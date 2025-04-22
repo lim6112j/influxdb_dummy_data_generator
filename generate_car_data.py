@@ -2,9 +2,10 @@ import random
 import time
 import argparse
 
-def generate_car_data(start_time, duration):
+def generate_car_data(duration):
     """Generates dummy car movement data in InfluxDB line protocol format every 1 second."""
 
+    start_time = time.time()
     end_time = start_time + (duration * 3600)  # Convert hours to seconds
     current_time = start_time
     while current_time <= end_time:
@@ -24,9 +25,8 @@ def generate_car_data(start_time, duration):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate car data for a given time duration.")
-    parser.add_argument("--start_time", type=int, help="Start time in seconds since epoch", required=True)
     parser.add_argument("--duration", type=int, help="Duration in hours", required=True)
 
     args = parser.parse_args()
 
-    generate_car_data(args.start_time, args.duration)
+    generate_car_data(args.duration)
