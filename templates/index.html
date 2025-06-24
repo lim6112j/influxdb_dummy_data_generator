@@ -1,314 +1,339 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Car Movement Tracker</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
-        
-        .controls {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .controls button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 5px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .controls button:hover {
-            background: #45a049;
-        }
-        
-        .controls button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        
-        #map {
-            height: 600px;
-            width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .info-panel {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .status {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 4px;
-        }
-        
-        .status.loading {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .status.error {
-            background: #ffebee;
-            color: #c62828;
-        }
-        
-        .status.success {
-            background: #e8f5e8;
-            color: #2e7d32;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f0f0f0;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      .controls {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .controls button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        margin: 5px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .controls button:hover {
+        background: #45a049;
+      }
+
+      .controls button:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      #map {
+        height: 600px;
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .info-panel {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .status {
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 4px;
+      }
+
+      .status.loading {
+        background: #e3f2fd;
+        color: #1976d2;
+      }
+
+      .status.error {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .status.success {
+        background: #e8f5e8;
+        color: #2e7d32;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Car Movement Tracker</h1>
-        
-        <div class="controls">
-            <button onclick="loadCarData()">Load Car Data</button>
-            <button onclick="clearMap()">Clear Map</button>
-            <button onclick="animateMovement()" id="animateBtn">Animate Movement</button>
-            <button onclick="stopAnimation()" id="stopBtn" disabled>Stop Animation</button>
+      <h1>Car Movement Tracker</h1>
+
+      <div class="controls">
+        <button onclick="loadCarData()">Load Car Data</button>
+        <button onclick="clearMap()">Clear Map</button>
+        <button onclick="animateMovement()" id="animateBtn">
+          Animate Movement
+        </button>
+        <button onclick="stopAnimation()" id="stopBtn" disabled>
+          Stop Animation
+        </button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div id="map"></div>
+
+      <div class="info-panel">
+        <h3>Car Information</h3>
+        <div id="carInfo">
+          <p>
+            <strong>Current Position:</strong>
+            <span id="currentPos">Not available</span>
+          </p>
+          <p>
+            <strong>Speed:</strong> <span id="currentSpeed">Not available</span>
+          </p>
+          <p>
+            <strong>Heading:</strong>
+            <span id="currentHeading">Not available</span>
+          </p>
+          <p><strong>Total Points:</strong> <span id="totalPoints">0</span></p>
         </div>
-        
-        <div id="status" class="status"></div>
-        
-        <div id="map"></div>
-        
-        <div class="info-panel">
-            <h3>Car Information</h3>
-            <div id="carInfo">
-                <p><strong>Current Position:</strong> <span id="currentPos">Not available</span></p>
-                <p><strong>Speed:</strong> <span id="currentSpeed">Not available</span></p>
-                <p><strong>Heading:</strong> <span id="currentHeading">Not available</span></p>
-                <p><strong>Total Points:</strong> <span id="totalPoints">0</span></p>
-            </div>
-        </div>
+      </div>
     </div>
 
     <script>
-        let map;
-        let carMarker;
-        let pathPolyline;
-        let carData = [];
-        let animationIndex = 0;
-        let animationInterval;
-        let isAnimating = false;
+      let map;
+      let carMarker;
+      let pathPolyline;
+      let carData = [];
+      let animationIndex = 0;
+      let animationInterval;
+      let isAnimating = false;
 
-        function initMap() {
-            // Initialize map centered on Los Angeles (matching the data generation area)
-            map = new google.maps.Map(document.getElementById('map'), {
-                zoom: 13,
-                center: { lat: 34.05, lng: -118.15 },
-                mapTypeId: 'roadmap'
-            });
+      function initMap() {
+        // Initialize map centered on Los Angeles (matching the data generation area)
+        map = new google.maps.Map(document.getElementById("map"), {
+          zoom: 13,
+          center: { lat: 34.05, lng: -118.15 },
+          mapTypeId: "roadmap",
+        });
 
-            // Initialize polyline for car path
-            pathPolyline = new google.maps.Polyline({
-                path: [],
-                geodesic: true,
-                strokeColor: '#FF0000',
-                strokeOpacity: 1.0,
-                strokeWeight: 2
-            });
-            pathPolyline.setMap(map);
+        // Initialize polyline for car path
+        pathPolyline = new google.maps.Polyline({
+          path: [],
+          geodesic: true,
+          strokeColor: "#FF0000",
+          strokeOpacity: 1.0,
+          strokeWeight: 2,
+        });
+        pathPolyline.setMap(map);
 
-            updateStatus('Map initialized. Click "Load Car Data" to fetch data from InfluxDB.', 'success');
+        updateStatus(
+          'Map initialized. Click "Load Car Data" to fetch data from InfluxDB.',
+          "success",
+        );
+      }
+
+      function updateStatus(message, type = "loading") {
+        const statusDiv = document.getElementById("status");
+        statusDiv.textContent = message;
+        statusDiv.className = `status ${type}`;
+      }
+
+      async function loadCarData() {
+        updateStatus("Loading car data from InfluxDB...", "loading");
+
+        try {
+          const response = await fetch("/api/car-data");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          carData = data;
+
+          if (carData.length === 0) {
+            updateStatus("No car data found in InfluxDB.", "error");
+            return;
+          }
+
+          // Update total points
+          document.getElementById("totalPoints").textContent = carData.length;
+
+          // Draw the complete path
+          const path = carData.map((point) => ({
+            lat: point.latitude,
+            lng: point.longitude,
+          }));
+
+          pathPolyline.setPath(path);
+
+          // Fit map to show all points
+          const bounds = new google.maps.LatLngBounds();
+          path.forEach((point) => bounds.extend(point));
+          map.fitBounds(bounds);
+
+          // Create or update car marker at the first position
+          if (carData.length > 0) {
+            const firstPoint = carData[0];
+            updateCarMarker(firstPoint);
+            updateCarInfo(firstPoint);
+          }
+
+          updateStatus(
+            `Loaded ${carData.length} data points successfully.`,
+            "success",
+          );
+        } catch (error) {
+          console.error("Error loading car data:", error);
+          updateStatus(`Error loading data: ${error.message}`, "error");
+        }
+      }
+
+      function updateCarMarker(point) {
+        const position = { lat: point.latitude, lng: point.longitude };
+
+        if (!carMarker) {
+          carMarker = new google.maps.Marker({
+            position: position,
+            map: map,
+            title: "Car Position",
+            icon: {
+              path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+              scale: 6,
+              fillColor: "#4CAF50",
+              fillOpacity: 1,
+              strokeColor: "#2E7D32",
+              strokeWeight: 2,
+              rotation: point.heading || 0,
+            },
+          });
+        } else {
+          carMarker.setPosition(position);
+          const icon = carMarker.getIcon();
+          icon.rotation = point.heading || 0;
+          carMarker.setIcon(icon);
+        }
+      }
+
+      function updateCarInfo(point) {
+        document.getElementById("currentPos").textContent =
+          `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`;
+        document.getElementById("currentSpeed").textContent =
+          `${point.speed} mph`;
+        document.getElementById("currentHeading").textContent =
+          `${point.heading}°`;
+      }
+
+      function animateMovement() {
+        if (carData.length === 0) {
+          updateStatus(
+            "No car data available. Please load data first.",
+            "error",
+          );
+          return;
         }
 
-        function updateStatus(message, type = 'loading') {
-            const statusDiv = document.getElementById('status');
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
-        }
+        if (isAnimating) return;
 
-        async function loadCarData() {
-            updateStatus('Loading car data from InfluxDB...', 'loading');
-            
-            try {
-                const response = await fetch('/api/car-data');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                carData = data;
-                
-                if (carData.length === 0) {
-                    updateStatus('No car data found in InfluxDB.', 'error');
-                    return;
-                }
-                
-                // Update total points
-                document.getElementById('totalPoints').textContent = carData.length;
-                
-                // Draw the complete path
-                const path = carData.map(point => ({
-                    lat: point.latitude,
-                    lng: point.longitude
-                }));
-                
-                pathPolyline.setPath(path);
-                
-                // Fit map to show all points
-                const bounds = new google.maps.LatLngBounds();
-                path.forEach(point => bounds.extend(point));
-                map.fitBounds(bounds);
-                
-                // Create or update car marker at the first position
-                if (carData.length > 0) {
-                    const firstPoint = carData[0];
-                    updateCarMarker(firstPoint);
-                    updateCarInfo(firstPoint);
-                }
-                
-                updateStatus(`Loaded ${carData.length} data points successfully.`, 'success');
-                
-            } catch (error) {
-                console.error('Error loading car data:', error);
-                updateStatus(`Error loading data: ${error.message}`, 'error');
-            }
-        }
+        isAnimating = true;
+        animationIndex = 0;
 
-        function updateCarMarker(point) {
-            const position = { lat: point.latitude, lng: point.longitude };
-            
-            if (!carMarker) {
-                carMarker = new google.maps.Marker({
-                    position: position,
-                    map: map,
-                    title: 'Car Position',
-                    icon: {
-                        path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                        scale: 6,
-                        fillColor: '#4CAF50',
-                        fillOpacity: 1,
-                        strokeColor: '#2E7D32',
-                        strokeWeight: 2,
-                        rotation: point.heading || 0
-                    }
-                });
-            } else {
-                carMarker.setPosition(position);
-                const icon = carMarker.getIcon();
-                icon.rotation = point.heading || 0;
-                carMarker.setIcon(icon);
-            }
-        }
+        document.getElementById("animateBtn").disabled = true;
+        document.getElementById("stopBtn").disabled = false;
 
-        function updateCarInfo(point) {
-            document.getElementById('currentPos').textContent = 
-                `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`;
-            document.getElementById('currentSpeed').textContent = 
-                `${point.speed} mph`;
-            document.getElementById('currentHeading').textContent = 
-                `${point.heading}°`;
-        }
+        updateStatus("Animating car movement...", "loading");
 
-        function animateMovement() {
-            if (carData.length === 0) {
-                updateStatus('No car data available. Please load data first.', 'error');
-                return;
-            }
-            
-            if (isAnimating) return;
-            
-            isAnimating = true;
-            animationIndex = 0;
-            
-            document.getElementById('animateBtn').disabled = true;
-            document.getElementById('stopBtn').disabled = false;
-            
-            updateStatus('Animating car movement...', 'loading');
-            
-            animationInterval = setInterval(() => {
-                if (animationIndex >= carData.length) {
-                    stopAnimation();
-                    updateStatus('Animation completed.', 'success');
-                    return;
-                }
-                
-                const currentPoint = carData[animationIndex];
-                updateCarMarker(currentPoint);
-                updateCarInfo(currentPoint);
-                
-                // Center map on current position
-                map.setCenter({ lat: currentPoint.latitude, lng: currentPoint.longitude });
-                
-                animationIndex++;
-            }, 500); // Update every 500ms
-        }
-
-        function stopAnimation() {
-            if (animationInterval) {
-                clearInterval(animationInterval);
-                animationInterval = null;
-            }
-            
-            isAnimating = false;
-            document.getElementById('animateBtn').disabled = false;
-            document.getElementById('stopBtn').disabled = true;
-            
-            updateStatus('Animation stopped.', 'success');
-        }
-
-        function clearMap() {
-            if (carMarker) {
-                carMarker.setMap(null);
-                carMarker = null;
-            }
-            
-            pathPolyline.setPath([]);
-            carData = [];
-            animationIndex = 0;
-            
+        animationInterval = setInterval(() => {
+          if (animationIndex >= carData.length) {
             stopAnimation();
-            
-            document.getElementById('currentPos').textContent = 'Not available';
-            document.getElementById('currentSpeed').textContent = 'Not available';
-            document.getElementById('currentHeading').textContent = 'Not available';
-            document.getElementById('totalPoints').textContent = '0';
-            
-            updateStatus('Map cleared.', 'success');
+            updateStatus("Animation completed.", "success");
+            return;
+          }
+
+          const currentPoint = carData[animationIndex];
+          updateCarMarker(currentPoint);
+          updateCarInfo(currentPoint);
+
+          // Center map on current position
+          map.setCenter({
+            lat: currentPoint.latitude,
+            lng: currentPoint.longitude,
+          });
+
+          animationIndex++;
+        }, 500); // Update every 500ms
+      }
+
+      function stopAnimation() {
+        if (animationInterval) {
+          clearInterval(animationInterval);
+          animationInterval = null;
         }
+
+        isAnimating = false;
+        document.getElementById("animateBtn").disabled = false;
+        document.getElementById("stopBtn").disabled = true;
+
+        updateStatus("Animation stopped.", "success");
+      }
+
+      function clearMap() {
+        if (carMarker) {
+          carMarker.setMap(null);
+          carMarker = null;
+        }
+
+        pathPolyline.setPath([]);
+        carData = [];
+        animationIndex = 0;
+
+        stopAnimation();
+
+        document.getElementById("currentPos").textContent = "Not available";
+        document.getElementById("currentSpeed").textContent = "Not available";
+        document.getElementById("currentHeading").textContent = "Not available";
+        document.getElementById("totalPoints").textContent = "0";
+
+        updateStatus("Map cleared.", "success");
+      }
     </script>
-    
+
     <!-- Replace YOUR_API_KEY with your actual Google Maps API key -->
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap">
-    </script>
-</body>
+    <script
+      async
+      defer
+      src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_REMOVED&callback=initMap"
+    ></script>
+  </body>
 </html>
