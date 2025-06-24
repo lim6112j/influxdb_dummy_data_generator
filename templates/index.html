@@ -329,11 +329,11 @@
       }
     </script>
 
-    <!-- Replace YOUR_API_KEY with your actual Google Maps API key -->
+    <!-- Google Maps API loaded from environment variable -->
     <script
       async
       defer
-      src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_REMOVED&callback=initMap"
+      src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap"
     ></script>
   </body>
 </html>

@@ -10,7 +10,8 @@ load_dotenv()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY', 'YOUR_API_KEY')
+    return render_template('index.html', google_maps_api_key=google_maps_api_key)
 
 @app.route('/api/car-data')
 def get_car_data():
