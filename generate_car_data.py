@@ -14,10 +14,10 @@ def generate_car_data(duration):
 
     # Load environment variables
     load_dotenv()
-    influxdb_url = os.getenv('INFLUXDB_URL')
+    influxdb_url = os.getenv('INFLUXDB_URL', 'http://localhost:8086')
     influxdb_token = os.getenv('INFLUXDB_TOKEN')
-    influxdb_org = os.getenv('INFLUXDB_ORG')
-    influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+    influxdb_org = os.getenv('INFLUXDB_ORG', 'ciel')
+    influxdb_bucket = os.getenv('INFLUXDB_BUCKET', 'location_202506')
 
     # Check if all required environment variables are set
     if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
@@ -32,6 +32,7 @@ def generate_car_data(duration):
     print(f"Connecting to InfluxDB at: {influxdb_url}")
     print(f"Organization: {influxdb_org}")
     print(f"Bucket: {influxdb_bucket}")
+    print(f"Token: {influxdb_token[:20]}..." if influxdb_token else "Token: None")
 
     # Initialize InfluxDB client
     try:
