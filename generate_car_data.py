@@ -13,11 +13,24 @@ def generate_car_data(duration):
     end_time = start_time + (duration * 3600)  # Convert hours to seconds
 
     # Load environment variables
-    load_dotenv()
+    env_file = '.env'
+    if os.path.exists(env_file):
+        print(f"Loading environment from: {os.path.abspath(env_file)}")
+        load_dotenv(env_file)
+    else:
+        print(f"Warning: .env file not found at {os.path.abspath(env_file)}")
+        load_dotenv()
+    
     influxdb_url = os.getenv('INFLUXDB_URL')
     influxdb_token = os.getenv('INFLUXDB_TOKEN')
     influxdb_org = os.getenv('INFLUXDB_ORG')
     influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+    
+    print(f"Raw environment values:")
+    print(f"  INFLUXDB_URL: {repr(influxdb_url)}")
+    print(f"  INFLUXDB_ORG: {repr(influxdb_org)}")
+    print(f"  INFLUXDB_BUCKET: {repr(influxdb_bucket)}")
+    print(f"  INFLUXDB_TOKEN: {repr(influxdb_token[:20] + '...' if influxdb_token else None)}")
     
     # Use defaults if not found in environment
     if not influxdb_url:
