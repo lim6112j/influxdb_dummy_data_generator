@@ -14,10 +14,18 @@ def generate_car_data(duration):
 
     # Load environment variables
     load_dotenv()
-    influxdb_url = os.getenv('INFLUXDB_URL', 'http://localhost:8086')
+    influxdb_url = os.getenv('INFLUXDB_URL')
     influxdb_token = os.getenv('INFLUXDB_TOKEN')
-    influxdb_org = os.getenv('INFLUXDB_ORG', 'ciel')
-    influxdb_bucket = os.getenv('INFLUXDB_BUCKET', 'location_202506')
+    influxdb_org = os.getenv('INFLUXDB_ORG')
+    influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+    
+    # Use defaults if not found in environment
+    if not influxdb_url:
+        influxdb_url = 'http://localhost:8086'
+    if not influxdb_org:
+        influxdb_org = 'ciel'
+    if not influxdb_bucket:
+        influxdb_bucket = 'location_202506'
 
     # Check if all required environment variables are set
     if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
