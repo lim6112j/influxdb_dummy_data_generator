@@ -16,26 +16,31 @@ def index():
 def get_car_data():
     """Fetch car data from InfluxDB and return as JSON"""
     
-    influxdb_url = os.getenv('INFLUXDB_URL')
-    influxdb_token = os.getenv('INFLUXDB_TOKEN')
-    influxdb_org = os.getenv('INFLUXDB_ORG')
-    influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
-    
-    client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
-    query_api = client.query_api()
-    
-    # Query to get the last 1000 car data points
-    query = f'''
-    from(bucket: "{influxdb_bucket}")
-      |> range(start: -24h)
-      |> filter(fn: (r) => r["_measurement"] == "car_data")
-      |> filter(fn: (r) => r["car_id"] == "1")
-      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-      |> sort(columns: ["_time"])
-      |> limit(n: 1000)
-    '''
-    
     try:
+        # Use the actual values from your .env file
+        influxdb_url = 'http://localhost:8086'
+        influxdb_token = 'cnpLoh8gsc7-m68RcQbYXARHWvp7tSRLtDC-nJi8jUfLqA2_vPVMlYclsmsJdit1c0vnvjXnt8yElk-IT3125w=='
+        influxdb_org = 'ciel'
+        influxdb_bucket = 'location_202506'
+        
+        print(f"Connecting to InfluxDB: {influxdb_url}")
+        print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
+        
+        client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        query_api = client.query_api()
+        
+        # Query to get the last 1000 car data points
+        query = f'''
+        from(bucket: "{influxdb_bucket}")
+          |> range(start: -24h)
+          |> filter(fn: (r) => r["_measurement"] == "car_data")
+          |> filter(fn: (r) => r["car_id"] == "1")
+          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+          |> sort(columns: ["_time"])
+          |> limit(n: 1000)
+        '''
+        
+        print(f"Executing query...")
         result = query_api.query(query=query)
         
         car_data = []
@@ -49,11 +54,14 @@ def get_car_data():
                     'heading': record.values.get('heading')
                 })
         
+        print(f"Found {len(car_data)} data points")
         client.close()
         return jsonify(car_data)
         
     except Exception as e:
-        client.close()
+        print(f"Error in get_car_data: {str(e)}")
+        if 'client' in locals():
+            client.close()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
