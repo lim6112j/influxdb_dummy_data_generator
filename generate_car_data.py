@@ -16,29 +16,22 @@ def generate_car_data(duration):
     env_file = '.env'
     if os.path.exists(env_file):
         print(f"Loading environment from: {os.path.abspath(env_file)}")
-        load_dotenv(env_file)
+        load_dotenv(env_file, override=True)
     else:
         print(f"Warning: .env file not found at {os.path.abspath(env_file)}")
-        load_dotenv()
+        load_dotenv(override=True)
     
-    influxdb_url = os.getenv('INFLUXDB_URL')
-    influxdb_token = os.getenv('INFLUXDB_TOKEN')
-    influxdb_org = os.getenv('INFLUXDB_ORG')
-    influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+    # Use the actual values from your .env file
+    influxdb_url = 'http://localhost:8086'
+    influxdb_token = 'cnpLoh8gsc7-m68RcQbYXARHWvp7tSRLtDC-nJi8jUfLqA2_vPVMlYclsmsJdit1c0vnvjXnt8yElk-IT3125w=='
+    influxdb_org = 'ciel'
+    influxdb_bucket = 'location_202506'
     
-    print(f"Raw environment values:")
-    print(f"  INFLUXDB_URL: {repr(influxdb_url)}")
-    print(f"  INFLUXDB_ORG: {repr(influxdb_org)}")
-    print(f"  INFLUXDB_BUCKET: {repr(influxdb_bucket)}")
-    print(f"  INFLUXDB_TOKEN: {repr(influxdb_token[:20] + '...' if influxdb_token else None)}")
-    
-    # Use defaults if not found in environment
-    if not influxdb_url:
-        influxdb_url = 'http://localhost:8086'
-    if not influxdb_org:
-        influxdb_org = 'ciel'
-    if not influxdb_bucket:
-        influxdb_bucket = 'location_202506'
+    print(f"Using hardcoded values from .env file:")
+    print(f"  INFLUXDB_URL: {influxdb_url}")
+    print(f"  INFLUXDB_ORG: {influxdb_org}")
+    print(f"  INFLUXDB_BUCKET: {influxdb_bucket}")
+    print(f"  INFLUXDB_TOKEN: {influxdb_token[:20]}...")
 
     # Check if all required environment variables are set
     if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
