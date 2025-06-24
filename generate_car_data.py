@@ -21,17 +21,17 @@ def generate_car_data(duration):
         print(f"Warning: .env file not found at {os.path.abspath(env_file)}")
         load_dotenv(override=True)
     
-    # Use the actual values from your .env file
-    influxdb_url = 'http://localhost:8086'
-    influxdb_token = 'cnpLoh8gsc7-m68RcQbYXARHWvp7tSRLtDC-nJi8jUfLqA2_vPVMlYclsmsJdit1c0vnvjXnt8yElk-IT3125w=='
-    influxdb_org = 'ciel'
-    influxdb_bucket = 'location_202506'
+    # Load environment variables
+    influxdb_url = os.getenv('INFLUXDB_URL')
+    influxdb_token = os.getenv('INFLUXDB_TOKEN')
+    influxdb_org = os.getenv('INFLUXDB_ORG')
+    influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
     
-    print(f"Using hardcoded values from .env file:")
+    print(f"Loaded environment variables:")
     print(f"  INFLUXDB_URL: {influxdb_url}")
     print(f"  INFLUXDB_ORG: {influxdb_org}")
     print(f"  INFLUXDB_BUCKET: {influxdb_bucket}")
-    print(f"  INFLUXDB_TOKEN: {influxdb_token[:20]}...")
+    print(f"  INFLUXDB_TOKEN: {influxdb_token[:20]}..." if influxdb_token else "Token: None")
 
     # Check if all required environment variables are set
     if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):

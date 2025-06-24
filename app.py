@@ -17,11 +17,14 @@ def get_car_data():
     """Fetch car data from InfluxDB and return as JSON"""
     
     try:
-        # Use the actual values from your .env file
-        influxdb_url = 'http://localhost:8086'
-        influxdb_token = 'cnpLoh8gsc7-m68RcQbYXARHWvp7tSRLtDC-nJi8jUfLqA2_vPVMlYclsmsJdit1c0vnvjXnt8yElk-IT3125w=='
-        influxdb_org = 'ciel'
-        influxdb_bucket = 'location_202506'
+        # Load environment variables
+        influxdb_url = os.getenv('INFLUXDB_URL')
+        influxdb_token = os.getenv('INFLUXDB_TOKEN')
+        influxdb_org = os.getenv('INFLUXDB_ORG')
+        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+        
+        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
+            return jsonify({'error': 'Missing InfluxDB configuration'}), 500
         
         print(f"Connecting to InfluxDB: {influxdb_url}")
         print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
