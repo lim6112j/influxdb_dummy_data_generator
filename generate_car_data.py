@@ -2,6 +2,7 @@ import random
 import time
 import argparse
 import os
+import math
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -81,13 +82,40 @@ def generate_car_data(duration):
         print(f"Error connecting to InfluxDB: {e}")
         return
 
+    # Initialize starting position
+    latitude = 34.05  # Starting latitude (Los Angeles area)
+    longitude = -118.15  # Starting longitude (Los Angeles area)
+    
     current_time = start_time
     while current_time <= end_time:
         # Simulate car data
-        latitude = round(random.uniform(34.0, 34.1), 6)  # Example range
-        longitude = round(random.uniform(-118.2, -118.1), 6)  # Example range
         speed = round(random.uniform(0, 60), 2)  # Speed in mph
         heading = round(random.uniform(0, 359), 2)  # Heading in degrees
+        
+        # Calculate new position based on speed and heading
+        if speed > 0:
+            # Convert speed from mph to meters per second
+            speed_ms = speed * 0.44704
+            
+            # Distance traveled in 1 second
+            distance_m = speed_ms * 1
+            
+            # Convert heading to radians (0° = North, clockwise)
+            heading_rad = math.radians(heading)
+            
+            # Calculate change in latitude and longitude
+            # 1 degree latitude ≈ 111,111 meters
+            # 1 degree longitude ≈ 111,111 * cos(latitude) meters
+            delta_lat = (distance_m * math.cos(heading_rad)) / 111111
+            delta_lon = (distance_m * math.sin(heading_rad)) / (111111 * math.cos(math.radians(latitude)))
+            
+            # Update position
+            latitude += delta_lat
+            longitude += delta_lon
+        
+        # Round to 6 decimal places for precision
+        latitude = round(latitude, 6)
+        longitude = round(longitude, 6)
 
         # Create a Point object
         point = Point("car_data") \
