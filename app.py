@@ -39,12 +39,12 @@ def get_car_data():
         # Query to get the last 1000 car data points
         query = f'''
         from(bucket: "{influxdb_bucket}")
-          |> range(start: -1m)
+          |> range(start: -10m)
           |> filter(fn: (r) => r["_measurement"] == "car_data")
           |> filter(fn: (r) => r["car_id"] == "1")
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
           |> sort(columns: ["_time"])
-          |> limit(n: 100)
+          |> limit(n: 500)
         '''
 
         print(f"Executing query...")
