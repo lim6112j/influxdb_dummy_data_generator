@@ -132,6 +132,57 @@ def get_route():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/start-generation', methods=['POST'])
+def start_generation():
+    """Start the car data generation script with given coordinates"""
+    import subprocess
+    import threading
+    
+    try:
+        data = request.get_json()
+        origin_lat = data.get('origin_lat')
+        origin_lon = data.get('origin_lon')
+        dest_lat = data.get('dest_lat')
+        dest_lon = data.get('dest_lon')
+        duration = data.get('duration', 1)  # Default 1 hour
+        osrm_url = data.get('osrm_url', 'http://localhost:5001')
+        
+        if not all([origin_lat, origin_lon, dest_lat, dest_lon]):
+            return jsonify({'error': 'Missing required coordinates'}), 400
+        
+        # Build command to run generate_car_data.py
+        cmd = [
+            'python', 'generate_car_data.py',
+            '--duration', str(duration),
+            '--origin', str(origin_lat), str(origin_lon),
+            '--destination', str(dest_lat), str(dest_lon),
+            '--osrm-url', osrm_url
+        ]
+        
+        # Start the script in a separate thread so it doesn't block the web server
+        def run_script():
+            try:
+                print(f"Starting data generation: {' '.join(cmd)}")
+                subprocess.run(cmd, check=True)
+                print("Data generation completed")
+            except subprocess.CalledProcessError as e:
+                print(f"Data generation failed: {e}")
+            except Exception as e:
+                print(f"Error running data generation: {e}")
+        
+        thread = threading.Thread(target=run_script)
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'message': 'Data generation started',
+            'command': ' '.join(cmd)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/car-data-stream')
 def stream_car_data():
     """Stream car data from InfluxDB in real-time"""

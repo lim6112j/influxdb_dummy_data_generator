@@ -355,16 +355,84 @@
       function startStreaming() {
         if (isStreaming) return;
 
+        // Get coordinates from input fields
+        const originLat = parseFloat(document.getElementById("startLat").value);
+        const originLon = parseFloat(document.getElementById("startLon").value);
+        const destLat = parseFloat(document.getElementById("destLat").value);
+        const destLon = parseFloat(document.getElementById("destLon").value);
+
+        // Validate inputs
+        if (
+          isNaN(originLat) ||
+          isNaN(originLon) ||
+          isNaN(destLat) ||
+          isNaN(destLon)
+        ) {
+          updateStatus(
+            "Please enter valid coordinates for start and destination locations",
+            "error",
+          );
+          return;
+        }
+
         isStreaming = true;
         document.getElementById("streamBtn").disabled = true;
         document.getElementById("stopStreamBtn").disabled = false;
 
-        updateStatus("Starting real-time data streaming...", "loading");
+        updateStatus("Starting data generation and streaming...", "loading");
 
         // Clear existing data
         carData = [];
         pathPolyline.setPath([]);
 
+        // First, start the data generation script
+        fetch("/api/start-generation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            origin_lat: originLat,
+            origin_lon: originLon,
+            dest_lat: destLat,
+            dest_lon: destLon,
+            duration: 1, // 1 hour of data generation
+            osrm_url: "http://localhost:5001",
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              updateStatus(`Error starting generation: ${data.error}`, "error");
+              isStreaming = false;
+              document.getElementById("streamBtn").disabled = false;
+              document.getElementById("stopStreamBtn").disabled = true;
+              return;
+            }
+
+            updateStatus(
+              "Data generation started. Beginning streaming...",
+              "loading",
+            );
+
+            // Wait a moment for data generation to start, then begin streaming
+            setTimeout(() => {
+              startEventStream();
+            }, 2000);
+          })
+          .catch((error) => {
+            console.error("Error starting generation:", error);
+            updateStatus(
+              `Error starting generation: ${error.message}`,
+              "error",
+            );
+            isStreaming = false;
+            document.getElementById("streamBtn").disabled = false;
+            document.getElementById("stopStreamBtn").disabled = true;
+          });
+      }
+
+      function startEventStream() {
         // Start EventSource for streaming
         eventSource = new EventSource("/api/car-data-stream");
 
