@@ -11,40 +11,42 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 def get_route_from_osrm(origin, destination, osrm_url):
     """Fetch route coordinates from OSRM server."""
     import requests
-    
+
     # Format coordinates for OSRM (longitude,latitude)
     origin_str = f"{origin[1]},{origin[0]}"
     destination_str = f"{destination[1]},{destination[0]}"
-    
+
     # OSRM route API endpoint
-    url = f"{osrm_url}/route/v1/driving/{origin_str};{destination_str}"
+    url = f"{osrm_url}/route/v1/driving/{origin_str};{destination_str}?steps=true"
     params = {
         'overview': 'full',
         'geometries': 'geojson',
         'steps': 'true'
     }
-    
+
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         if data['code'] != 'Ok':
-            raise Exception(f"OSRM error: {data.get('message', 'Unknown error')}")
-        
+            raise Exception(
+                f"OSRM error: {data.get('message', 'Unknown error')}")
+
         # Extract coordinates from the route geometry
         coordinates = data['routes'][0]['geometry']['coordinates']
         # Convert from [lon, lat] to [lat, lon] format
         route_points = [(coord[1], coord[0]) for coord in coordinates]
-        
+
         # Get total duration and distance
         duration = data['routes'][0]['duration']  # in seconds
         distance = data['routes'][0]['distance']  # in meters
-        
-        print(f"✓ Route fetched: {len(route_points)} points, {distance/1000:.2f}km, {duration/60:.1f}min")
-        
+
+        print(
+            f"✓ Route fetched: {len(route_points)} points, {distance/1000:.2f}km, {duration/60:.1f}min")
+
         return route_points, duration, distance
-        
+
     except requests.exceptions.RequestException as e:
         print(f"Error connecting to OSRM server: {e}")
         return None, None, None
@@ -135,99 +137,105 @@ def generate_car_data(duration, origin, destination, osrm_url):
     print(f"Fetching route from OSRM server at {osrm_url}")
     print(f"Origin: {origin[0]}, {origin[1]}")
     print(f"Destination: {destination[0]}, {destination[1]}")
-    
-    route_points, route_duration, route_distance = get_route_from_osrm(origin, destination, osrm_url)
-    
+
+    route_points, route_duration, route_distance = get_route_from_osrm(
+        origin, destination, osrm_url)
+
     if not route_points:
         print("Failed to get route from OSRM. Exiting.")
         client.close()
         return
-    
+
     # Calculate how many times to repeat the route to fill the duration
     total_seconds = duration * 3600
     route_duration_seconds = route_duration
-    
+
     if total_seconds < route_duration_seconds:
-        print(f"Warning: Requested duration ({duration}h) is shorter than route duration ({route_duration_seconds/3600:.2f}h)")
+        print(
+            f"Warning: Requested duration ({duration}h) is shorter than route duration ({route_duration_seconds/3600:.2f}h)")
         print("Will only generate data for partial route.")
-    
+
     # Calculate speed for each segment to match real-world timing
     segment_speeds = []
     for i in range(len(route_points) - 1):
         # Calculate distance between consecutive points
         lat1, lon1 = route_points[i]
         lat2, lon2 = route_points[i + 1]
-        
+
         # Haversine formula for distance
         R = 6371000  # Earth's radius in meters
         dlat = math.radians(lat2 - lat1)
         dlon = math.radians(lon2 - lon1)
-        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * \
+            math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
         segment_distance = R * c
-        
+
         # Calculate time for this segment (assuming equal time distribution)
         segment_time = route_duration / (len(route_points) - 1)
-        
+
         # Calculate speed in km/h
         speed_ms = segment_distance / segment_time if segment_time > 0 else 0
         speed_kmh = speed_ms * 3.6  # Convert m/s to km/h
         segment_speeds.append(round(speed_kmh, 2))
-    
+
     current_time = start_time
     route_index = 0
     cycle_count = 0
-    
+
     while current_time <= end_time:
         # Check if we've started a new cycle
         elapsed_time = current_time - start_time
         current_cycle = int(elapsed_time // route_duration)
-        
+
         if current_cycle > cycle_count:
             cycle_count = current_cycle
             print(f"Starting route cycle #{cycle_count + 1}")
-        
+
         # Move to next route point based on timing
         elapsed_time = current_time - start_time
-        
+
         # Calculate which cycle we're in
         current_cycle = int(elapsed_time // route_duration)
         time_in_current_cycle = elapsed_time % route_duration
-        
+
         # Calculate progress through current route (0.0 to 1.0)
         route_progress = time_in_current_cycle / route_duration
-        
+
         # Calculate route index based on progress
         route_index = int(route_progress * (len(route_points) - 1))
         route_index = min(route_index, len(route_points) - 1)
-        
+
         # Debug output every 30 seconds
         if int(current_time) % 30 == 0:
-            print(f"Debug: Cycle {current_cycle + 1}, Progress: {route_progress:.2%}, Point: {route_index + 1}/{len(route_points)}")
-        
+            print(
+                f"Debug: Cycle {current_cycle + 1}, Progress: {route_progress:.2%}, Point: {route_index + 1}/{len(route_points)}")
+
         latitude, longitude = route_points[route_index]
-        
+
         # Get speed for current segment
-        speed = segment_speeds[min(route_index, len(segment_speeds) - 1)] if segment_speeds else 0
-        
+        speed = segment_speeds[min(route_index, len(
+            segment_speeds) - 1)] if segment_speeds else 0
+
         # Calculate heading to next point
         if route_index < len(route_points) - 1:
             lat1, lon1 = route_points[route_index]
             lat2, lon2 = route_points[route_index + 1]
-            
+
             # Calculate bearing
             dlon = math.radians(lon2 - lon1)
             lat1_rad = math.radians(lat1)
             lat2_rad = math.radians(lat2)
-            
+
             y = math.sin(dlon) * math.cos(lat2_rad)
-            x = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(dlon)
-            
+            x = math.cos(lat1_rad) * math.sin(lat2_rad) - \
+                math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(dlon)
+
             heading = math.degrees(math.atan2(y, x))
             heading = (heading + 360) % 360  # Normalize to 0-360
         else:
             heading = 0  # At destination
-        
+
         heading = round(heading, 2)
 
         # Create a Point object
@@ -275,5 +283,5 @@ if __name__ == "__main__":
 
     origin = (float(args.origin[0]), float(args.origin[1]))
     destination = (float(args.destination[0]), float(args.destination[1]))
-    
+
     generate_car_data(args.duration, origin, destination, args.osrm_url)
