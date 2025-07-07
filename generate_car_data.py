@@ -214,7 +214,7 @@ def generate_car_data(duration, origin, destination, osrm_url):
         # Get current step data
         current_step = step_locations[step_index]
         latitude, longitude = current_step['location']
-        speed = current_step['speed_kmh']
+        speed = float(current_step['speed_kmh'])
         
         # Calculate heading to next step
         if step_index < len(step_locations) - 1:
@@ -235,7 +235,7 @@ def generate_car_data(duration, origin, destination, osrm_url):
         else:
             heading = 0  # At destination
         
-        heading = round(heading, 2)
+        heading = float(round(heading, 2))
 
         # Debug output every 10 seconds
         if int(current_time) % 10 == 0:
