@@ -100,18 +100,24 @@ def stream_car_data():
                 try:
                     # Query for new data since last timestamp
                     if last_timestamp:
-                        time_filter = f'|> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))'
+                        query = f'''
+                        from(bucket: "{influxdb_bucket}")
+                          |> range(start: -10m)
+                          |> filter(fn: (r) => r["_measurement"] == "car_data")
+                          |> filter(fn: (r) => r["car_id"] == "1")
+                          |> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))
+                          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+                          |> sort(columns: ["_time"])
+                        '''
                     else:
-                        time_filter = '|> range(start: -1m)'  # Start with last minute of data
-                    
-                    query = f'''
-                    from(bucket: "{influxdb_bucket}")
-                      {time_filter}
-                      |> filter(fn: (r) => r["_measurement"] == "car_data")
-                      |> filter(fn: (r) => r["car_id"] == "1")
-                      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                      |> sort(columns: ["_time"])
-                    '''
+                        query = f'''
+                        from(bucket: "{influxdb_bucket}")
+                          |> range(start: -1m)
+                          |> filter(fn: (r) => r["_measurement"] == "car_data")
+                          |> filter(fn: (r) => r["car_id"] == "1")
+                          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+                          |> sort(columns: ["_time"])
+                        '''
 
                     result = query_api.query(query=query)
                     
