@@ -224,7 +224,10 @@ def generate_car_data(duration, origin, destination, osrm_url):
                 'location': step['location'],
                 'speed_kmh': step['speed_kmh'],
                 'instruction': step['instruction'],
-                'step_index': i
+                'step_index': i,
+                'step_duration': step['duration'],
+                'step_distance': step['distance'],
+                'step_name': step.get('name', '')
             })
         
         if i < len(step_locations) - 1:
@@ -254,7 +257,10 @@ def generate_car_data(duration, origin, destination, osrm_url):
             'location': final_step['location'],
             'speed_kmh': 0,  # Stopped at destination
             'instruction': 'arrive',
-            'step_index': len(step_locations) - 1
+            'step_index': len(step_locations) - 1,
+            'step_duration': 0,
+            'step_distance': 0,
+            'step_name': 'Destination'
         })
     
     print(f"Generated {len(all_route_points)} total points for smooth movement")
@@ -313,13 +319,20 @@ def generate_car_data(duration, origin, destination, osrm_url):
             step_info = current_point.get('instruction', 'moving')
             print(f"Debug: Point {point_index + 1}/{len(all_route_points)}: {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
-        # Create a Point object
+        # Create a Point object with step information
         point = Point("car_data") \
             .tag("car_id", "1") \
             .field("latitude", latitude) \
             .field("longitude", longitude) \
             .field("speed", speed) \
             .field("heading", heading) \
+            .field("step_index", current_point.get('step_index', 0)) \
+            .field("instruction", current_point.get('instruction', 'moving')) \
+            .field("intermediate_index", current_point.get('intermediate_index', 0)) \
+            .field("cycle_count", cycle_count) \
+            .field("step_duration", current_point.get('step_duration', 0)) \
+            .field("step_distance", current_point.get('step_distance', 0)) \
+            .field("step_name", current_point.get('step_name', '')) \
             .time(int(current_time * 1e9), "ns")
 
         # Write the data to InfluxDB

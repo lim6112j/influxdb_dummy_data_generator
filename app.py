@@ -36,7 +36,7 @@ def get_car_data():
             url=influxdb_url, token=influxdb_token, org=influxdb_org)
         query_api = client.query_api()
 
-        # Query to get the last 1000 car data points
+        # Query to get the last 500 car data points with step information
         query = f'''
         from(bucket: "{influxdb_bucket}")
           |> range(start: -10m)
@@ -58,7 +58,14 @@ def get_car_data():
                     'latitude': record.values.get('latitude'),
                     'longitude': record.values.get('longitude'),
                     'speed': record.values.get('speed'),
-                    'heading': record.values.get('heading')
+                    'heading': record.values.get('heading'),
+                    'step_index': record.values.get('step_index'),
+                    'instruction': record.values.get('instruction'),
+                    'intermediate_index': record.values.get('intermediate_index'),
+                    'cycle_count': record.values.get('cycle_count'),
+                    'step_duration': record.values.get('step_duration'),
+                    'step_distance': record.values.get('step_distance'),
+                    'step_name': record.values.get('step_name')
                 })
 
         print(f"Found {len(car_data)} data points")
@@ -129,7 +136,14 @@ def stream_car_data():
                                 'latitude': record.values.get('latitude'),
                                 'longitude': record.values.get('longitude'),
                                 'speed': record.values.get('speed'),
-                                'heading': record.values.get('heading')
+                                'heading': record.values.get('heading'),
+                                'step_index': record.values.get('step_index'),
+                                'instruction': record.values.get('instruction'),
+                                'intermediate_index': record.values.get('intermediate_index'),
+                                'cycle_count': record.values.get('cycle_count'),
+                                'step_duration': record.values.get('step_duration'),
+                                'step_distance': record.values.get('step_distance'),
+                                'step_name': record.values.get('step_name')
                             }
                             new_points.append(point_data)
                             last_timestamp = record.get_time().isoformat()
