@@ -266,6 +266,13 @@
           path.forEach((point) => bounds.extend(point));
           map.fitBounds(bounds);
 
+          // Set a reasonable zoom level for animation
+          setTimeout(() => {
+            if (map.getZoom() > 15) {
+              map.setZoom(15);
+            }
+          }, 100);
+
           // Create or update car marker at the first position
           if (carData.length > 0) {
             const firstPoint = carData[0];
@@ -277,6 +284,13 @@
             `Loaded ${carData.length} data points successfully.`,
             "success",
           );
+
+          // Debug: Log first few data points
+          console.log("Loaded car data:", carData.length, "points");
+          if (carData.length > 0) {
+            console.log("First point:", carData[0]);
+            console.log("Last point:", carData[carData.length - 1]);
+          }
 
           // Show the data panel and display the data
           document.getElementById("dataPanel").style.display = "block";
@@ -291,25 +305,40 @@
         const position = { lat: point.latitude, lng: point.longitude };
 
         if (!carMarker) {
+          // Create new marker
           carMarker = new google.maps.Marker({
             position: position,
             map: map,
-            title: "Car Position",
+            title: `Car Position - Speed: ${point.speed} km/h`,
             icon: {
               path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-              scale: 6,
+              scale: 8,
               fillColor: "#4CAF50",
               fillOpacity: 1,
               strokeColor: "#2E7D32",
               strokeWeight: 2,
               rotation: point.heading || 0,
             },
+            zIndex: 1000
           });
+          
+          console.log("Created new car marker at:", position);
         } else {
+          // Update existing marker
           carMarker.setPosition(position);
-          const icon = carMarker.getIcon();
-          icon.rotation = point.heading || 0;
-          carMarker.setIcon(icon);
+          
+          // Update the icon rotation
+          const currentIcon = carMarker.getIcon();
+          const newIcon = {
+            ...currentIcon,
+            rotation: point.heading || 0
+          };
+          carMarker.setIcon(newIcon);
+          
+          // Update title
+          carMarker.setTitle(`Car Position - Speed: ${point.speed} km/h`);
+          
+          console.log("Updated car marker to:", position);
         }
       }
 
@@ -449,7 +478,13 @@
         document.getElementById("animateBtn").disabled = true;
         document.getElementById("stopBtn").disabled = false;
 
-        updateStatus("Animating car movement...", "loading");
+        updateStatus(`Starting animation with ${carData.length} points...`, "loading");
+
+        // Ensure we start from the first point
+        if (carData.length > 0) {
+          updateCarMarker(carData[0]);
+          updateCarInfo(carData[0]);
+        }
 
         animationInterval = setInterval(() => {
           if (animationIndex >= carData.length) {
@@ -459,17 +494,26 @@
           }
 
           const currentPoint = carData[animationIndex];
+          
+          // Debug log to see if we're getting data
+          console.log(`Animation step ${animationIndex}: lat=${currentPoint.latitude}, lng=${currentPoint.longitude}`);
+          
           updateCarMarker(currentPoint);
           updateCarInfo(currentPoint);
 
-          // Center map on current position
-          map.setCenter({
+          // Center map on current position with smooth pan
+          map.panTo({
             lat: currentPoint.latitude,
             lng: currentPoint.longitude,
           });
 
+          // Update status every 10 steps
+          if (animationIndex % 10 === 0) {
+            updateStatus(`Animating... ${animationIndex + 1}/${carData.length}`, "loading");
+          }
+
           animationIndex++;
-        }, 500); // Update every 500ms
+        }, 200); // Faster animation - update every 200ms
       }
 
       function stopAnimation() {
