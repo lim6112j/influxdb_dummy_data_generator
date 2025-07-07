@@ -182,17 +182,45 @@
         <div class="location-inputs">
           <div class="input-group">
             <label for="startLat">Start Location:</label>
-            <input type="number" id="startLat" placeholder="Latitude" value="34.0522" step="any">
-            <input type="number" id="startLon" placeholder="Longitude" value="-118.2437" step="any">
+            <input
+              type="number"
+              id="startLat"
+              placeholder="Latitude"
+              value="34.0522"
+              step="any"
+            />
+            <input
+              type="number"
+              id="startLon"
+              placeholder="Longitude"
+              value="-118.2437"
+              step="any"
+            />
           </div>
           <div class="input-group">
             <label for="destLat">Destination:</label>
-            <input type="number" id="destLat" placeholder="Latitude" value="34.0689" step="any">
-            <input type="number" id="destLon" placeholder="Longitude" value="-118.3452" step="any">
+            <input
+              type="number"
+              id="destLat"
+              placeholder="Latitude"
+              value="34.0689"
+              step="any"
+            />
+            <input
+              type="number"
+              id="destLon"
+              placeholder="Longitude"
+              value="-118.3452"
+              step="any"
+            />
           </div>
         </div>
-        <button onclick="startStreaming()" id="streamBtn">Start Streaming Data</button>
-        <button onclick="stopStreaming()" id="stopStreamBtn" disabled>Stop Streaming</button>
+        <button onclick="startStreaming()" id="streamBtn">
+          Start Streaming Data
+        </button>
+        <button onclick="stopStreaming()" id="stopStreamBtn" disabled>
+          Stop Streaming
+        </button>
         <button onclick="showRoute()" id="routeBtn">Show Route</button>
         <button onclick="clearMap()">Clear Map</button>
         <button onclick="animateMovement()" id="animateBtn">
@@ -222,17 +250,25 @@
             <span id="currentHeading">Not available</span>
           </p>
           <p><strong>Total Points:</strong> <span id="totalPoints">0</span></p>
-          <p><strong>Total Distance:</strong> <span id="totalDistance">0 km</span></p>
+          <p>
+            <strong>Total Distance:</strong>
+            <span id="totalDistance">0 km</span>
+          </p>
         </div>
       </div>
 
-      <div class="info-panel" id="dataPanel" style="display: none;">
+      <div class="info-panel" id="dataPanel" style="display: none">
         <h3>Loaded Car Data</h3>
         <div class="data-controls">
-          <button onclick="toggleDataView()" id="toggleDataBtn">Show All Data</button>
+          <button onclick="toggleDataView()" id="toggleDataBtn">
+            Show All Data
+          </button>
           <span id="dataCount"></span>
         </div>
-        <div id="carDataDisplay" style="max-height: 400px; overflow-y: auto; margin-top: 10px;">
+        <div
+          id="carDataDisplay"
+          style="max-height: 400px; overflow-y: auto; margin-top: 10px"
+        >
           <!-- Data will be populated here -->
         </div>
       </div>
@@ -250,7 +286,7 @@
       let showAllData = false;
       let eventSource = null;
       let isStreaming = false;
-      let clickMode = 'start'; // 'start' or 'destination'
+      let clickMode = "start"; // 'start' or 'destination'
       let startMarker = null;
       let destinationMarker = null;
 
@@ -258,7 +294,7 @@
         // Initialize map centered on Los Angeles (matching the data generation area)
         map = new google.maps.Map(document.getElementById("map"), {
           zoom: 13,
-          center: { lat: 34.05, lng: -118.15 },
+          center: { lat: 35.84, lng: 128.48 },
           mapTypeId: "roadmap",
         });
 
@@ -283,23 +319,29 @@
         routePolyline.setMap(map);
 
         // Add click listener to set start/destination locations
-        map.addListener('click', function(event) {
+        map.addListener("click", function (event) {
           const lat = event.latLng.lat();
           const lng = event.latLng.lng();
-          
-          if (clickMode === 'start') {
+
+          if (clickMode === "start") {
             setStartLocation(lat, lng);
-            clickMode = 'destination';
-            updateStatus('Start location set. Click on map to set destination.', 'success');
+            clickMode = "destination";
+            updateStatus(
+              "Start location set. Click on map to set destination.",
+              "success",
+            );
           } else {
             setDestinationLocation(lat, lng);
-            clickMode = 'start';
-            updateStatus('Destination set. Click on map to set new start location.', 'success');
+            clickMode = "start";
+            updateStatus(
+              "Destination set. Click on map to set new start location.",
+              "success",
+            );
           }
         });
 
         updateStatus(
-          'Map initialized. Click on map to set start location, then destination.',
+          "Map initialized. Click on map to set start location, then destination.",
           "success",
         );
       }
@@ -312,77 +354,80 @@
 
       function startStreaming() {
         if (isStreaming) return;
-        
+
         isStreaming = true;
         document.getElementById("streamBtn").disabled = true;
         document.getElementById("stopStreamBtn").disabled = false;
-        
+
         updateStatus("Starting real-time data streaming...", "loading");
-        
+
         // Clear existing data
         carData = [];
         pathPolyline.setPath([]);
-        
+
         // Start EventSource for streaming
-        eventSource = new EventSource('/api/car-data-stream');
-        
-        eventSource.onmessage = function(event) {
+        eventSource = new EventSource("/api/car-data-stream");
+
+        eventSource.onmessage = function (event) {
           try {
             const newPoint = JSON.parse(event.data);
-            
+
             if (newPoint.error) {
               updateStatus(`Streaming error: ${newPoint.error}`, "error");
               return;
             }
-            
+
             // Add new point to data array
             carData.push(newPoint);
-            
+
             // Update car marker with latest position
             updateCarMarker(newPoint);
             updateCarInfo(newPoint);
-            
+
             // Update path
             const path = carData.map((point) => ({
               lat: point.latitude,
               lng: point.longitude,
             }));
             pathPolyline.setPath(path);
-            
+
             // Center map on current position (optional - can be disabled for better UX)
             if (carData.length === 1) {
               // Only center on first point
               map.setCenter({
                 lat: newPoint.latitude,
-                lng: newPoint.longitude
+                lng: newPoint.longitude,
               });
               map.setZoom(15);
             }
-            
+
             // Update info panel
             document.getElementById("totalPoints").textContent = carData.length;
             const totalDistance = calculateTotalDistance(carData);
-            document.getElementById("totalDistance").textContent = `${totalDistance.toFixed(2)} km`;
-            
+            document.getElementById("totalDistance").textContent =
+              `${totalDistance.toFixed(2)} km`;
+
             // Update data display if panel is visible
             if (document.getElementById("dataPanel").style.display !== "none") {
               displayCarData();
             }
-            
-            updateStatus(`Streaming... ${carData.length} points received`, "success");
-            
+
+            updateStatus(
+              `Streaming... ${carData.length} points received`,
+              "success",
+            );
           } catch (error) {
             console.error("Error parsing streaming data:", error);
             updateStatus(`Error parsing data: ${error.message}`, "error");
           }
         };
-        
-        eventSource.onerror = function(event) {
+
+        eventSource.onerror = function (event) {
           console.error("EventSource error:", event);
           updateStatus("Streaming connection error. Retrying...", "error");
         };
-        
-        eventSource.onopen = function(event) {
+
+        eventSource.onopen = function (event) {
           updateStatus("Streaming connection established", "success");
           // Show the data panel
           document.getElementById("dataPanel").style.display = "block";
@@ -391,17 +436,20 @@
 
       function stopStreaming() {
         if (!isStreaming) return;
-        
+
         isStreaming = false;
         document.getElementById("streamBtn").disabled = false;
         document.getElementById("stopStreamBtn").disabled = true;
-        
+
         if (eventSource) {
           eventSource.close();
           eventSource = null;
         }
-        
-        updateStatus(`Streaming stopped. Total points: ${carData.length}`, "success");
+
+        updateStatus(
+          `Streaming stopped. Total points: ${carData.length}`,
+          "success",
+        );
       }
 
       function updateCarMarker(point) {
@@ -422,25 +470,25 @@
               strokeWeight: 2,
               rotation: point.heading || 0,
             },
-            zIndex: 1000
+            zIndex: 1000,
           });
-          
+
           console.log("Created new car marker at:", position);
         } else {
           // Update existing marker
           carMarker.setPosition(position);
-          
+
           // Update the icon rotation
           const currentIcon = carMarker.getIcon();
           const newIcon = {
             ...currentIcon,
-            rotation: point.heading || 0
+            rotation: point.heading || 0,
           };
           carMarker.setIcon(newIcon);
-          
+
           // Update title
           carMarker.setTitle(`Car Position - Speed: ${point.speed} km/h`);
-          
+
           console.log("Updated car marker to:", position);
         }
       }
@@ -456,35 +504,38 @@
 
       function calculateTotalDistance(points) {
         if (points.length < 2) return 0;
-        
+
         let totalDistance = 0;
-        
+
         for (let i = 1; i < points.length; i++) {
-          const lat1 = points[i-1].latitude;
-          const lon1 = points[i-1].longitude;
+          const lat1 = points[i - 1].latitude;
+          const lon1 = points[i - 1].longitude;
           const lat2 = points[i].latitude;
           const lon2 = points[i].longitude;
-          
+
           // Haversine formula for distance calculation
           const R = 6371; // Earth's radius in kilometers
-          const dLat = (lat2 - lat1) * Math.PI / 180;
-          const dLon = (lon2 - lon1) * Math.PI / 180;
-          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          const dLat = ((lat2 - lat1) * Math.PI) / 180;
+          const dLon = ((lon2 - lon1) * Math.PI) / 180;
+          const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos((lat1 * Math.PI) / 180) *
+              Math.cos((lat2 * Math.PI) / 180) *
+              Math.sin(dLon / 2) *
+              Math.sin(dLon / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           const distance = R * c;
-          
+
           totalDistance += distance;
         }
-        
+
         return totalDistance;
       }
 
       function toggleDataView() {
         showAllData = !showAllData;
         displayCarData();
-        
+
         const btn = document.getElementById("toggleDataBtn");
         btn.textContent = showAllData ? "Show Recent Data" : "Show All Data";
       }
@@ -492,13 +543,13 @@
       function displayCarData() {
         const dataDisplay = document.getElementById("carDataDisplay");
         const dataCount = document.getElementById("dataCount");
-        
+
         if (carData.length === 0) {
           dataDisplay.innerHTML = "<p>No data available</p>";
           dataCount.textContent = "";
           return;
         }
-        
+
         // Determine how many records to show (reverse order so recent is at top)
         let dataToShow;
         if (showAllData) {
@@ -506,9 +557,9 @@
         } else {
           dataToShow = carData.slice(-20).reverse(); // Show last 20, most recent first
         }
-        
+
         dataCount.textContent = `Showing ${dataToShow.length} of ${carData.length} records`;
-        
+
         // Create table
         let tableHTML = `
           <table class="data-table">
@@ -523,7 +574,7 @@
             </thead>
             <tbody>
         `;
-        
+
         dataToShow.forEach((point, index) => {
           const time = new Date(point.time).toLocaleString();
           tableHTML += `
@@ -536,12 +587,12 @@
             </tr>
           `;
         });
-        
+
         tableHTML += `
             </tbody>
           </table>
         `;
-        
+
         dataDisplay.innerHTML = tableHTML;
       }
 
@@ -550,13 +601,13 @@
           const point = carData[index];
           updateCarMarker(point);
           updateCarInfo(point);
-          
+
           // Center map on selected point
           map.setCenter({
             lat: point.latitude,
-            lng: point.longitude
+            lng: point.longitude,
           });
-          
+
           // Zoom in a bit
           if (map.getZoom() < 15) {
             map.setZoom(15);
@@ -581,7 +632,10 @@
         document.getElementById("animateBtn").disabled = true;
         document.getElementById("stopBtn").disabled = false;
 
-        updateStatus(`Starting animation with ${carData.length} points...`, "loading");
+        updateStatus(
+          `Starting animation with ${carData.length} points...`,
+          "loading",
+        );
 
         // Ensure we start from the first point
         if (carData.length > 0) {
@@ -597,10 +651,12 @@
           }
 
           const currentPoint = carData[animationIndex];
-          
+
           // Debug log to see if we're getting data
-          console.log(`Animation step ${animationIndex}: lat=${currentPoint.latitude}, lng=${currentPoint.longitude}`);
-          
+          console.log(
+            `Animation step ${animationIndex}: lat=${currentPoint.latitude}, lng=${currentPoint.longitude}`,
+          );
+
           updateCarMarker(currentPoint);
           updateCarInfo(currentPoint);
 
@@ -612,7 +668,10 @@
 
           // Update status every 10 steps
           if (animationIndex % 10 === 0) {
-            updateStatus(`Animating... ${animationIndex + 1}/${carData.length}`, "loading");
+            updateStatus(
+              `Animating... ${animationIndex + 1}/${carData.length}`,
+              "loading",
+            );
           }
 
           animationIndex++;
@@ -635,7 +694,7 @@
       function clearMap() {
         // Stop streaming first
         stopStreaming();
-        
+
         if (carMarker) {
           carMarker.setMap(null);
           carMarker = null;
@@ -674,110 +733,133 @@
 
       function setStartLocation(lat, lng) {
         // Update input fields
-        document.getElementById('startLat').value = lat.toFixed(6);
-        document.getElementById('startLon').value = lng.toFixed(6);
-        
+        document.getElementById("startLat").value = lat.toFixed(6);
+        document.getElementById("startLon").value = lng.toFixed(6);
+
         // Remove existing start marker
         if (startMarker) {
           startMarker.setMap(null);
         }
-        
+
         // Create new start marker (green)
         startMarker = new google.maps.Marker({
           position: { lat: lat, lng: lng },
           map: map,
-          title: 'Start Location',
+          title: "Start Location",
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 8,
-            fillColor: '#4CAF50',
+            fillColor: "#4CAF50",
             fillOpacity: 1,
-            strokeColor: '#2E7D32',
+            strokeColor: "#2E7D32",
             strokeWeight: 2,
           },
-          zIndex: 999
+          zIndex: 999,
         });
       }
 
       function setDestinationLocation(lat, lng) {
         // Update input fields
-        document.getElementById('destLat').value = lat.toFixed(6);
-        document.getElementById('destLon').value = lng.toFixed(6);
-        
+        document.getElementById("destLat").value = lat.toFixed(6);
+        document.getElementById("destLon").value = lng.toFixed(6);
+
         // Remove existing destination marker
         if (destinationMarker) {
           destinationMarker.setMap(null);
         }
-        
+
         // Create new destination marker (red)
         destinationMarker = new google.maps.Marker({
           position: { lat: lat, lng: lng },
           map: map,
-          title: 'Destination',
+          title: "Destination",
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
             scale: 8,
-            fillColor: '#F44336',
+            fillColor: "#F44336",
             fillOpacity: 1,
-            strokeColor: '#C62828',
+            strokeColor: "#C62828",
             strokeWeight: 2,
           },
-          zIndex: 999
+          zIndex: 999,
         });
       }
 
       function showRoute() {
         // Get coordinates from input fields
-        const originLat = parseFloat(document.getElementById('startLat').value);
-        const originLon = parseFloat(document.getElementById('startLon').value);
-        const destLat = parseFloat(document.getElementById('destLat').value);
-        const destLon = parseFloat(document.getElementById('destLon').value);
+        const originLat = parseFloat(document.getElementById("startLat").value);
+        const originLon = parseFloat(document.getElementById("startLon").value);
+        const destLat = parseFloat(document.getElementById("destLat").value);
+        const destLon = parseFloat(document.getElementById("destLon").value);
         const osrmUrl = "http://localhost:5001";
-        
+
         // Validate inputs
-        if (isNaN(originLat) || isNaN(originLon) || isNaN(destLat) || isNaN(destLon)) {
-          updateStatus("Please enter valid coordinates for start and destination locations", "error");
+        if (
+          isNaN(originLat) ||
+          isNaN(originLon) ||
+          isNaN(destLat) ||
+          isNaN(destLon)
+        ) {
+          updateStatus(
+            "Please enter valid coordinates for start and destination locations",
+            "error",
+          );
           return;
         }
-        
-        console.log("Fetching route with coordinates:", {originLat, originLon, destLat, destLon});
-        
+
+        console.log("Fetching route with coordinates:", {
+          originLat,
+          originLon,
+          destLat,
+          destLon,
+        });
+
         updateStatus("Fetching route from OSRM...", "loading");
-        
-        fetch(`/api/route?origin_lat=${originLat}&origin_lon=${originLon}&dest_lat=${destLat}&dest_lon=${destLon}&osrm_url=${osrmUrl}`)
-          .then(response => {
+
+        fetch(
+          `/api/route?origin_lat=${originLat}&origin_lon=${originLon}&dest_lat=${destLat}&dest_lon=${destLon}&osrm_url=${osrmUrl}`,
+        )
+          .then((response) => {
             console.log("Route API response status:", response.status);
             return response.json();
           })
-          .then(data => {
+          .then((data) => {
             console.log("Route API response data:", data);
-            
+
             if (data.error) {
               updateStatus(`Route error: ${data.error}`, "error");
               console.error("Route API error:", data.error);
               return;
             }
-            
+
             // Convert route points to Google Maps format
-            const routePath = data.route_points.map(point => ({
+            const routePath = data.route_points.map((point) => ({
               lat: point[0],
-              lng: point[1]
+              lng: point[1],
             }));
-            
-            console.log("Route path points:", routePath.length, "first few:", routePath.slice(0, 3));
-            
+
+            console.log(
+              "Route path points:",
+              routePath.length,
+              "first few:",
+              routePath.slice(0, 3),
+            );
+
             // Display the route on the map
             routePolyline.setPath(routePath);
             console.log("Route polyline path set");
-            
+
             // Fit the map to show the entire route
             const bounds = new google.maps.LatLngBounds();
-            routePath.forEach(point => bounds.extend(point));
+            routePath.forEach((point) => bounds.extend(point));
             map.fitBounds(bounds);
-            
-            updateStatus(`Route loaded: ${(data.distance/1000).toFixed(2)}km, ${(data.duration/60).toFixed(1)}min`, "success");
+
+            updateStatus(
+              `Route loaded: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min`,
+              "success",
+            );
           })
-          .catch(error => {
+          .catch((error) => {
             console.error("Error fetching route:", error);
             updateStatus(`Error fetching route: ${error.message}`, "error");
           });
