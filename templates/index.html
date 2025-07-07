@@ -140,7 +140,8 @@
       <h1>Car Movement Tracker</h1>
 
       <div class="controls">
-        <button onclick="loadCarData()">Load Car Data</button>
+        <button onclick="startStreaming()" id="streamBtn">Start Streaming Data</button>
+        <button onclick="stopStreaming()" id="stopStreamBtn" disabled>Stop Streaming</button>
         <button onclick="clearMap()">Clear Map</button>
         <button onclick="animateMovement()" id="animateBtn">
           Animate Movement
@@ -194,6 +195,8 @@
       let animationInterval;
       let isAnimating = false;
       let showAllData = false;
+      let eventSource = null;
+      let isStreaming = false;
 
       function initMap() {
         // Initialize map centered on Los Angeles (matching the data generation area)
@@ -214,7 +217,7 @@
         pathPolyline.setMap(map);
 
         updateStatus(
-          'Map initialized. Click "Load Car Data" to fetch data from InfluxDB.',
+          'Map initialized. Click "Start Streaming Data" to begin real-time tracking.',
           "success",
         );
       }
@@ -225,80 +228,98 @@
         statusDiv.className = `status ${type}`;
       }
 
-      async function loadCarData() {
-        updateStatus("Loading car data from InfluxDB...", "loading");
-
-        try {
-          const response = await fetch("/api/car-data");
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          if (data.error) {
-            throw new Error(data.error);
-          }
-
-          carData = data;
-
-          if (carData.length === 0) {
-            updateStatus("No car data found in InfluxDB.", "error");
-            return;
-          }
-
-          // Update total points
-          document.getElementById("totalPoints").textContent = carData.length;
-          
-          const totalDistance = calculateTotalDistance(carData);
-          document.getElementById("totalDistance").textContent = `${totalDistance.toFixed(2)} km`;
-
-          // Draw the complete path
-          const path = carData.map((point) => ({
-            lat: point.latitude,
-            lng: point.longitude,
-          }));
-
-          pathPolyline.setPath(path);
-
-          // Fit map to show all points
-          const bounds = new google.maps.LatLngBounds();
-          path.forEach((point) => bounds.extend(point));
-          map.fitBounds(bounds);
-
-          // Set a reasonable zoom level for animation
-          setTimeout(() => {
-            if (map.getZoom() > 15) {
+      function startStreaming() {
+        if (isStreaming) return;
+        
+        isStreaming = true;
+        document.getElementById("streamBtn").disabled = true;
+        document.getElementById("stopStreamBtn").disabled = false;
+        
+        updateStatus("Starting real-time data streaming...", "loading");
+        
+        // Clear existing data
+        carData = [];
+        pathPolyline.setPath([]);
+        
+        // Start EventSource for streaming
+        eventSource = new EventSource('/api/car-data-stream');
+        
+        eventSource.onmessage = function(event) {
+          try {
+            const newPoint = JSON.parse(event.data);
+            
+            if (newPoint.error) {
+              updateStatus(`Streaming error: ${newPoint.error}`, "error");
+              return;
+            }
+            
+            // Add new point to data array
+            carData.push(newPoint);
+            
+            // Update car marker with latest position
+            updateCarMarker(newPoint);
+            updateCarInfo(newPoint);
+            
+            // Update path
+            const path = carData.map((point) => ({
+              lat: point.latitude,
+              lng: point.longitude,
+            }));
+            pathPolyline.setPath(path);
+            
+            // Center map on current position (optional - can be disabled for better UX)
+            if (carData.length === 1) {
+              // Only center on first point
+              map.setCenter({
+                lat: newPoint.latitude,
+                lng: newPoint.longitude
+              });
               map.setZoom(15);
             }
-          }, 100);
-
-          // Create or update car marker at the first position
-          if (carData.length > 0) {
-            const firstPoint = carData[0];
-            updateCarMarker(firstPoint);
-            updateCarInfo(firstPoint);
+            
+            // Update info panel
+            document.getElementById("totalPoints").textContent = carData.length;
+            const totalDistance = calculateTotalDistance(carData);
+            document.getElementById("totalDistance").textContent = `${totalDistance.toFixed(2)} km`;
+            
+            // Update data display if panel is visible
+            if (document.getElementById("dataPanel").style.display !== "none") {
+              displayCarData();
+            }
+            
+            updateStatus(`Streaming... ${carData.length} points received`, "success");
+            
+          } catch (error) {
+            console.error("Error parsing streaming data:", error);
+            updateStatus(`Error parsing data: ${error.message}`, "error");
           }
-
-          updateStatus(
-            `Loaded ${carData.length} data points successfully.`,
-            "success",
-          );
-
-          // Debug: Log first few data points
-          console.log("Loaded car data:", carData.length, "points");
-          if (carData.length > 0) {
-            console.log("First point:", carData[0]);
-            console.log("Last point:", carData[carData.length - 1]);
-          }
-
-          // Show the data panel and display the data
+        };
+        
+        eventSource.onerror = function(event) {
+          console.error("EventSource error:", event);
+          updateStatus("Streaming connection error. Retrying...", "error");
+        };
+        
+        eventSource.onopen = function(event) {
+          updateStatus("Streaming connection established", "success");
+          // Show the data panel
           document.getElementById("dataPanel").style.display = "block";
-          displayCarData();
-        } catch (error) {
-          console.error("Error loading car data:", error);
-          updateStatus(`Error loading data: ${error.message}`, "error");
+        };
+      }
+
+      function stopStreaming() {
+        if (!isStreaming) return;
+        
+        isStreaming = false;
+        document.getElementById("streamBtn").disabled = false;
+        document.getElementById("stopStreamBtn").disabled = true;
+        
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
         }
+        
+        updateStatus(`Streaming stopped. Total points: ${carData.length}`, "success");
       }
 
       function updateCarMarker(point) {
@@ -530,6 +551,9 @@
       }
 
       function clearMap() {
+        // Stop streaming first
+        stopStreaming();
+        
         if (carMarker) {
           carMarker.setMap(null);
           carMarker = null;

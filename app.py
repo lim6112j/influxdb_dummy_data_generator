@@ -72,5 +72,82 @@ def get_car_data():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/car-data-stream')
+def stream_car_data():
+    """Stream car data from InfluxDB in real-time"""
+    from flask import Response
+    import json
+    import time
+    
+    def generate_data():
+        try:
+            # Load environment variables
+            influxdb_url = os.getenv('INFLUXDB_URL')
+            influxdb_token = os.getenv('INFLUXDB_TOKEN')
+            influxdb_org = os.getenv('INFLUXDB_ORG')
+            influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+
+            if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
+                yield f"data: {json.dumps({'error': 'Missing InfluxDB configuration'})}\n\n"
+                return
+
+            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            query_api = client.query_api()
+            
+            last_timestamp = None
+            
+            while True:
+                try:
+                    # Query for new data since last timestamp
+                    if last_timestamp:
+                        time_filter = f'|> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))'
+                    else:
+                        time_filter = '|> range(start: -1m)'  # Start with last minute of data
+                    
+                    query = f'''
+                    from(bucket: "{influxdb_bucket}")
+                      {time_filter}
+                      |> filter(fn: (r) => r["_measurement"] == "car_data")
+                      |> filter(fn: (r) => r["car_id"] == "1")
+                      |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+                      |> sort(columns: ["_time"])
+                    '''
+
+                    result = query_api.query(query=query)
+                    
+                    new_points = []
+                    for table in result:
+                        for record in table.records:
+                            point_data = {
+                                'time': record.get_time().isoformat(),
+                                'latitude': record.values.get('latitude'),
+                                'longitude': record.values.get('longitude'),
+                                'speed': record.values.get('speed'),
+                                'heading': record.values.get('heading')
+                            }
+                            new_points.append(point_data)
+                            last_timestamp = record.get_time().isoformat()
+                    
+                    if new_points:
+                        # Send new data points
+                        for point in new_points:
+                            yield f"data: {json.dumps(point)}\n\n"
+                    
+                    time.sleep(1)  # Check for new data every second
+                    
+                except Exception as e:
+                    print(f"Error in streaming: {e}")
+                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                    time.sleep(5)  # Wait longer on error
+                    
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+    
+    return Response(generate_data(), mimetype='text/event-stream',
+                   headers={'Cache-Control': 'no-cache',
+                           'Connection': 'keep-alive',
+                           'Access-Control-Allow-Origin': '*'})
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
