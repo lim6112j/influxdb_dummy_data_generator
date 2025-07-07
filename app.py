@@ -1,5 +1,6 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import os
+import requests
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient
 
@@ -76,6 +77,58 @@ def get_car_data():
         print(f"Error in get_car_data: {str(e)}")
         if 'client' in locals():
             client.close()
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/route')
+def get_route():
+    """Get the full route geometry from OSRM for drawing on the map"""
+    try:
+        # Get route parameters from query string
+        origin_lat = request.args.get('origin_lat', type=float)
+        origin_lon = request.args.get('origin_lon', type=float)
+        dest_lat = request.args.get('dest_lat', type=float)
+        dest_lon = request.args.get('dest_lon', type=float)
+        osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
+        
+        if not all([origin_lat, origin_lon, dest_lat, dest_lon]):
+            return jsonify({'error': 'Missing required parameters: origin_lat, origin_lon, dest_lat, dest_lon'}), 400
+        
+        # Format coordinates for OSRM (longitude,latitude)
+        origin_str = f"{origin_lon},{origin_lat}"
+        destination_str = f"{dest_lon},{dest_lat}"
+        
+        # OSRM route API endpoint
+        url = f"{osrm_url}/route/v1/driving/{origin_str};{destination_str}"
+        params = {
+            'overview': 'full',
+            'geometries': 'geojson',
+            'steps': 'true'
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data['code'] != 'Ok':
+            return jsonify({'error': f"OSRM error: {data.get('message', 'Unknown error')}"}), 500
+        
+        route = data['routes'][0]
+        
+        # Extract route geometry (coordinates are in [longitude, latitude] format)
+        coordinates = route['geometry']['coordinates']
+        # Convert to [latitude, longitude] for Google Maps
+        route_points = [[coord[1], coord[0]] for coord in coordinates]
+        
+        return jsonify({
+            'route_points': route_points,
+            'duration': route['duration'],
+            'distance': route['distance']
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
