@@ -9,7 +9,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 
 def get_route_from_osrm(origin, destination, osrm_url):
-    """Fetch route coordinates from OSRM server."""
+    """Fetch route coordinates from OSRM server with step data."""
     import requests
 
     # Format coordinates for OSRM (longitude,latitude)
@@ -17,7 +17,7 @@ def get_route_from_osrm(origin, destination, osrm_url):
     destination_str = f"{destination[1]},{destination[0]}"
 
     # OSRM route API endpoint
-    url = f"{osrm_url}/route/v1/driving/{origin_str};{destination_str}?steps=true"
+    url = f"{osrm_url}/route/v1/driving/{origin_str};{destination_str}"
     params = {
         'overview': 'full',
         'geometries': 'geojson',
@@ -33,26 +33,54 @@ def get_route_from_osrm(origin, destination, osrm_url):
             raise Exception(
                 f"OSRM error: {data.get('message', 'Unknown error')}")
 
-        # Extract coordinates from the route geometry
-        coordinates = data['routes'][0]['geometry']['coordinates']
-        # Convert from [lon, lat] to [lat, lon] format
+        route = data['routes'][0]
+        
+        # Extract step-by-step locations
+        step_locations = []
+        total_step_duration = 0
+        total_step_distance = 0
+        
+        for leg in route['legs']:
+            for step in leg['steps']:
+                # Get maneuver location (intersection/turn point)
+                maneuver_location = step['maneuver']['location']
+                step_info = {
+                    'location': [maneuver_location[1], maneuver_location[0]],  # [lat, lon]
+                    'duration': step['duration'],  # seconds
+                    'distance': step['distance'],  # meters
+                    'instruction': step['maneuver']['type'],
+                    'name': step.get('name', ''),
+                    'speed_kmh': 0  # Will calculate below
+                }
+                
+                # Calculate speed for this step
+                if step['duration'] > 0:
+                    speed_ms = step['distance'] / step['duration']
+                    step_info['speed_kmh'] = round(speed_ms * 3.6, 2)  # Convert m/s to km/h
+                
+                step_locations.append(step_info)
+                total_step_duration += step['duration']
+                total_step_distance += step['distance']
+
+        # Also get the full route geometry for backup
+        coordinates = route['geometry']['coordinates']
         route_points = [(coord[1], coord[0]) for coord in coordinates]
 
         # Get total duration and distance
-        duration = data['routes'][0]['duration']  # in seconds
-        distance = data['routes'][0]['distance']  # in meters
+        duration = route['duration']  # in seconds
+        distance = route['distance']  # in meters
 
-        print(
-            f"✓ Route fetched: {len(route_points)} points, {distance/1000:.2f}km, {duration/60:.1f}min")
+        print(f"✓ Route fetched: {len(step_locations)} steps, {distance/1000:.2f}km, {duration/60:.1f}min")
+        print(f"✓ Step locations: {len(step_locations)} maneuver points")
 
-        return route_points, duration, distance
+        return route_points, duration, distance, step_locations
 
     except requests.exceptions.RequestException as e:
         print(f"Error connecting to OSRM server: {e}")
-        return None, None, None
+        return None, None, None, None
     except Exception as e:
         print(f"Error processing OSRM response: {e}")
-        return None, None, None
+        return None, None, None, None
 
 
 def generate_car_data(duration, origin, destination, osrm_url):
@@ -138,10 +166,10 @@ def generate_car_data(duration, origin, destination, osrm_url):
     print(f"Origin: {origin[0]}, {origin[1]}")
     print(f"Destination: {destination[0]}, {destination[1]}")
 
-    route_points, route_duration, route_distance = get_route_from_osrm(
+    route_points, route_duration, route_distance, step_locations = get_route_from_osrm(
         origin, destination, osrm_url)
 
-    if not route_points:
+    if not route_points or not step_locations:
         print("Failed to get route from OSRM. Exiting.")
         client.close()
         return
@@ -155,88 +183,63 @@ def generate_car_data(duration, origin, destination, osrm_url):
             f"Warning: Requested duration ({duration}h) is shorter than route duration ({route_duration_seconds/3600:.2f}h)")
         print("Will only generate data for partial route.")
 
-    # Calculate speed for each segment to match real-world timing
-    segment_speeds = []
-    for i in range(len(route_points) - 1):
-        # Calculate distance between consecutive points
-        lat1, lon1 = route_points[i]
-        lat2, lon2 = route_points[i + 1]
-
-        # Haversine formula for distance
-        R = 6371000  # Earth's radius in meters
-        dlat = math.radians(lat2 - lat1)
-        dlon = math.radians(lon2 - lon1)
-        a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * \
-            math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        segment_distance = R * c
-
-        # Calculate time for this segment (assuming equal time distribution)
-        segment_time = route_duration / (len(route_points) - 1)
-
-        # Calculate speed in km/h
-        speed_ms = segment_distance / segment_time if segment_time > 0 else 0
-        speed_kmh = speed_ms * 3.6  # Convert m/s to km/h
-        segment_speeds.append(round(speed_kmh, 2))
+    print(f"Using {len(step_locations)} step locations for car movement")
+    for i, step in enumerate(step_locations):
+        print(f"Step {i+1}: {step['instruction']} at {step['location'][0]:.6f}, {step['location'][1]:.6f} - {step['speed_kmh']} km/h")
 
     current_time = start_time
-    route_index = 0
+    step_index = 0
     cycle_count = 0
 
     while current_time <= end_time:
-        # Check if we've started a new cycle
+        # Calculate elapsed time and determine current step
         elapsed_time = current_time - start_time
-        current_cycle = int(elapsed_time // route_duration)
-
-        if current_cycle > cycle_count:
-            cycle_count = current_cycle
-            print(f"Starting route cycle #{cycle_count + 1}")
-
-        # Move to next route point based on timing
-        elapsed_time = current_time - start_time
-
+        
         # Calculate which cycle we're in
         current_cycle = int(elapsed_time // route_duration)
         time_in_current_cycle = elapsed_time % route_duration
-
+        
+        # Check if we've started a new cycle
+        if current_cycle > cycle_count:
+            cycle_count = current_cycle
+            print(f"Starting route cycle #{cycle_count + 1}")
+        
         # Calculate progress through current route (0.0 to 1.0)
         route_progress = time_in_current_cycle / route_duration
-
-        # Calculate route index based on progress
-        route_index = int(route_progress * (len(route_points) - 1))
-        route_index = min(route_index, len(route_points) - 1)
-
-        # Debug output every 30 seconds
-        if int(current_time) % 30 == 0:
-            print(
-                f"Debug: Cycle {current_cycle + 1}, Progress: {route_progress:.2%}, Point: {route_index + 1}/{len(route_points)}")
-
-        latitude, longitude = route_points[route_index]
-
-        # Get speed for current segment
-        speed = segment_speeds[min(route_index, len(
-            segment_speeds) - 1)] if segment_speeds else 0
-
-        # Calculate heading to next point
-        if route_index < len(route_points) - 1:
-            lat1, lon1 = route_points[route_index]
-            lat2, lon2 = route_points[route_index + 1]
-
+        
+        # Calculate step index based on progress
+        step_index = int(route_progress * len(step_locations))
+        step_index = min(step_index, len(step_locations) - 1)
+        
+        # Get current step data
+        current_step = step_locations[step_index]
+        latitude, longitude = current_step['location']
+        speed = current_step['speed_kmh']
+        
+        # Calculate heading to next step
+        if step_index < len(step_locations) - 1:
+            lat1, lon1 = current_step['location']
+            lat2, lon2 = step_locations[step_index + 1]['location']
+            
             # Calculate bearing
             dlon = math.radians(lon2 - lon1)
             lat1_rad = math.radians(lat1)
             lat2_rad = math.radians(lat2)
-
+            
             y = math.sin(dlon) * math.cos(lat2_rad)
             x = math.cos(lat1_rad) * math.sin(lat2_rad) - \
                 math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(dlon)
-
+            
             heading = math.degrees(math.atan2(y, x))
             heading = (heading + 360) % 360  # Normalize to 0-360
         else:
             heading = 0  # At destination
-
+        
         heading = round(heading, 2)
+
+        # Debug output every 10 seconds
+        if int(current_time) % 10 == 0:
+            print(f"Debug: Step {step_index + 1}/{len(step_locations)}: {current_step['instruction']} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
         # Create a Point object
         point = Point("car_data") \
@@ -253,7 +256,7 @@ def generate_car_data(duration, origin, destination, osrm_url):
                             org=influxdb_org, record=point)
             if int(current_time) % 10 == 0:  # Print every 10 seconds
                 print(
-                    f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - Point {route_index + 1}/{len(route_points)}")
+                    f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - Step {step_index + 1}/{len(step_locations)}")
         except Exception as e:
             print(f"Error writing data: {e}")
             client.close()
