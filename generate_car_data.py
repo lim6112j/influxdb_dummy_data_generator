@@ -169,10 +169,10 @@ def generate_car_data(duration, origin, destination, osrm_url):
         # Calculate time for this segment (assuming equal time distribution)
         segment_time = route_duration / (len(route_points) - 1)
         
-        # Calculate speed in mph
+        # Calculate speed in km/h
         speed_ms = segment_distance / segment_time if segment_time > 0 else 0
-        speed_mph = speed_ms * 2.237  # Convert m/s to mph
-        segment_speeds.append(round(speed_mph, 2))
+        speed_kmh = speed_ms * 3.6  # Convert m/s to km/h
+        segment_speeds.append(round(speed_kmh, 2))
     
     current_time = start_time
     route_index = 0
