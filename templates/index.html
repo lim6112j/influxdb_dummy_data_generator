@@ -51,6 +51,45 @@
         cursor: not-allowed;
       }
 
+      .location-inputs {
+        margin-bottom: 15px;
+        padding: 10px;
+        background: #f9f9f9;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+
+      .input-group {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .input-group:last-child {
+        margin-bottom: 0;
+      }
+
+      .input-group label {
+        font-weight: bold;
+        min-width: 100px;
+        color: #333;
+      }
+
+      .input-group input {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+        width: 120px;
+      }
+
+      .input-group input:focus {
+        outline: none;
+        border-color: #4caf50;
+        box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+      }
+
       #map {
         height: 600px;
         width: 100%;
@@ -140,8 +179,21 @@
       <h1>Car Movement Tracker</h1>
 
       <div class="controls">
+        <div class="location-inputs">
+          <div class="input-group">
+            <label for="startLat">Start Location:</label>
+            <input type="number" id="startLat" placeholder="Latitude" value="34.0522" step="any">
+            <input type="number" id="startLon" placeholder="Longitude" value="-118.2437" step="any">
+          </div>
+          <div class="input-group">
+            <label for="destLat">Destination:</label>
+            <input type="number" id="destLat" placeholder="Latitude" value="34.0689" step="any">
+            <input type="number" id="destLon" placeholder="Longitude" value="-118.3452" step="any">
+          </div>
+        </div>
         <button onclick="startStreaming()" id="streamBtn">Start Streaming Data</button>
         <button onclick="stopStreaming()" id="stopStreamBtn" disabled>Stop Streaming</button>
+        <button onclick="showRoute()" id="routeBtn">Show Route</button>
         <button onclick="clearMap()">Clear Map</button>
         <button onclick="animateMovement()" id="animateBtn">
           Animate Movement
@@ -190,6 +242,7 @@
       let map;
       let carMarker;
       let pathPolyline;
+      let routePolyline;
       let carData = [];
       let animationIndex = 0;
       let animationInterval;
@@ -206,7 +259,7 @@
           mapTypeId: "roadmap",
         });
 
-        // Initialize polyline for car path
+        // Initialize polyline for car path (red line showing actual movement)
         pathPolyline = new google.maps.Polyline({
           path: [],
           geodesic: true,
@@ -215,6 +268,16 @@
           strokeWeight: 2,
         });
         pathPolyline.setMap(map);
+
+        // Initialize polyline for planned route (blue line showing OSRM route)
+        routePolyline = new google.maps.Polyline({
+          path: [],
+          geodesic: true,
+          strokeColor: "#0000FF",
+          strokeOpacity: 0.7,
+          strokeWeight: 3,
+        });
+        routePolyline.setMap(map);
 
         updateStatus(
           'Map initialized. Click "Start Streaming Data" to begin real-time tracking.',
@@ -560,6 +623,7 @@
         }
 
         pathPolyline.setPath([]);
+        routePolyline.setPath([]);
         carData = [];
         animationIndex = 0;
 
