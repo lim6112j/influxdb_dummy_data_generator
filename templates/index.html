@@ -214,6 +214,13 @@
               step="any"
             />
           </div>
+          <div class="input-group">
+            <label for="cyclicalMode">Movement Mode:</label>
+            <input type="radio" id="oneWay" name="movementMode" value="one-way" checked>
+            <label for="oneWay" style="min-width: auto; margin-right: 15px;">One-way</label>
+            <input type="radio" id="roundTrip" name="movementMode" value="round-trip">
+            <label for="roundTrip" style="min-width: auto;">Round-trip (Cyclical)</label>
+          </div>
         </div>
         <button onclick="startStreaming()" id="streamBtn" disabled>
           Start Streaming Data
@@ -360,6 +367,9 @@
         const originLon = parseFloat(document.getElementById("startLon").value);
         const destLat = parseFloat(document.getElementById("destLat").value);
         const destLon = parseFloat(document.getElementById("destLon").value);
+        
+        // Get movement mode
+        const movementMode = document.querySelector('input[name="movementMode"]:checked').value;
 
         // Validate inputs
         if (
@@ -398,6 +408,7 @@
             dest_lon: destLon,
             duration: 1, // 1 hour of data generation
             osrm_url: "http://localhost:5001",
+            movement_mode: movementMode,
           }),
         })
           .then((response) => response.json())

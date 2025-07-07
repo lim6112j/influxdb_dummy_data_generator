@@ -109,7 +109,7 @@ def generate_intermediate_points(start_location, end_location, duration, speed_k
     return points
 
 
-def generate_car_data(duration, origin, destination, osrm_url):
+def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way'):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
 
     start_time = time.time()
@@ -213,48 +213,104 @@ def generate_car_data(duration, origin, destination, osrm_url):
     for i, step in enumerate(step_locations):
         print(f"Step {i+1}: {step['instruction']} at {step['location'][0]:.6f}, {step['location'][1]:.6f} - {step['speed_kmh']} km/h")
 
-    # Use the full route geometry for more accurate path following
-    print("Generating route points from OSRM geometry...")
+    # Generate route points based on movement mode
+    print(f"Generating route points from OSRM geometry (mode: {movement_mode})...")
     all_route_points = []
     
-    # Use the detailed route geometry instead of just step locations
-    if route_points and len(route_points) > 1:
-        total_route_time = route_duration  # Total time for the route in seconds
-        points_per_second = len(route_points) / total_route_time if total_route_time > 0 else 1
+    if movement_mode == 'round-trip':
+        # Get return route from destination back to origin
+        print("Fetching return route from OSRM...")
+        return_route_points, return_duration, return_distance, return_step_locations = get_route_from_osrm(
+            destination, origin, osrm_url)
         
-        for i, point in enumerate(route_points):
-            # Calculate speed based on route duration
-            speed_kmh = (route_distance / 1000) / (route_duration / 3600) if route_duration > 0 else 30
-            
-            # Find which step this point belongs to
-            step_index = min(i // max(1, len(route_points) // len(step_locations)), len(step_locations) - 1)
-            current_step = step_locations[step_index] if step_index < len(step_locations) else step_locations[-1]
-            
-            all_route_points.append({
-                'location': point,  # Use exact OSRM route geometry
-                'speed_kmh': current_step.get('speed_kmh', speed_kmh),
-                'instruction': current_step.get('instruction', 'continue'),
-                'step_index': step_index,
-                'intermediate_index': i % max(1, len(route_points) // len(step_locations)),
-                'step_duration': current_step.get('duration', 0),
-                'step_distance': current_step.get('distance', 0),
-                'step_name': current_step.get('name', '')
-            })
+        if not return_route_points or not return_step_locations:
+            print("Failed to get return route from OSRM. Using reverse of forward route.")
+            # Use reverse of forward route as fallback
+            return_route_points = list(reversed(route_points))
+            return_duration = route_duration
+            return_distance = route_distance
+            return_step_locations = list(reversed(step_locations))
+        
+        # Generate forward route points (start to destination)
+        forward_route_points = []
+        if route_points and len(route_points) > 1:
+            for i, point in enumerate(route_points):
+                speed_kmh = (route_distance / 1000) / (route_duration / 3600) if route_duration > 0 else 30
+                step_index = min(i // max(1, len(route_points) // len(step_locations)), len(step_locations) - 1)
+                current_step = step_locations[step_index] if step_index < len(step_locations) else step_locations[-1]
+                
+                forward_route_points.append({
+                    'location': point,
+                    'speed_kmh': current_step.get('speed_kmh', speed_kmh),
+                    'instruction': current_step.get('instruction', 'continue'),
+                    'step_index': step_index,
+                    'intermediate_index': i % max(1, len(route_points) // len(step_locations)),
+                    'step_duration': current_step.get('duration', 0),
+                    'step_distance': current_step.get('distance', 0),
+                    'step_name': current_step.get('name', ''),
+                    'direction': 'forward'
+                })
+        
+        # Generate backward route points (destination to start)
+        backward_route_points = []
+        if return_route_points and len(return_route_points) > 1:
+            for i, point in enumerate(return_route_points):
+                speed_kmh = (return_distance / 1000) / (return_duration / 3600) if return_duration > 0 else 30
+                step_index = min(i // max(1, len(return_route_points) // len(return_step_locations)), len(return_step_locations) - 1)
+                current_step = return_step_locations[step_index] if step_index < len(return_step_locations) else return_step_locations[-1]
+                
+                backward_route_points.append({
+                    'location': point,
+                    'speed_kmh': current_step.get('speed_kmh', speed_kmh),
+                    'instruction': current_step.get('instruction', 'continue'),
+                    'step_index': step_index,
+                    'intermediate_index': i % max(1, len(return_route_points) // len(return_step_locations)),
+                    'step_duration': current_step.get('duration', 0),
+                    'step_distance': current_step.get('distance', 0),
+                    'step_name': current_step.get('name', ''),
+                    'direction': 'backward'
+                })
+        
+        # Combine forward and backward routes into a complete cycle
+        all_route_points = forward_route_points + backward_route_points
+        print(f"Forward route: {len(forward_route_points)} points")
+        print(f"Backward route: {len(backward_route_points)} points")
+        
     else:
-        # Fallback to step-based generation if route geometry is not available
-        for i, step in enumerate(step_locations):
-            all_route_points.append({
-                'location': step['location'],
-                'speed_kmh': step['speed_kmh'],
-                'instruction': step['instruction'],
-                'step_index': i,
-                'intermediate_index': 0,
-                'step_duration': step['duration'],
-                'step_distance': step['distance'],
-                'step_name': step.get('name', '')
-            })
+        # One-way mode: just use the forward route
+        if route_points and len(route_points) > 1:
+            for i, point in enumerate(route_points):
+                speed_kmh = (route_distance / 1000) / (route_duration / 3600) if route_duration > 0 else 30
+                step_index = min(i // max(1, len(route_points) // len(step_locations)), len(step_locations) - 1)
+                current_step = step_locations[step_index] if step_index < len(step_locations) else step_locations[-1]
+                
+                all_route_points.append({
+                    'location': point,
+                    'speed_kmh': current_step.get('speed_kmh', speed_kmh),
+                    'instruction': current_step.get('instruction', 'continue'),
+                    'step_index': step_index,
+                    'intermediate_index': i % max(1, len(route_points) // len(step_locations)),
+                    'step_duration': current_step.get('duration', 0),
+                    'step_distance': current_step.get('distance', 0),
+                    'step_name': current_step.get('name', ''),
+                    'direction': 'forward'
+                })
+        else:
+            # Fallback to step-based generation if route geometry is not available
+            for i, step in enumerate(step_locations):
+                all_route_points.append({
+                    'location': step['location'],
+                    'speed_kmh': step['speed_kmh'],
+                    'instruction': step['instruction'],
+                    'step_index': i,
+                    'intermediate_index': 0,
+                    'step_duration': step['duration'],
+                    'step_distance': step['distance'],
+                    'step_name': step.get('name', ''),
+                    'direction': 'forward'
+                })
     
-    print(f"Generated {len(all_route_points)} total points for smooth movement")
+    print(f"Generated {len(all_route_points)} total points for {movement_mode} movement")
     
     # Calculate total route time based on generated points
     total_route_time = len(all_route_points)  # 1 second per point
@@ -308,7 +364,8 @@ def generate_car_data(duration, origin, destination, osrm_url):
         # Debug output every 30 seconds
         if int(current_time) % 30 == 0:
             step_info = current_point.get('instruction', 'moving')
-            print(f"Debug: Point {point_index + 1}/{len(all_route_points)}: {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
+            direction = current_point.get('direction', 'unknown')
+            print(f"Debug: Point {point_index + 1}/{len(all_route_points)} ({direction}): {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
         # Create a Point object with step information
         point = Point("car_data") \
@@ -357,10 +414,12 @@ if __name__ == "__main__":
                         help="Destination coordinates (latitude longitude)", required=True)
     parser.add_argument("--osrm-url", type=str, default="http://localhost:5001",
                         help="OSRM server URL (default: http://localhost:5001)")
+    parser.add_argument("--movement-mode", type=str, choices=['one-way', 'round-trip'], 
+                        default='one-way', help="Movement mode: one-way or round-trip (default: one-way)")
 
     args = parser.parse_args()
 
     origin = (float(args.origin[0]), float(args.origin[1]))
     destination = (float(args.destination[0]), float(args.destination[1]))
 
-    generate_car_data(args.duration, origin, destination, args.osrm_url)
+    generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode)

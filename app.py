@@ -146,6 +146,7 @@ def start_generation():
         dest_lon = data.get('dest_lon')
         duration = data.get('duration', 1)  # Default 1 hour
         osrm_url = data.get('osrm_url', 'http://localhost:5001')
+        movement_mode = data.get('movement_mode', 'one-way')  # Default one-way
         
         if not all([origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
@@ -156,7 +157,8 @@ def start_generation():
             '--duration', str(duration),
             '--origin', str(origin_lat), str(origin_lon),
             '--destination', str(dest_lat), str(dest_lon),
-            '--osrm-url', osrm_url
+            '--osrm-url', osrm_url,
+            '--movement-mode', movement_mode
         ]
         
         # Start the script in a separate thread so it doesn't block the web server
