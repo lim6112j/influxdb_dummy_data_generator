@@ -215,7 +215,7 @@
             />
           </div>
         </div>
-        <button onclick="startStreaming()" id="streamBtn">
+        <button onclick="startStreaming()" id="streamBtn" disabled>
           Start Streaming Data
         </button>
         <button onclick="stopStreaming()" id="stopStreamBtn" disabled>
@@ -341,7 +341,7 @@
         });
 
         updateStatus(
-          "Map initialized. Click on map to set start location, then destination.",
+          "Map initialized. Click on map to set start location, then destination. Show route first to enable streaming.",
           "success",
         );
       }
@@ -858,6 +858,9 @@
               `Route loaded: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min`,
               "success",
             );
+            
+            // Enable the streaming button after route is loaded
+            document.getElementById("streamBtn").disabled = false;
           })
           .catch((error) => {
             console.error("Error fetching route:", error);
