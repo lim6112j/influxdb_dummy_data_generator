@@ -250,6 +250,9 @@
       let showAllData = false;
       let eventSource = null;
       let isStreaming = false;
+      let clickMode = 'start'; // 'start' or 'destination'
+      let startMarker = null;
+      let destinationMarker = null;
 
       function initMap() {
         // Initialize map centered on Los Angeles (matching the data generation area)
@@ -279,8 +282,24 @@
         });
         routePolyline.setMap(map);
 
+        // Add click listener to set start/destination locations
+        map.addListener('click', function(event) {
+          const lat = event.latLng.lat();
+          const lng = event.latLng.lng();
+          
+          if (clickMode === 'start') {
+            setStartLocation(lat, lng);
+            clickMode = 'destination';
+            updateStatus('Start location set. Click on map to set destination.', 'success');
+          } else {
+            setDestinationLocation(lat, lng);
+            clickMode = 'start';
+            updateStatus('Destination set. Click on map to set new start location.', 'success');
+          }
+        });
+
         updateStatus(
-          'Map initialized. Click "Start Streaming Data" to begin real-time tracking.',
+          'Map initialized. Click on map to set start location, then destination.',
           "success",
         );
       }
@@ -622,6 +641,16 @@
           carMarker = null;
         }
 
+        // Clear start and destination markers
+        if (startMarker) {
+          startMarker.setMap(null);
+          startMarker = null;
+        }
+        if (destinationMarker) {
+          destinationMarker.setMap(null);
+          destinationMarker = null;
+        }
+
         pathPolyline.setPath([]);
         routePolyline.setPath([]);
         carData = [];
@@ -641,6 +670,117 @@
         document.getElementById("toggleDataBtn").textContent = "Show All Data";
 
         updateStatus("Map cleared.", "success");
+      }
+
+      function setStartLocation(lat, lng) {
+        // Update input fields
+        document.getElementById('startLat').value = lat.toFixed(6);
+        document.getElementById('startLon').value = lng.toFixed(6);
+        
+        // Remove existing start marker
+        if (startMarker) {
+          startMarker.setMap(null);
+        }
+        
+        // Create new start marker (green)
+        startMarker = new google.maps.Marker({
+          position: { lat: lat, lng: lng },
+          map: map,
+          title: 'Start Location',
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: '#4CAF50',
+            fillOpacity: 1,
+            strokeColor: '#2E7D32',
+            strokeWeight: 2,
+          },
+          zIndex: 999
+        });
+      }
+
+      function setDestinationLocation(lat, lng) {
+        // Update input fields
+        document.getElementById('destLat').value = lat.toFixed(6);
+        document.getElementById('destLon').value = lng.toFixed(6);
+        
+        // Remove existing destination marker
+        if (destinationMarker) {
+          destinationMarker.setMap(null);
+        }
+        
+        // Create new destination marker (red)
+        destinationMarker = new google.maps.Marker({
+          position: { lat: lat, lng: lng },
+          map: map,
+          title: 'Destination',
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: '#F44336',
+            fillOpacity: 1,
+            strokeColor: '#C62828',
+            strokeWeight: 2,
+          },
+          zIndex: 999
+        });
+      }
+
+      function showRoute() {
+        // Get coordinates from input fields
+        const originLat = parseFloat(document.getElementById('startLat').value);
+        const originLon = parseFloat(document.getElementById('startLon').value);
+        const destLat = parseFloat(document.getElementById('destLat').value);
+        const destLon = parseFloat(document.getElementById('destLon').value);
+        const osrmUrl = "http://localhost:5001";
+        
+        // Validate inputs
+        if (isNaN(originLat) || isNaN(originLon) || isNaN(destLat) || isNaN(destLon)) {
+          updateStatus("Please enter valid coordinates for start and destination locations", "error");
+          return;
+        }
+        
+        console.log("Fetching route with coordinates:", {originLat, originLon, destLat, destLon});
+        
+        updateStatus("Fetching route from OSRM...", "loading");
+        
+        fetch(`/api/route?origin_lat=${originLat}&origin_lon=${originLon}&dest_lat=${destLat}&dest_lon=${destLon}&osrm_url=${osrmUrl}`)
+          .then(response => {
+            console.log("Route API response status:", response.status);
+            return response.json();
+          })
+          .then(data => {
+            console.log("Route API response data:", data);
+            
+            if (data.error) {
+              updateStatus(`Route error: ${data.error}`, "error");
+              console.error("Route API error:", data.error);
+              return;
+            }
+            
+            // Convert route points to Google Maps format
+            const routePath = data.route_points.map(point => ({
+              lat: point[0],
+              lng: point[1]
+            }));
+            
+            console.log("Route path points:", routePath.length, "first few:", routePath.slice(0, 3));
+            
+            // Display the route on the map
+            routePolyline.setPath(routePath);
+            console.log("Route polyline path set");
+            
+            // Fit the map to show the entire route
+            const bounds = new google.maps.LatLngBounds();
+            routePath.forEach(point => bounds.extend(point));
+            map.fitBounds(bounds);
+            
+            updateStatus(`Route loaded: ${(data.distance/1000).toFixed(2)}km, ${(data.duration/60).toFixed(1)}min`, "success");
+          })
+          .catch(error => {
+            console.error("Error fetching route:", error);
+            updateStatus(`Error fetching route: ${error.message}`, "error");
+          });
       }
     </script>
 
