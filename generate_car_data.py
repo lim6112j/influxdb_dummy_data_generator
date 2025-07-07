@@ -247,7 +247,10 @@ def generate_car_data(duration, origin, destination, osrm_url):
                     'speed_kmh': point['speed_kmh'],
                     'instruction': f"{step['instruction']} (progress: {point['progress']:.1%})",
                     'step_index': i,
-                    'intermediate_index': j
+                    'intermediate_index': j,
+                    'step_duration': step['duration'],
+                    'step_distance': step['distance'],
+                    'step_name': step.get('name', '')
                 })
     
     # Add the final destination point
