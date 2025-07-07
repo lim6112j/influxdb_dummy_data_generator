@@ -86,6 +86,53 @@
         background: #e8f5e8;
         color: #2e7d32;
       }
+
+      .data-controls {
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .data-controls button {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+
+      .data-controls button:hover {
+        background: #1976d2;
+      }
+
+      .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .data-table th,
+      .data-table td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        text-align: left;
+      }
+
+      .data-table th {
+        background-color: #f5f5f5;
+        font-weight: bold;
+      }
+
+      .data-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+
+      .data-table tr:hover {
+        background-color: #e3f2fd;
+      }
     </style>
   </head>
   <body>
@@ -125,6 +172,17 @@
           <p><strong>Total Distance:</strong> <span id="totalDistance">0 km</span></p>
         </div>
       </div>
+
+      <div class="info-panel" id="dataPanel" style="display: none;">
+        <h3>Loaded Car Data</h3>
+        <div class="data-controls">
+          <button onclick="toggleDataView()" id="toggleDataBtn">Show All Data</button>
+          <span id="dataCount"></span>
+        </div>
+        <div id="carDataDisplay" style="max-height: 400px; overflow-y: auto; margin-top: 10px;">
+          <!-- Data will be populated here -->
+        </div>
+      </div>
     </div>
 
     <script>
@@ -135,6 +193,7 @@
       let animationIndex = 0;
       let animationInterval;
       let isAnimating = false;
+      let showAllData = false;
 
       function initMap() {
         // Initialize map centered on Los Angeles (matching the data generation area)
@@ -218,6 +277,10 @@
             `Loaded ${carData.length} data points successfully.`,
             "success",
           );
+
+          // Show the data panel and display the data
+          document.getElementById("dataPanel").style.display = "block";
+          displayCarData();
         } catch (error) {
           console.error("Error loading car data:", error);
           updateStatus(`Error loading data: ${error.message}`, "error");
@@ -284,6 +347,84 @@
         }
         
         return totalDistance;
+      }
+
+      function toggleDataView() {
+        showAllData = !showAllData;
+        displayCarData();
+        
+        const btn = document.getElementById("toggleDataBtn");
+        btn.textContent = showAllData ? "Show Recent Data" : "Show All Data";
+      }
+
+      function displayCarData() {
+        const dataDisplay = document.getElementById("carDataDisplay");
+        const dataCount = document.getElementById("dataCount");
+        
+        if (carData.length === 0) {
+          dataDisplay.innerHTML = "<p>No data available</p>";
+          dataCount.textContent = "";
+          return;
+        }
+        
+        // Determine how many records to show
+        const dataToShow = showAllData ? carData : carData.slice(-20); // Show last 20 if not showing all
+        
+        dataCount.textContent = `Showing ${dataToShow.length} of ${carData.length} records`;
+        
+        // Create table
+        let tableHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>Speed (km/h)</th>
+                <th>Heading (°)</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+        
+        dataToShow.forEach((point, index) => {
+          const time = new Date(point.time).toLocaleString();
+          tableHTML += `
+            <tr onclick="highlightPoint(${showAllData ? carData.indexOf(point) : carData.length - 20 + index})" style="cursor: pointer;">
+              <td>${time}</td>
+              <td>${point.latitude.toFixed(6)}</td>
+              <td>${point.longitude.toFixed(6)}</td>
+              <td>${point.speed}</td>
+              <td>${point.heading}</td>
+            </tr>
+          `;
+        });
+        
+        tableHTML += `
+            </tbody>
+          </table>
+        `;
+        
+        dataDisplay.innerHTML = tableHTML;
+      }
+
+      function highlightPoint(index) {
+        if (index >= 0 && index < carData.length) {
+          const point = carData[index];
+          updateCarMarker(point);
+          updateCarInfo(point);
+          
+          // Center map on selected point
+          map.setCenter({
+            lat: point.latitude,
+            lng: point.longitude
+          });
+          
+          // Zoom in a bit
+          if (map.getZoom() < 15) {
+            map.setZoom(15);
+          }
+        }
       }
 
       function animateMovement() {
@@ -356,6 +497,11 @@
         document.getElementById("currentHeading").textContent = "Not available";
         document.getElementById("totalPoints").textContent = "0";
         document.getElementById("totalDistance").textContent = "0 km";
+
+        // Hide data panel
+        document.getElementById("dataPanel").style.display = "none";
+        showAllData = false;
+        document.getElementById("toggleDataBtn").textContent = "Show All Data";
 
         updateStatus("Map cleared.", "success");
       }
