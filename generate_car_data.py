@@ -83,6 +83,32 @@ def get_route_from_osrm(origin, destination, osrm_url):
         return None, None, None, None
 
 
+def generate_intermediate_points(start_location, end_location, duration, speed_kmh):
+    """Generate intermediate points between two locations based on duration and speed."""
+    lat1, lon1 = start_location
+    lat2, lon2 = end_location
+    
+    # Calculate number of points based on duration (1 point per second)
+    num_points = max(int(duration), 1)
+    
+    points = []
+    for i in range(num_points):
+        # Linear interpolation between start and end points
+        progress = i / max(num_points - 1, 1)
+        
+        # Interpolate latitude and longitude
+        lat = lat1 + (lat2 - lat1) * progress
+        lon = lon1 + (lon2 - lon1) * progress
+        
+        points.append({
+            'location': [lat, lon],
+            'speed_kmh': speed_kmh,
+            'progress': progress
+        })
+    
+    return points
+
+
 def generate_car_data(duration, origin, destination, osrm_url):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
 
@@ -187,39 +213,84 @@ def generate_car_data(duration, origin, destination, osrm_url):
     for i, step in enumerate(step_locations):
         print(f"Step {i+1}: {step['instruction']} at {step['location'][0]:.6f}, {step['location'][1]:.6f} - {step['speed_kmh']} km/h")
 
+    # Generate all intermediate points for the entire route
+    print("Generating intermediate points for smooth movement...")
+    all_route_points = []
+    
+    for i, step in enumerate(step_locations):
+        if i == 0:
+            # Add the starting point
+            all_route_points.append({
+                'location': step['location'],
+                'speed_kmh': step['speed_kmh'],
+                'instruction': step['instruction'],
+                'step_index': i
+            })
+        
+        if i < len(step_locations) - 1:
+            # Generate intermediate points to next step
+            next_step = step_locations[i + 1]
+            intermediate_points = generate_intermediate_points(
+                step['location'], 
+                next_step['location'], 
+                step['duration'], 
+                step['speed_kmh']
+            )
+            
+            # Add intermediate points (skip the first one to avoid duplication)
+            for j, point in enumerate(intermediate_points[1:], 1):
+                all_route_points.append({
+                    'location': point['location'],
+                    'speed_kmh': point['speed_kmh'],
+                    'instruction': f"{step['instruction']} (progress: {point['progress']:.1%})",
+                    'step_index': i,
+                    'intermediate_index': j
+                })
+    
+    # Add the final destination point
+    if step_locations:
+        final_step = step_locations[-1]
+        all_route_points.append({
+            'location': final_step['location'],
+            'speed_kmh': 0,  # Stopped at destination
+            'instruction': 'arrive',
+            'step_index': len(step_locations) - 1
+        })
+    
+    print(f"Generated {len(all_route_points)} total points for smooth movement")
+    
+    # Calculate total route time based on generated points
+    total_route_time = len(all_route_points)  # 1 second per point
+    
     current_time = start_time
-    step_index = 0
+    point_index = 0
     cycle_count = 0
 
     while current_time <= end_time:
-        # Calculate elapsed time and determine current step
+        # Calculate elapsed time and determine current point
         elapsed_time = current_time - start_time
         
         # Calculate which cycle we're in
-        current_cycle = int(elapsed_time // route_duration)
-        time_in_current_cycle = elapsed_time % route_duration
+        current_cycle = int(elapsed_time // total_route_time)
+        time_in_current_cycle = elapsed_time % total_route_time
         
         # Check if we've started a new cycle
         if current_cycle > cycle_count:
             cycle_count = current_cycle
             print(f"Starting route cycle #{cycle_count + 1}")
         
-        # Calculate progress through current route (0.0 to 1.0)
-        route_progress = time_in_current_cycle / route_duration
+        # Calculate point index based on elapsed time
+        point_index = int(time_in_current_cycle) % len(all_route_points)
         
-        # Calculate step index based on progress
-        step_index = int(route_progress * len(step_locations))
-        step_index = min(step_index, len(step_locations) - 1)
+        # Get current point data
+        current_point = all_route_points[point_index]
+        latitude, longitude = current_point['location']
+        speed = float(current_point['speed_kmh'])
         
-        # Get current step data
-        current_step = step_locations[step_index]
-        latitude, longitude = current_step['location']
-        speed = float(current_step['speed_kmh'])
-        
-        # Calculate heading to next step
-        if step_index < len(step_locations) - 1:
-            lat1, lon1 = current_step['location']
-            lat2, lon2 = step_locations[step_index + 1]['location']
+        # Calculate heading to next point
+        if point_index < len(all_route_points) - 1:
+            lat1, lon1 = current_point['location']
+            lat2, lon2 = all_route_points[point_index + 1]['location']
             
             # Calculate bearing
             dlon = math.radians(lon2 - lon1)
@@ -237,9 +308,10 @@ def generate_car_data(duration, origin, destination, osrm_url):
         
         heading = float(round(heading, 2))
 
-        # Debug output every 10 seconds
-        if int(current_time) % 10 == 0:
-            print(f"Debug: Step {step_index + 1}/{len(step_locations)}: {current_step['instruction']} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
+        # Debug output every 30 seconds
+        if int(current_time) % 30 == 0:
+            step_info = current_point.get('instruction', 'moving')
+            print(f"Debug: Point {point_index + 1}/{len(all_route_points)}: {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
         # Create a Point object
         point = Point("car_data") \
@@ -254,9 +326,9 @@ def generate_car_data(duration, origin, destination, osrm_url):
         try:
             write_api.write(bucket=influxdb_bucket,
                             org=influxdb_org, record=point)
-            if int(current_time) % 10 == 0:  # Print every 10 seconds
+            if int(current_time) % 30 == 0:  # Print every 30 seconds
                 print(
-                    f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - Step {step_index + 1}/{len(step_locations)}")
+                    f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - Point {point_index + 1}/{len(all_route_points)}")
         except Exception as e:
             print(f"Error writing data: {e}")
             client.close()
