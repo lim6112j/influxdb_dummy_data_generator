@@ -367,8 +367,13 @@
           return;
         }
         
-        // Determine how many records to show
-        const dataToShow = showAllData ? carData : carData.slice(-20); // Show last 20 if not showing all
+        // Determine how many records to show (reverse order so recent is at top)
+        let dataToShow;
+        if (showAllData) {
+          dataToShow = [...carData].reverse(); // Show all data, most recent first
+        } else {
+          dataToShow = carData.slice(-20).reverse(); // Show last 20, most recent first
+        }
         
         dataCount.textContent = `Showing ${dataToShow.length} of ${carData.length} records`;
         
@@ -390,7 +395,7 @@
         dataToShow.forEach((point, index) => {
           const time = new Date(point.time).toLocaleString();
           tableHTML += `
-            <tr onclick="highlightPoint(${showAllData ? carData.indexOf(point) : carData.length - 20 + index})" style="cursor: pointer;">
+            <tr onclick="highlightPoint(${carData.indexOf(point)})" style="cursor: pointer;">
               <td>${time}</td>
               <td>${point.latitude.toFixed(6)}</td>
               <td>${point.longitude.toFixed(6)}</td>
