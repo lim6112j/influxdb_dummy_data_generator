@@ -179,12 +179,31 @@ def generate_car_data(duration, origin, destination, osrm_url):
     cycle_count = 0
     
     while current_time <= end_time:
-        # Get current position
-        if route_index >= len(route_points):
-            # Reset to start of route for next cycle
-            route_index = 0
-            cycle_count += 1
+        # Check if we've started a new cycle
+        elapsed_time = current_time - start_time
+        current_cycle = int(elapsed_time // route_duration)
+        
+        if current_cycle > cycle_count:
+            cycle_count = current_cycle
             print(f"Starting route cycle #{cycle_count + 1}")
+        
+        # Move to next route point based on timing
+        elapsed_time = current_time - start_time
+        
+        # Calculate which cycle we're in
+        current_cycle = int(elapsed_time // route_duration)
+        time_in_current_cycle = elapsed_time % route_duration
+        
+        # Calculate progress through current route (0.0 to 1.0)
+        route_progress = time_in_current_cycle / route_duration
+        
+        # Calculate route index based on progress
+        route_index = int(route_progress * (len(route_points) - 1))
+        route_index = min(route_index, len(route_points) - 1)
+        
+        # Debug output every 30 seconds
+        if int(current_time) % 30 == 0:
+            print(f"Debug: Cycle {current_cycle + 1}, Progress: {route_progress:.2%}, Point: {route_index + 1}/{len(route_points)}")
         
         latitude, longitude = route_points[route_index]
         
@@ -232,10 +251,6 @@ def generate_car_data(duration, origin, destination, osrm_url):
             client.close()
             return
 
-        # Move to next route point based on timing
-        points_per_second = (len(route_points) - 1) / route_duration
-        route_index = min(int((current_time - start_time) * points_per_second) % len(route_points), len(route_points) - 1)
-        
         current_time += 1
         time.sleep(1)
 
