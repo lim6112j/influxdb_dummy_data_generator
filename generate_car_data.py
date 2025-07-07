@@ -187,7 +187,7 @@ def generate_car_data(duration, origin, destination, osrm_url):
         print(f"Error connecting to InfluxDB: {e}")
         return
 
-    # Get route from OSRM
+    # Get route from OSRM using the provided coordinates
     print(f"Fetching route from OSRM server at {osrm_url}")
     print(f"Origin: {origin[0]}, {origin[1]}")
     print(f"Destination: {destination[0]}, {destination[1]}")
@@ -213,58 +213,46 @@ def generate_car_data(duration, origin, destination, osrm_url):
     for i, step in enumerate(step_locations):
         print(f"Step {i+1}: {step['instruction']} at {step['location'][0]:.6f}, {step['location'][1]:.6f} - {step['speed_kmh']} km/h")
 
-    # Generate all intermediate points for the entire route
-    print("Generating intermediate points for smooth movement...")
+    # Use the full route geometry for more accurate path following
+    print("Generating route points from OSRM geometry...")
     all_route_points = []
     
-    for i, step in enumerate(step_locations):
-        if i == 0:
-            # Add the starting point
+    # Use the detailed route geometry instead of just step locations
+    if route_points and len(route_points) > 1:
+        total_route_time = route_duration  # Total time for the route in seconds
+        points_per_second = len(route_points) / total_route_time if total_route_time > 0 else 1
+        
+        for i, point in enumerate(route_points):
+            # Calculate speed based on route duration
+            speed_kmh = (route_distance / 1000) / (route_duration / 3600) if route_duration > 0 else 30
+            
+            # Find which step this point belongs to
+            step_index = min(i // max(1, len(route_points) // len(step_locations)), len(step_locations) - 1)
+            current_step = step_locations[step_index] if step_index < len(step_locations) else step_locations[-1]
+            
+            all_route_points.append({
+                'location': point,  # Use exact OSRM route geometry
+                'speed_kmh': current_step.get('speed_kmh', speed_kmh),
+                'instruction': current_step.get('instruction', 'continue'),
+                'step_index': step_index,
+                'intermediate_index': i % max(1, len(route_points) // len(step_locations)),
+                'step_duration': current_step.get('duration', 0),
+                'step_distance': current_step.get('distance', 0),
+                'step_name': current_step.get('name', '')
+            })
+    else:
+        # Fallback to step-based generation if route geometry is not available
+        for i, step in enumerate(step_locations):
             all_route_points.append({
                 'location': step['location'],
                 'speed_kmh': step['speed_kmh'],
                 'instruction': step['instruction'],
                 'step_index': i,
+                'intermediate_index': 0,
                 'step_duration': step['duration'],
                 'step_distance': step['distance'],
                 'step_name': step.get('name', '')
             })
-        
-        if i < len(step_locations) - 1:
-            # Generate intermediate points to next step
-            next_step = step_locations[i + 1]
-            intermediate_points = generate_intermediate_points(
-                step['location'], 
-                next_step['location'], 
-                step['duration'], 
-                step['speed_kmh']
-            )
-            
-            # Add intermediate points (skip the first one to avoid duplication)
-            for j, point in enumerate(intermediate_points[1:], 1):
-                all_route_points.append({
-                    'location': point['location'],
-                    'speed_kmh': point['speed_kmh'],
-                    'instruction': f"{step['instruction']} (progress: {point['progress']:.1%})",
-                    'step_index': i,
-                    'intermediate_index': j,
-                    'step_duration': step['duration'],
-                    'step_distance': step['distance'],
-                    'step_name': step.get('name', '')
-                })
-    
-    # Add the final destination point
-    if step_locations:
-        final_step = step_locations[-1]
-        all_route_points.append({
-            'location': final_step['location'],
-            'speed_kmh': 0,  # Stopped at destination
-            'instruction': 'arrive',
-            'step_index': len(step_locations) - 1,
-            'step_duration': 0,
-            'step_distance': 0,
-            'step_name': 'Destination'
-        })
     
     print(f"Generated {len(all_route_points)} total points for smooth movement")
     
