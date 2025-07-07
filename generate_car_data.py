@@ -329,12 +329,12 @@ def generate_car_data(duration, origin, destination, osrm_url):
             .field("longitude", longitude) \
             .field("speed", speed) \
             .field("heading", heading) \
-            .field("step_index", current_point.get('step_index', 0)) \
+            .field("step_index", float(current_point.get('step_index', 0))) \
             .field("instruction", current_point.get('instruction', 'moving')) \
-            .field("intermediate_index", current_point.get('intermediate_index', 0)) \
-            .field("cycle_count", cycle_count) \
-            .field("step_duration", current_point.get('step_duration', 0)) \
-            .field("step_distance", current_point.get('step_distance', 0)) \
+            .field("intermediate_index", float(current_point.get('intermediate_index', 0))) \
+            .field("cycle_count", float(cycle_count)) \
+            .field("step_duration", float(current_point.get('step_duration', 0))) \
+            .field("step_distance", float(current_point.get('step_distance', 0))) \
             .field("step_name", current_point.get('step_name', '')) \
             .time(int(current_time * 1e9), "ns")
 
