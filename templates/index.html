@@ -478,6 +478,8 @@
       let startMarker = null;
       let destinationMarker = null;
       let statusCheckInterval = null;
+      let lastOSRMStatus = null;
+      let lastInfluxDBStatus = null;
 
       function initMap() {
         // Initialize map centered on Los Angeles (matching the data generation area)
@@ -1169,29 +1171,48 @@
         const message = document.getElementById("osrmMessage");
         const details = document.getElementById("osrmDetails");
 
-        indicator.className = "status-indicator checking";
-        message.textContent = "Checking OSRM status...";
-        details.textContent = "";
-
         const osrmUrl =
           document.getElementById("osrmUrlInput").value.trim() ||
           "http://localhost:5001";
+        
         fetch(`/api/status/osrm?osrm_url=${encodeURIComponent(osrmUrl)}`)
           .then((response) => response.json())
           .then((data) => {
-            indicator.className = `status-indicator ${data.status}`;
-            message.textContent = data.message;
+            // Create a status signature to compare with previous status
+            const statusSignature = JSON.stringify({
+              status: data.status,
+              message: data.message,
+              url: data.url,
+              response_time: data.response_time_ms ? Math.round(data.response_time_ms / 100) * 100 : null // Round to nearest 100ms to avoid constant updates
+            });
 
-            let detailsText = `URL: ${data.url}`;
-            if (data.response_time_ms) {
-              detailsText += ` | Response: ${data.response_time_ms.toFixed(0)}ms`;
+            // Only update UI if status has changed
+            if (lastOSRMStatus !== statusSignature) {
+              indicator.className = `status-indicator ${data.status}`;
+              message.textContent = data.message;
+
+              let detailsText = `URL: ${data.url}`;
+              if (data.response_time_ms) {
+                detailsText += ` | Response: ${data.response_time_ms.toFixed(0)}ms`;
+              }
+              details.textContent = detailsText;
+
+              lastOSRMStatus = statusSignature;
             }
-            details.textContent = detailsText;
           })
           .catch((error) => {
-            indicator.className = "status-indicator error";
-            message.textContent = "Failed to check OSRM status";
-            details.textContent = `Error: ${error.message}`;
+            const errorSignature = JSON.stringify({
+              status: 'error',
+              message: 'Failed to check OSRM status',
+              error: error.message
+            });
+
+            if (lastOSRMStatus !== errorSignature) {
+              indicator.className = "status-indicator error";
+              message.textContent = "Failed to check OSRM status";
+              details.textContent = `Error: ${error.message}`;
+              lastOSRMStatus = errorSignature;
+            }
           });
       }
 
@@ -1199,10 +1220,6 @@
         const indicator = document.getElementById("influxdbIndicator");
         const message = document.getElementById("influxdbMessage");
         const details = document.getElementById("influxdbDetails");
-
-        indicator.className = "status-indicator checking";
-        message.textContent = "Checking InfluxDB status...";
-        details.textContent = "";
 
         const influxdbUrl =
           document.getElementById("influxdbUrlInput").value.trim() ||
@@ -1222,26 +1239,50 @@
         fetch(`/api/status/influxdb?${params}`)
           .then((response) => response.json())
           .then((data) => {
-            indicator.className = `status-indicator ${data.status}`;
-            message.textContent = data.message;
+            // Create a status signature to compare with previous status
+            const statusSignature = JSON.stringify({
+              status: data.status,
+              message: data.message,
+              url: data.url,
+              org: data.org,
+              bucket: data.bucket,
+              response_time: data.response_time_ms ? Math.round(data.response_time_ms / 100) * 100 : null // Round to nearest 100ms
+            });
 
-            let detailsText = `URL: ${data.url}`;
-            if (data.org) {
-              detailsText += ` | Org: ${data.org}`;
+            // Only update UI if status has changed
+            if (lastInfluxDBStatus !== statusSignature) {
+              indicator.className = `status-indicator ${data.status}`;
+              message.textContent = data.message;
+
+              let detailsText = `URL: ${data.url}`;
+              if (data.org) {
+                detailsText += ` | Org: ${data.org}`;
+              }
+              if (data.bucket) {
+                detailsText += ` | Bucket: ${data.bucket}`;
+              }
+              if (data.response_time_ms) {
+                detailsText += ` | Response: ${data.response_time_ms.toFixed(0)}ms`;
+              }
+              details.textContent = detailsText;
+
+              lastInfluxDBStatus = statusSignature;
             }
-            if (data.bucket) {
-              detailsText += ` | Bucket: ${data.bucket}`;
-            }
-            if (data.response_time_ms) {
-              detailsText += ` | Response: ${data.response_time_ms.toFixed(0)}ms`;
-            }
-            details.textContent = detailsText;
           })
           .catch((error) => {
-            indicator.className = "status-indicator error";
-            message.textContent = "Failed to check InfluxDB status";
-            details.textContent = `Error: ${error.message}`;
-          });
+            const errorSignature = JSON.stringify({
+              status: 'error',
+              message: 'Failed to check InfluxDB status',
+              error: error.message
+            });
+
+            if (lastInfluxDBStatus !== errorSignature) {
+              indicator.className = "status-indicator error";
+              message.textContent = "Failed to check InfluxDB status";
+              details.textContent = `Error: ${error.message}`;
+              lastInfluxDBStatus = errorSignature;
+            }
+          })
       }
 
       function refreshServiceStatus() {
