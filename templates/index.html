@@ -230,9 +230,15 @@
       }
 
       @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
+        0% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+        100% {
+          opacity: 1;
+        }
       }
 
       .status-details {
@@ -269,29 +275,74 @@
               <span class="status-indicator checking" id="osrmIndicator"></span>
               OSRM Engine
             </h4>
-            <div style="margin-bottom: 8px;">
-              <input type="text" id="osrmUrlInput" value="http://localhost:5001" 
-                     style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;"
-                     placeholder="OSRM Server URL">
+            <div style="margin-bottom: 8px">
+              <input
+                type="text"
+                id="osrmUrlInput"
+                value="http://localhost:5001"
+                style="
+                  width: 100%;
+                  padding: 4px;
+                  border: 1px solid #ddd;
+                  border-radius: 3px;
+                  font-size: 12px;
+                "
+                placeholder="OSRM Server URL"
+              />
             </div>
             <div id="osrmMessage">Checking status...</div>
             <div class="status-details" id="osrmDetails"></div>
           </div>
           <div class="service-status" id="influxdbStatus">
             <h4>
-              <span class="status-indicator checking" id="influxdbIndicator"></span>
+              <span
+                class="status-indicator checking"
+                id="influxdbIndicator"
+              ></span>
               InfluxDB
             </h4>
-            <div style="margin-bottom: 8px;">
-              <input type="text" id="influxdbUrlInput" value="http://localhost:8086" 
-                     style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-bottom: 4px;"
-                     placeholder="InfluxDB Server URL">
-              <input type="text" id="influxdbOrgInput" value="myorg" 
-                     style="width: 48%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-right: 4%;"
-                     placeholder="Organization">
-              <input type="text" id="influxdbBucketInput" value="car_tracking" 
-                     style="width: 48%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;"
-                     placeholder="Bucket">
+            <div style="margin-bottom: 8px">
+              <input
+                type="text"
+                id="influxdbUrlInput"
+                value="http://localhost:8086"
+                style="
+                  width: 100%;
+                  padding: 4px;
+                  border: 1px solid #ddd;
+                  border-radius: 3px;
+                  font-size: 12px;
+                  margin-bottom: 4px;
+                "
+                placeholder="InfluxDB Server URL"
+              />
+              <input
+                type="text"
+                id="influxdbOrgInput"
+                value="ciel"
+                style="
+                  width: 48%;
+                  padding: 4px;
+                  border: 1px solid #ddd;
+                  border-radius: 3px;
+                  font-size: 12px;
+                  margin-right: 4%;
+                "
+                placeholder="Organization"
+              />
+              <input
+                type="text"
+                id="influxdbBucketInput"
+                value="location_202506"
+                style="
+                  width: 48%;
+                  padding: 4px;
+                  border: 1px solid #ddd;
+                  border-radius: 3px;
+                  font-size: 12px;
+                "
+                placeholder="Bucket"
+              />
             </div>
             <div id="influxdbMessage">Checking status...</div>
             <div class="status-details" id="influxdbDetails"></div>
@@ -340,10 +391,25 @@
           </div>
           <div class="input-group">
             <label for="cyclicalMode">Movement Mode:</label>
-            <input type="radio" id="oneWay" name="movementMode" value="one-way" checked>
-            <label for="oneWay" style="min-width: auto; margin-right: 15px;">One-way</label>
-            <input type="radio" id="roundTrip" name="movementMode" value="round-trip">
-            <label for="roundTrip" style="min-width: auto;">Round-trip (Cyclical)</label>
+            <input
+              type="radio"
+              id="oneWay"
+              name="movementMode"
+              value="one-way"
+              checked
+            />
+            <label for="oneWay" style="min-width: auto; margin-right: 15px"
+              >One-way</label
+            >
+            <input
+              type="radio"
+              id="roundTrip"
+              name="movementMode"
+              value="round-trip"
+            />
+            <label for="roundTrip" style="min-width: auto"
+              >Round-trip (Cyclical)</label
+            >
           </div>
         </div>
         <button onclick="startStreaming()" id="streamBtn" disabled>
@@ -469,7 +535,7 @@
 
         // Check service status on page load
         checkServiceStatus();
-        
+
         // Load InfluxDB settings from environment on page load
         loadInfluxDBSettings();
       }
@@ -493,9 +559,11 @@
         const originLon = parseFloat(document.getElementById("startLon").value);
         const destLat = parseFloat(document.getElementById("destLat").value);
         const destLon = parseFloat(document.getElementById("destLon").value);
-        
+
         // Get movement mode
-        const movementMode = document.querySelector('input[name="movementMode"]:checked').value;
+        const movementMode = document.querySelector(
+          'input[name="movementMode"]:checked',
+        ).value;
 
         // Validate inputs
         if (
@@ -520,26 +588,26 @@
 
         // Thoroughly clear all existing data and visual elements
         carData = [];
-        
+
         // Force clear the path polyline multiple times to ensure it's gone
         pathPolyline.setPath([]);
         pathPolyline.setMap(null);
         pathPolyline.setMap(map);
         pathPolyline.setPath([]);
-        
+
         // Remove car marker if it exists
         if (carMarker) {
           carMarker.setMap(null);
           carMarker = null;
         }
-        
+
         // Reset car info display
         document.getElementById("currentPos").textContent = "Not available";
         document.getElementById("currentSpeed").textContent = "Not available";
         document.getElementById("currentHeading").textContent = "Not available";
         document.getElementById("totalPoints").textContent = "0";
         document.getElementById("totalDistance").textContent = "0 km";
-        
+
         // Hide and reset data panel
         document.getElementById("dataPanel").style.display = "none";
         document.getElementById("carDataDisplay").innerHTML = "";
@@ -557,7 +625,9 @@
             dest_lat: destLat,
             dest_lon: destLon,
             duration: 1, // 1 hour of data generation
-            osrm_url: document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001",
+            osrm_url:
+              document.getElementById("osrmUrlInput").value.trim() ||
+              "http://localhost:5001",
             movement_mode: movementMode,
           }),
         })
@@ -961,7 +1031,7 @@
         // Clear any existing path data before showing new route
         carData = [];
         pathPolyline.setPath([]);
-        
+
         // Remove car marker if it exists
         if (carMarker) {
           carMarker.setMap(null);
@@ -973,7 +1043,9 @@
         const originLon = parseFloat(document.getElementById("startLon").value);
         const destLat = parseFloat(document.getElementById("destLat").value);
         const destLon = parseFloat(document.getElementById("destLon").value);
-        const osrmUrl = document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001";
+        const osrmUrl =
+          document.getElementById("osrmUrlInput").value.trim() ||
+          "http://localhost:5001";
 
         // Validate inputs
         if (
@@ -1064,7 +1136,9 @@
         message.textContent = "Checking OSRM status...";
         details.textContent = "";
 
-        const osrmUrl = document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001";
+        const osrmUrl =
+          document.getElementById("osrmUrlInput").value.trim() ||
+          "http://localhost:5001";
         fetch(`/api/status/osrm?osrm_url=${encodeURIComponent(osrmUrl)}`)
           .then((response) => response.json())
           .then((data) => {
@@ -1093,14 +1167,19 @@
         message.textContent = "Checking InfluxDB status...";
         details.textContent = "";
 
-        const influxdbUrl = document.getElementById("influxdbUrlInput").value.trim() || "http://localhost:8086";
-        const influxdbOrg = document.getElementById("influxdbOrgInput").value.trim() || "myorg";
-        const influxdbBucket = document.getElementById("influxdbBucketInput").value.trim() || "car_tracking";
+        const influxdbUrl =
+          document.getElementById("influxdbUrlInput").value.trim() ||
+          "http://localhost:8086";
+        const influxdbOrg =
+          document.getElementById("influxdbOrgInput").value.trim() || "myorg";
+        const influxdbBucket =
+          document.getElementById("influxdbBucketInput").value.trim() ||
+          "car_tracking";
 
         const params = new URLSearchParams({
           influxdb_url: influxdbUrl,
           influxdb_org: influxdbOrg,
-          influxdb_bucket: influxdbBucket
+          influxdb_bucket: influxdbBucket,
         });
 
         fetch(`/api/status/influxdb?${params}`)
