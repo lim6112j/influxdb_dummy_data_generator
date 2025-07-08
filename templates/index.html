@@ -338,12 +338,6 @@
         </button>
         <button onclick="showRoute()" id="routeBtn">Show Route</button>
         <button onclick="clearMap()">Clear Map</button>
-        <button onclick="animateMovement()" id="animateBtn">
-          Animate Movement
-        </button>
-        <button onclick="stopAnimation()" id="stopBtn" disabled>
-          Stop Animation
-        </button>
       </div>
 
       <div id="status" class="status"></div>
@@ -395,9 +389,6 @@
       let pathPolyline;
       let routePolyline;
       let carData = [];
-      let animationIndex = 0;
-      let animationInterval;
-      let isAnimating = false;
       let showAllData = false;
       let eventSource = null;
       let isStreaming = false;
@@ -504,7 +495,6 @@
 
         // Thoroughly clear all existing data and visual elements
         carData = [];
-        animationIndex = 0;
         
         // Force clear the path polyline multiple times to ensure it's gone
         pathPolyline.setPath([]);
@@ -850,82 +840,6 @@
         }
       }
 
-      function animateMovement() {
-        if (carData.length === 0) {
-          updateStatus(
-            "No car data available. Please load data first.",
-            "error",
-          );
-          return;
-        }
-
-        if (isAnimating) return;
-
-        isAnimating = true;
-        animationIndex = 0;
-
-        document.getElementById("animateBtn").disabled = true;
-        document.getElementById("stopBtn").disabled = false;
-
-        updateStatus(
-          `Starting animation with ${carData.length} points...`,
-          "loading",
-        );
-
-        // Ensure we start from the first point
-        if (carData.length > 0) {
-          updateCarMarker(carData[0]);
-          updateCarInfo(carData[0]);
-        }
-
-        animationInterval = setInterval(() => {
-          if (animationIndex >= carData.length) {
-            stopAnimation();
-            updateStatus("Animation completed.", "success");
-            return;
-          }
-
-          const currentPoint = carData[animationIndex];
-
-          // Debug log to see if we're getting data
-          console.log(
-            `Animation step ${animationIndex}: lat=${currentPoint.latitude}, lng=${currentPoint.longitude}`,
-          );
-
-          updateCarMarker(currentPoint);
-          updateCarInfo(currentPoint);
-
-          // Center map on current position with smooth pan
-          map.panTo({
-            lat: currentPoint.latitude,
-            lng: currentPoint.longitude,
-          });
-
-          // Update status every 10 steps
-          if (animationIndex % 10 === 0) {
-            updateStatus(
-              `Animating... ${animationIndex + 1}/${carData.length}`,
-              "loading",
-            );
-          }
-
-          animationIndex++;
-        }, 200); // Faster animation - update every 200ms
-      }
-
-      function stopAnimation() {
-        if (animationInterval) {
-          clearInterval(animationInterval);
-          animationInterval = null;
-        }
-
-        isAnimating = false;
-        document.getElementById("animateBtn").disabled = false;
-        document.getElementById("stopBtn").disabled = true;
-
-        updateStatus("Animation stopped.", "success");
-      }
-
       function clearMap() {
         // Stop streaming first
         stopStreaming();
@@ -948,9 +862,6 @@
         pathPolyline.setPath([]);
         routePolyline.setPath([]);
         carData = [];
-        animationIndex = 0;
-
-        stopAnimation();
 
         document.getElementById("currentPos").textContent = "Not available";
         document.getElementById("currentSpeed").textContent = "Not available";
