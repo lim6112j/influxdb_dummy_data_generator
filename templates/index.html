@@ -282,6 +282,17 @@
               <span class="status-indicator checking" id="influxdbIndicator"></span>
               InfluxDB
             </h4>
+            <div style="margin-bottom: 8px;">
+              <input type="text" id="influxdbUrlInput" value="http://localhost:8086" 
+                     style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-bottom: 4px;"
+                     placeholder="InfluxDB Server URL">
+              <input type="text" id="influxdbOrgInput" value="myorg" 
+                     style="width: 48%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px; margin-right: 4%;"
+                     placeholder="Organization">
+              <input type="text" id="influxdbBucketInput" value="car_tracking" 
+                     style="width: 48%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;"
+                     placeholder="Bucket">
+            </div>
             <div id="influxdbMessage">Checking status...</div>
             <div class="status-details" id="influxdbDetails"></div>
           </div>
@@ -458,6 +469,14 @@
 
         // Check service status on page load
         checkServiceStatus();
+        
+        // Load InfluxDB settings from environment on page load
+        loadInfluxDBSettings();
+      }
+
+      function loadInfluxDBSettings() {
+        // You could make an API call to get current env settings, but for now use defaults
+        // The actual values will be shown in the status check response
       }
 
       function updateStatus(message, type = "loading") {
@@ -1074,7 +1093,17 @@
         message.textContent = "Checking InfluxDB status...";
         details.textContent = "";
 
-        fetch("/api/status/influxdb")
+        const influxdbUrl = document.getElementById("influxdbUrlInput").value.trim() || "http://localhost:8086";
+        const influxdbOrg = document.getElementById("influxdbOrgInput").value.trim() || "myorg";
+        const influxdbBucket = document.getElementById("influxdbBucketInput").value.trim() || "car_tracking";
+
+        const params = new URLSearchParams({
+          influxdb_url: influxdbUrl,
+          influxdb_org: influxdbOrg,
+          influxdb_bucket: influxdbBucket
+        });
+
+        fetch(`/api/status/influxdb?${params}`)
           .then((response) => response.json())
           .then((data) => {
             indicator.className = `status-indicator ${data.status}`;

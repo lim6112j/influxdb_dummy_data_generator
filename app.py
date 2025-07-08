@@ -194,11 +194,11 @@ def check_osrm_status():
 def check_influxdb_status():
     """Check if InfluxDB is accessible and configured properly"""
     try:
-        # Load environment variables
-        influxdb_url = os.getenv('INFLUXDB_URL')
-        influxdb_token = os.getenv('INFLUXDB_TOKEN')
-        influxdb_org = os.getenv('INFLUXDB_ORG')
-        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+        # Get configuration from query parameters or environment variables
+        influxdb_url = request.args.get('influxdb_url') or os.getenv('INFLUXDB_URL')
+        influxdb_token = os.getenv('INFLUXDB_TOKEN')  # Token should remain from env for security
+        influxdb_org = request.args.get('influxdb_org') or os.getenv('INFLUXDB_ORG')
+        influxdb_bucket = request.args.get('influxdb_bucket') or os.getenv('INFLUXDB_BUCKET')
 
         if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
             missing = []
