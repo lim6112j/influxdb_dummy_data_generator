@@ -287,7 +287,7 @@ def start_generation():
         if not all([origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
         
-        # Build command to run generate_car_data.py
+        # Build command to run generate_car_data.py (it will clear existing data by default)
         cmd = [
             'python', 'generate_car_data.py',
             '--duration', str(duration),

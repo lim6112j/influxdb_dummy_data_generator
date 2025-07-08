@@ -109,7 +109,30 @@ def generate_intermediate_points(start_location, end_location, duration, speed_k
     return points
 
 
-def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way'):
+def clear_existing_car_data(client, influxdb_bucket, influxdb_org):
+    """Clear existing car data from InfluxDB"""
+    try:
+        delete_api = client.delete_api()
+        
+        # Delete all car_data measurements for car_id=1
+        start_time = "1970-01-01T00:00:00Z"  # Delete all historical data
+        stop_time = "2030-01-01T00:00:00Z"   # Far future to ensure we get everything
+        
+        delete_api.delete(
+            start=start_time,
+            stop=stop_time,
+            predicate='_measurement="car_data" AND car_id="1"',
+            bucket=influxdb_bucket,
+            org=influxdb_org
+        )
+        
+        print("✓ Cleared existing car data from InfluxDB")
+        
+    except Exception as e:
+        print(f"Warning: Error clearing existing data: {e}")
+
+
+def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', clear_existing=True):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
 
     start_time = time.time()
@@ -182,6 +205,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             return
 
         write_api = client.write_api(write_options=SYNCHRONOUS)
+        
+        # Clear existing data if requested
+        if clear_existing:
+            print("Clearing existing car data from InfluxDB...")
+            clear_existing_car_data(client, influxdb_bucket, influxdb_org)
 
     except Exception as e:
         print(f"Error connecting to InfluxDB: {e}")
@@ -416,10 +444,12 @@ if __name__ == "__main__":
                         help="OSRM server URL (default: http://localhost:5001)")
     parser.add_argument("--movement-mode", type=str, choices=['one-way', 'round-trip'], 
                         default='one-way', help="Movement mode: one-way or round-trip (default: one-way)")
+    parser.add_argument("--no-clear", action='store_true',
+                        help="Don't clear existing car data before generating new data")
 
     args = parser.parse_args()
 
     origin = (float(args.origin[0]), float(args.origin[1]))
     destination = (float(args.destination[0]), float(args.destination[1]))
 
-    generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode)
+    generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode, clear_existing=not args.no_clear)
