@@ -954,7 +954,7 @@
         const originLon = parseFloat(document.getElementById("startLon").value);
         const destLat = parseFloat(document.getElementById("destLat").value);
         const destLon = parseFloat(document.getElementById("destLon").value);
-        const osrmUrl = "http://localhost:5001";
+        const osrmUrl = document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001";
 
         // Validate inputs
         if (
