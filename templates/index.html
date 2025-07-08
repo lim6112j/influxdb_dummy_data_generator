@@ -302,6 +302,7 @@
               InfluxDB
             </h4>
             <div style="margin-bottom: 8px">
+              <label for="influxdbUrlInput" style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">URL:</label>
               <input
                 type="text"
                 id="influxdbUrlInput"
@@ -316,33 +317,40 @@
                 "
                 placeholder="InfluxDB Server URL"
               />
-              <input
-                type="text"
-                id="influxdbOrgInput"
-                value="ciel"
-                style="
-                  width: 48%;
-                  padding: 4px;
-                  border: 1px solid #ddd;
-                  border-radius: 3px;
-                  font-size: 12px;
-                  margin-right: 4%;
-                "
-                placeholder="Organization"
-              />
-              <input
-                type="text"
-                id="influxdbBucketInput"
-                value="location_202506"
-                style="
-                  width: 48%;
-                  padding: 4px;
-                  border: 1px solid #ddd;
-                  border-radius: 3px;
-                  font-size: 12px;
-                "
-                placeholder="Bucket"
-              />
+              <div style="display: flex; gap: 4%;">
+                <div style="width: 48%;">
+                  <label for="influxdbOrgInput" style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Organization:</label>
+                  <input
+                    type="text"
+                    id="influxdbOrgInput"
+                    value="ciel"
+                    style="
+                      width: 100%;
+                      padding: 4px;
+                      border: 1px solid #ddd;
+                      border-radius: 3px;
+                      font-size: 12px;
+                    "
+                    placeholder="Organization"
+                  />
+                </div>
+                <div style="width: 48%;">
+                  <label for="influxdbBucketInput" style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Bucket:</label>
+                  <input
+                    type="text"
+                    id="influxdbBucketInput"
+                    value="location_202506"
+                    style="
+                      width: 100%;
+                      padding: 4px;
+                      border: 1px solid #ddd;
+                      border-radius: 3px;
+                      font-size: 12px;
+                    "
+                    placeholder="Bucket"
+                  />
+                </div>
+              </div>
             </div>
             <div id="influxdbMessage">Checking status...</div>
             <div class="status-details" id="influxdbDetails"></div>
