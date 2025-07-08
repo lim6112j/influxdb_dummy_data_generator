@@ -269,6 +269,11 @@
               <span class="status-indicator checking" id="osrmIndicator"></span>
               OSRM Engine
             </h4>
+            <div style="margin-bottom: 8px;">
+              <input type="text" id="osrmUrlInput" value="http://localhost:5001" 
+                     style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;"
+                     placeholder="OSRM Server URL">
+            </div>
             <div id="osrmMessage">Checking status...</div>
             <div class="status-details" id="osrmDetails"></div>
           </div>
@@ -533,7 +538,7 @@
             dest_lat: destLat,
             dest_lon: destLon,
             duration: 1, // 1 hour of data generation
-            osrm_url: "http://localhost:5001",
+            osrm_url: document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001",
             movement_mode: movementMode,
           }),
         })
@@ -1040,7 +1045,7 @@
         message.textContent = "Checking OSRM status...";
         details.textContent = "";
 
-        const osrmUrl = "http://localhost:5001";
+        const osrmUrl = document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001";
         fetch(`/api/status/osrm?osrm_url=${encodeURIComponent(osrmUrl)}`)
           .then((response) => response.json())
           .then((data) => {
