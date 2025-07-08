@@ -490,6 +490,7 @@
         isStreaming = true;
         document.getElementById("streamBtn").disabled = true;
         document.getElementById("stopStreamBtn").disabled = false;
+        document.getElementById("routeBtn").disabled = true;
 
         updateStatus("Starting data generation and streaming...", "loading");
 
@@ -644,6 +645,7 @@
         isStreaming = false;
         document.getElementById("streamBtn").disabled = false;
         document.getElementById("stopStreamBtn").disabled = true;
+        document.getElementById("routeBtn").disabled = false;
 
         if (eventSource) {
           eventSource.close();
