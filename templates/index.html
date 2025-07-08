@@ -172,11 +172,119 @@
       .data-table tr:hover {
         background-color: #e3f2fd;
       }
+
+      .status-panel {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .status-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-top: 10px;
+      }
+
+      .service-status {
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+
+      .service-status h4 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        color: #333;
+      }
+
+      .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .status-indicator.online {
+        background-color: #4caf50;
+      }
+
+      .status-indicator.offline {
+        background-color: #f44336;
+      }
+
+      .status-indicator.warning {
+        background-color: #ff9800;
+      }
+
+      .status-indicator.error {
+        background-color: #f44336;
+      }
+
+      .status-indicator.checking {
+        background-color: #2196f3;
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+      }
+
+      .status-details {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .refresh-status-btn {
+        background: #2196f3;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 10px;
+      }
+
+      .refresh-status-btn:hover {
+        background: #1976d2;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>Car Movement Tracker</h1>
+
+      <div class="status-panel">
+        <h3>Service Status</h3>
+        <div class="status-grid">
+          <div class="service-status" id="osrmStatus">
+            <h4>
+              <span class="status-indicator checking" id="osrmIndicator"></span>
+              OSRM Engine
+            </h4>
+            <div id="osrmMessage">Checking status...</div>
+            <div class="status-details" id="osrmDetails"></div>
+          </div>
+          <div class="service-status" id="influxdbStatus">
+            <h4>
+              <span class="status-indicator checking" id="influxdbIndicator"></span>
+              InfluxDB
+            </h4>
+            <div id="influxdbMessage">Checking status...</div>
+            <div class="status-details" id="influxdbDetails"></div>
+          </div>
+        </div>
+        <button onclick="refreshServiceStatus()" class="refresh-status-btn">
+          Refresh Status
+        </button>
+      </div>
 
       <div class="controls">
         <div class="location-inputs">
@@ -351,6 +459,9 @@
           "Map initialized. Click on map to set start location, then destination. Show route first to enable streaming.",
           "success",
         );
+
+        // Check service status on page load
+        checkServiceStatus();
       }
 
       function updateStatus(message, type = "loading") {
@@ -945,6 +1056,78 @@
             console.error("Error fetching route:", error);
             updateStatus(`Error fetching route: ${error.message}`, "error");
           });
+      }
+
+      function checkServiceStatus() {
+        checkOSRMStatus();
+        checkInfluxDBStatus();
+      }
+
+      function checkOSRMStatus() {
+        const indicator = document.getElementById("osrmIndicator");
+        const message = document.getElementById("osrmMessage");
+        const details = document.getElementById("osrmDetails");
+
+        indicator.className = "status-indicator checking";
+        message.textContent = "Checking OSRM status...";
+        details.textContent = "";
+
+        const osrmUrl = "http://localhost:5001";
+        fetch(`/api/status/osrm?osrm_url=${encodeURIComponent(osrmUrl)}`)
+          .then((response) => response.json())
+          .then((data) => {
+            indicator.className = `status-indicator ${data.status}`;
+            message.textContent = data.message;
+
+            let detailsText = `URL: ${data.url}`;
+            if (data.response_time_ms) {
+              detailsText += ` | Response: ${data.response_time_ms.toFixed(0)}ms`;
+            }
+            details.textContent = detailsText;
+          })
+          .catch((error) => {
+            indicator.className = "status-indicator error";
+            message.textContent = "Failed to check OSRM status";
+            details.textContent = `Error: ${error.message}`;
+          });
+      }
+
+      function checkInfluxDBStatus() {
+        const indicator = document.getElementById("influxdbIndicator");
+        const message = document.getElementById("influxdbMessage");
+        const details = document.getElementById("influxdbDetails");
+
+        indicator.className = "status-indicator checking";
+        message.textContent = "Checking InfluxDB status...";
+        details.textContent = "";
+
+        fetch("/api/status/influxdb")
+          .then((response) => response.json())
+          .then((data) => {
+            indicator.className = `status-indicator ${data.status}`;
+            message.textContent = data.message;
+
+            let detailsText = `URL: ${data.url}`;
+            if (data.org) {
+              detailsText += ` | Org: ${data.org}`;
+            }
+            if (data.bucket) {
+              detailsText += ` | Bucket: ${data.bucket}`;
+            }
+            if (data.response_time_ms) {
+              detailsText += ` | Response: ${data.response_time_ms.toFixed(0)}ms`;
+            }
+            details.textContent = detailsText;
+          })
+          .catch((error) => {
+            indicator.className = "status-indicator error";
+            message.textContent = "Failed to check InfluxDB status";
+            details.textContent = `Error: ${error.message}`;
+          });
+      }
+
+      function refreshServiceStatus() {
+        checkServiceStatus();
       }
     </script>
 

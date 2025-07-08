@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify, request
 import os
 import requests
+import time
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient
 
@@ -130,6 +131,141 @@ def get_route():
         return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/status/osrm')
+def check_osrm_status():
+    """Check if OSRM server is running and accessible"""
+    try:
+        osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
+        
+        # Try to get a simple route to test OSRM connectivity
+        test_url = f"{osrm_url}/route/v1/driving/128.48,35.84;128.4827,35.8419"
+        params = {'overview': 'false', 'steps': 'false'}
+        
+        response = requests.get(test_url, params=params, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('code') == 'Ok':
+                return jsonify({
+                    'status': 'online',
+                    'message': 'OSRM server is running and accessible',
+                    'url': osrm_url,
+                    'response_time_ms': response.elapsed.total_seconds() * 1000
+                })
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': f"OSRM returned error: {data.get('message', 'Unknown error')}",
+                    'url': osrm_url
+                })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f"OSRM server returned status {response.status_code}",
+                'url': osrm_url
+            })
+            
+    except requests.exceptions.ConnectionError:
+        return jsonify({
+            'status': 'offline',
+            'message': 'Cannot connect to OSRM server',
+            'url': osrm_url
+        })
+    except requests.exceptions.Timeout:
+        return jsonify({
+            'status': 'timeout',
+            'message': 'OSRM server connection timeout',
+            'url': osrm_url
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f"Error checking OSRM status: {str(e)}",
+            'url': osrm_url
+        })
+
+
+@app.route('/api/status/influxdb')
+def check_influxdb_status():
+    """Check if InfluxDB is accessible and configured properly"""
+    try:
+        # Load environment variables
+        influxdb_url = os.getenv('INFLUXDB_URL')
+        influxdb_token = os.getenv('INFLUXDB_TOKEN')
+        influxdb_org = os.getenv('INFLUXDB_ORG')
+        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+
+        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
+            missing = []
+            if not influxdb_url: missing.append('INFLUXDB_URL')
+            if not influxdb_token: missing.append('INFLUXDB_TOKEN')
+            if not influxdb_org: missing.append('INFLUXDB_ORG')
+            if not influxdb_bucket: missing.append('INFLUXDB_BUCKET')
+            
+            return jsonify({
+                'status': 'misconfigured',
+                'message': f"Missing environment variables: {', '.join(missing)}",
+                'url': influxdb_url or 'Not configured'
+            })
+
+        # Try to connect to InfluxDB
+        client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        
+        # Test connection with a simple query
+        query_api = client.query_api()
+        test_query = f'buckets() |> filter(fn: (r) => r.name == "{influxdb_bucket}") |> limit(n: 1)'
+        
+        start_time = time.time()
+        result = query_api.query(query=test_query)
+        response_time = (time.time() - start_time) * 1000
+        
+        # Check if bucket exists
+        bucket_found = False
+        for table in result:
+            if len(table.records) > 0:
+                bucket_found = True
+                break
+        
+        client.close()
+        
+        if bucket_found:
+            return jsonify({
+                'status': 'online',
+                'message': 'InfluxDB is accessible and bucket exists',
+                'url': influxdb_url,
+                'org': influxdb_org,
+                'bucket': influxdb_bucket,
+                'response_time_ms': response_time
+            })
+        else:
+            return jsonify({
+                'status': 'warning',
+                'message': f'InfluxDB is accessible but bucket "{influxdb_bucket}" not found',
+                'url': influxdb_url,
+                'org': influxdb_org,
+                'bucket': influxdb_bucket,
+                'response_time_ms': response_time
+            })
+            
+    except Exception as e:
+        error_msg = str(e)
+        if 'unauthorized' in error_msg.lower():
+            status = 'unauthorized'
+            message = 'InfluxDB authentication failed - check token'
+        elif 'connection' in error_msg.lower():
+            status = 'offline'
+            message = 'Cannot connect to InfluxDB server'
+        else:
+            status = 'error'
+            message = f'InfluxDB error: {error_msg}'
+            
+        return jsonify({
+            'status': status,
+            'message': message,
+            'url': influxdb_url or 'Not configured'
+        })
 
 
 @app.route('/api/start-generation', methods=['POST'])
