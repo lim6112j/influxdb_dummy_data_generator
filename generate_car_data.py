@@ -351,17 +351,27 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         # Calculate elapsed time and determine current point
         elapsed_time = current_time - start_time
         
-        # Calculate which cycle we're in
-        current_cycle = int(elapsed_time // total_route_time)
-        time_in_current_cycle = elapsed_time % total_route_time
-        
-        # Check if we've started a new cycle
-        if current_cycle > cycle_count:
-            cycle_count = current_cycle
-            print(f"Starting route cycle #{cycle_count + 1}")
-        
-        # Calculate point index based on elapsed time
-        point_index = int(time_in_current_cycle) % len(all_route_points)
+        # For one-way mode, stop when we reach the destination
+        if movement_mode == 'one-way':
+            point_index = int(elapsed_time) % len(all_route_points)
+            
+            # If we've reached the end of the route in one-way mode, stop generating data
+            if point_index >= len(all_route_points) - 1:
+                print(f"✓ Reached destination in one-way mode. Stopping data generation.")
+                break
+        else:
+            # For round-trip mode, continue cycling through the route
+            # Calculate which cycle we're in
+            current_cycle = int(elapsed_time // total_route_time)
+            time_in_current_cycle = elapsed_time % total_route_time
+            
+            # Check if we've started a new cycle
+            if current_cycle > cycle_count:
+                cycle_count = current_cycle
+                print(f"Starting route cycle #{cycle_count + 1}")
+            
+            # Calculate point index based on elapsed time
+            point_index = int(time_in_current_cycle) % len(all_route_points)
         
         # Get current point data
         current_point = all_route_points[point_index]
@@ -393,7 +403,10 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         if int(current_time) % 30 == 0:
             step_info = current_point.get('instruction', 'moving')
             direction = current_point.get('direction', 'unknown')
-            print(f"Debug: Point {point_index + 1}/{len(all_route_points)} ({direction}): {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
+            progress_info = f"Point {point_index + 1}/{len(all_route_points)}"
+            if movement_mode == 'round-trip':
+                progress_info += f" (Cycle {cycle_count + 1})"
+            print(f"Debug: {progress_info} ({direction}): {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
         # Create a Point object with step information
         point = Point("car_data") \
@@ -416,8 +429,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             write_api.write(bucket=influxdb_bucket,
                             org=influxdb_org, record=point)
             if int(current_time) % 30 == 0:  # Print every 30 seconds
+                progress_info = f"Point {point_index + 1}/{len(all_route_points)}"
+                if movement_mode == 'round-trip':
+                    progress_info += f" (Cycle {cycle_count + 1})"
                 print(
-                    f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - Point {point_index + 1}/{len(all_route_points)}")
+                    f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - {progress_info}")
         except Exception as e:
             print(f"Error writing data: {e}")
             client.close()
@@ -428,7 +444,13 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
 
     # Close the client
     client.close()
-    print(f"✓ Successfully generated {int(duration * 3600)} data points")
+    
+    # Calculate actual points generated
+    actual_points = int(current_time - start_time)
+    if movement_mode == 'one-way':
+        print(f"✓ Successfully generated {actual_points} data points (one-way to destination)")
+    else:
+        print(f"✓ Successfully generated {actual_points} data points (round-trip mode)")
 
 
 if __name__ == "__main__":
