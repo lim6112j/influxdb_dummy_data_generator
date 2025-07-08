@@ -502,8 +502,14 @@
 
         updateStatus("Starting data generation and streaming...", "loading");
 
-        // Clear existing data and path
+        // Thoroughly clear all existing data and visual elements
         carData = [];
+        animationIndex = 0;
+        
+        // Force clear the path polyline multiple times to ensure it's gone
+        pathPolyline.setPath([]);
+        pathPolyline.setMap(null);
+        pathPolyline.setMap(map);
         pathPolyline.setPath([]);
         
         // Remove car marker if it exists
@@ -518,6 +524,11 @@
         document.getElementById("currentHeading").textContent = "Not available";
         document.getElementById("totalPoints").textContent = "0";
         document.getElementById("totalDistance").textContent = "0 km";
+        
+        // Hide and reset data panel
+        document.getElementById("dataPanel").style.display = "none";
+        document.getElementById("carDataDisplay").innerHTML = "";
+        document.getElementById("dataCount").textContent = "";
 
         // First, start the data generation script
         fetch("/api/start-generation", {
@@ -648,6 +659,9 @@
           eventSource.close();
           eventSource = null;
         }
+
+        // Force clear the path when stopping streaming
+        pathPolyline.setPath([]);
 
         updateStatus(
           `Streaming stopped. Total points: ${carData.length}`,
@@ -989,6 +1003,16 @@
       }
 
       function showRoute() {
+        // Clear any existing path data before showing new route
+        carData = [];
+        pathPolyline.setPath([]);
+        
+        // Remove car marker if it exists
+        if (carMarker) {
+          carMarker.setMap(null);
+          carMarker = null;
+        }
+
         // Get coordinates from input fields
         const originLat = parseFloat(document.getElementById("startLat").value);
         const originLon = parseFloat(document.getElementById("startLon").value);
