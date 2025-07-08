@@ -502,9 +502,22 @@
 
         updateStatus("Starting data generation and streaming...", "loading");
 
-        // Clear existing data
+        // Clear existing data and path
         carData = [];
         pathPolyline.setPath([]);
+        
+        // Remove car marker if it exists
+        if (carMarker) {
+          carMarker.setMap(null);
+          carMarker = null;
+        }
+        
+        // Reset car info display
+        document.getElementById("currentPos").textContent = "Not available";
+        document.getElementById("currentSpeed").textContent = "Not available";
+        document.getElementById("currentHeading").textContent = "Not available";
+        document.getElementById("totalPoints").textContent = "0";
+        document.getElementById("totalDistance").textContent = "0 km";
 
         // First, start the data generation script
         fetch("/api/start-generation", {
