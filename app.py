@@ -313,7 +313,7 @@ def start_generation():
         thread.start()
         
         return jsonify({
-            'message': 'Data generation started',
+            'message': 'Data generation started (existing data will be cleared)',
             'command': ' '.join(cmd)
         })
         
