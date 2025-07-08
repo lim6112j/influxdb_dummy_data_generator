@@ -10,6 +10,9 @@ app = Flask(__name__)
 # Load environment variables
 load_dotenv()
 
+# Global variable to track the running data generation process
+running_process = None
+
 
 @app.route('/')
 def index():
@@ -297,16 +300,21 @@ def start_generation():
             '--movement-mode', movement_mode
         ]
         
-        # Start the script in a separate thread so it doesn't block the web server
+        # Start the script as a subprocess so we can control it
         def run_script():
+            global running_process
             try:
                 print(f"Starting data generation: {' '.join(cmd)}")
-                subprocess.run(cmd, check=True)
+                running_process = subprocess.Popen(cmd)
+                running_process.wait()  # Wait for process to complete
                 print("Data generation completed")
+                running_process = None
             except subprocess.CalledProcessError as e:
                 print(f"Data generation failed: {e}")
+                running_process = None
             except Exception as e:
                 print(f"Error running data generation: {e}")
+                running_process = None
         
         thread = threading.Thread(target=run_script)
         thread.daemon = True
@@ -318,6 +326,36 @@ def start_generation():
         })
         
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/stop-generation', methods=['POST'])
+def stop_generation():
+    """Stop the running car data generation script"""
+    global running_process
+    
+    try:
+        if running_process and running_process.poll() is None:
+            # Process is still running, terminate it
+            running_process.terminate()
+            
+            # Wait a bit for graceful termination
+            try:
+                running_process.wait(timeout=5)
+                print("Data generation process terminated gracefully")
+            except subprocess.TimeoutExpired:
+                # Force kill if it doesn't terminate gracefully
+                running_process.kill()
+                running_process.wait()
+                print("Data generation process force killed")
+            
+            running_process = None
+            return jsonify({'message': 'Data generation stopped'})
+        else:
+            return jsonify({'message': 'No data generation process running'})
+            
+    except Exception as e:
+        print(f"Error stopping data generation: {e}")
         return jsonify({'error': str(e)}), 500
 
 

@@ -663,10 +663,28 @@
         // Force clear the path when stopping streaming
         pathPolyline.setPath([]);
 
-        updateStatus(
-          `Streaming stopped. Total points: ${carData.length}`,
-          "success",
-        );
+        // Stop the data generation process
+        fetch("/api/stop-generation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log("Stop generation response:", data.message);
+            updateStatus(
+              `Streaming stopped. Data generation stopped. Total points: ${carData.length}`,
+              "success",
+            );
+          })
+          .catch((error) => {
+            console.error("Error stopping data generation:", error);
+            updateStatus(
+              `Streaming stopped. Total points: ${carData.length} (Warning: Could not stop data generation)`,
+              "success",
+            );
+          });
       }
 
       function updateCarMarker(point) {
