@@ -477,6 +477,7 @@
       let clickMode = "start"; // 'start' or 'destination'
       let startMarker = null;
       let destinationMarker = null;
+      let statusCheckInterval = null;
 
       function initMap() {
         // Initialize map centered on Los Angeles (matching the data generation area)
@@ -538,11 +539,47 @@
 
         // Load InfluxDB settings from environment on page load
         loadInfluxDBSettings();
+
+        // Start automatic status checking every 10 seconds
+        startAutoStatusCheck();
       }
 
       function loadInfluxDBSettings() {
-        // You could make an API call to get current env settings, but for now use defaults
-        // The actual values will be shown in the status check response
+        fetch('/api/influxdb-config')
+          .then(response => response.json())
+          .then(data => {
+            if (!data.error) {
+              document.getElementById('influxdbUrlInput').value = data.url || 'http://localhost:8086';
+              document.getElementById('influxdbOrgInput').value = data.org || 'myorg';
+              document.getElementById('influxdbBucketInput').value = data.bucket || 'car_tracking';
+            }
+          })
+          .catch(error => {
+            console.log('Could not load InfluxDB config from environment:', error);
+            // Keep default values in the input fields
+          });
+      }
+
+      function startAutoStatusCheck() {
+        // Clear any existing interval
+        if (statusCheckInterval) {
+          clearInterval(statusCheckInterval);
+        }
+        
+        // Check status every 10 seconds
+        statusCheckInterval = setInterval(() => {
+          checkServiceStatus();
+        }, 10000);
+        
+        console.log('Started automatic status checking every 10 seconds');
+      }
+
+      function stopAutoStatusCheck() {
+        if (statusCheckInterval) {
+          clearInterval(statusCheckInterval);
+          statusCheckInterval = null;
+          console.log('Stopped automatic status checking');
+        }
       }
 
       function updateStatus(message, type = "loading") {
@@ -1210,6 +1247,11 @@
       function refreshServiceStatus() {
         checkServiceStatus();
       }
+
+      // Stop auto-checking when page is about to unload
+      window.addEventListener('beforeunload', function() {
+        stopAutoStatusCheck();
+      });
     </script>
 
     <!-- Google Maps API loaded from environment variable -->
