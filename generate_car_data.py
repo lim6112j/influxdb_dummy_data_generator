@@ -101,7 +101,9 @@ def generate_intermediate_points(start_location, end_location, duration, speed_k
         lon = lon1 + (lon2 - lon1) * progress
         
         points.append({
-            'location': [lat, lon],
+            'latitude': lat,
+            'longitude': lon,
+            'timestamp': f'2023-01-01T{i//3600:02d}:{(i%3600)//60:02d}:{i%60:02d}Z',
             'speed_kmh': speed_kmh,
             'progress': progress
         })
