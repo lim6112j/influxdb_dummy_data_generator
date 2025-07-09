@@ -33,7 +33,7 @@ def test_get_car_data_route(client):
 
 def test_get_route_with_valid_params(client):
     """Test the route API with valid parameters"""
-    with patch('requests.get') as mock_get:
+    with patch('app.requests.get') as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -113,8 +113,8 @@ def test_start_generation_valid_data(client):
         'movement_mode': 'one-way'
     }
     
-    with patch('app.threading.Thread') as mock_thread, \
-         patch('app.subprocess.Popen') as mock_popen:
+    with patch('threading.Thread') as mock_thread, \
+         patch('subprocess.Popen') as mock_popen:
         
         mock_process = MagicMock()
         mock_popen.return_value = mock_process
