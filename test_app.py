@@ -21,7 +21,17 @@ def test_index_route(client):
 
 def test_get_car_data_route(client):
     """Test the car data API endpoint"""
-    with patch('app.InfluxDBClient') as mock_client:
+    with patch('app.InfluxDBClient') as mock_client, \
+         patch('app.os.getenv') as mock_getenv:
+        
+        # Mock environment variables
+        mock_getenv.side_effect = lambda key: {
+            'INFLUXDB_URL': 'http://localhost:8086',
+            'INFLUXDB_TOKEN': 'test_token',
+            'INFLUXDB_ORG': 'test_org',
+            'INFLUXDB_BUCKET': 'test_bucket'
+        }.get(key)
+        
         mock_query_api = MagicMock()
         mock_client.return_value.query_api.return_value = mock_query_api
         mock_query_api.query.return_value = []

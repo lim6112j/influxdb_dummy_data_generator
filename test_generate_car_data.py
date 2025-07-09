@@ -118,7 +118,16 @@ def test_generate_car_data_one_way():
          patch('generate_car_data.clear_existing_car_data') as mock_clear, \
          patch('generate_car_data.InfluxDBClient') as mock_client, \
          patch('generate_car_data.time.sleep') as mock_sleep, \
-         patch('generate_car_data.time.time') as mock_time:
+         patch('generate_car_data.time.time') as mock_time, \
+         patch('generate_car_data.os.getenv') as mock_getenv:
+        
+        # Mock environment variables
+        mock_getenv.side_effect = lambda key: {
+            'INFLUXDB_URL': 'http://localhost:8086',
+            'INFLUXDB_TOKEN': 'test_token',
+            'INFLUXDB_ORG': 'test_org',
+            'INFLUXDB_BUCKET': 'test_bucket'
+        }.get(key)
         
         # Mock time to control the loop
         mock_time.side_effect = [1000, 1001, 1002, 1003]  # start_time, then increments
@@ -162,7 +171,16 @@ def test_generate_car_data_round_trip():
          patch('generate_car_data.clear_existing_car_data') as mock_clear, \
          patch('generate_car_data.InfluxDBClient') as mock_client, \
          patch('generate_car_data.time.sleep') as mock_sleep, \
-         patch('generate_car_data.time.time') as mock_time:
+         patch('generate_car_data.time.time') as mock_time, \
+         patch('generate_car_data.os.getenv') as mock_getenv:
+        
+        # Mock environment variables
+        mock_getenv.side_effect = lambda key: {
+            'INFLUXDB_URL': 'http://localhost:8086',
+            'INFLUXDB_TOKEN': 'test_token',
+            'INFLUXDB_ORG': 'test_org',
+            'INFLUXDB_BUCKET': 'test_bucket'
+        }.get(key)
         
         # Mock time to control the loop
         mock_time.side_effect = [1000, 1001, 1002, 1003]  # start_time, then increments
@@ -202,7 +220,16 @@ def test_generate_car_data_no_route():
     """Test car data generation when no route is found"""
     with patch('generate_car_data.get_route_from_osrm') as mock_route, \
          patch('generate_car_data.clear_existing_car_data') as mock_clear, \
-         patch('generate_car_data.InfluxDBClient') as mock_client:
+         patch('generate_car_data.InfluxDBClient') as mock_client, \
+         patch('generate_car_data.os.getenv') as mock_getenv:
+        
+        # Mock environment variables
+        mock_getenv.side_effect = lambda key: {
+            'INFLUXDB_URL': 'http://localhost:8086',
+            'INFLUXDB_TOKEN': 'test_token',
+            'INFLUXDB_ORG': 'test_org',
+            'INFLUXDB_BUCKET': 'test_bucket'
+        }.get(key)
         
         # Mock InfluxDB client setup
         mock_client.return_value.health.return_value.status = 'pass'
