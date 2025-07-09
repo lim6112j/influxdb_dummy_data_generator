@@ -3,6 +3,7 @@ import time
 import argparse
 import os
 import math
+import requests
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -10,7 +11,6 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 def get_route_from_osrm(origin, destination, osrm_url):
     """Fetch route coordinates from OSRM server with step data."""
-    import requests
 
     # Format coordinates for OSRM (longitude,latitude)
     origin_str = f"{origin[1]},{origin[0]}"

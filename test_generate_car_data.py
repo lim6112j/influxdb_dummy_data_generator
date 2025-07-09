@@ -10,7 +10,7 @@ from generate_car_data import (
 
 def test_get_route_from_osrm_success():
     """Test successful OSRM route retrieval"""
-    with patch('generate_car_data.requests.get') as mock_get:
+    with patch('requests.get') as mock_get:
         mock_response = MagicMock()
         mock_response.json.return_value = {
             'code': 'Ok',
@@ -52,7 +52,7 @@ def test_get_route_from_osrm_success():
 
 def test_get_route_from_osrm_failure():
     """Test OSRM route retrieval failure"""
-    with patch('generate_car_data.requests.get') as mock_get:
+    with patch('requests.get') as mock_get:
         mock_get.side_effect = Exception("Connection error")
         
         route_points, duration, distance, step_locations = get_route_from_osrm([0, 0], [1, 1], 'http://localhost:5000')
@@ -115,9 +115,14 @@ def test_clear_existing_car_data():
 def test_generate_car_data_one_way():
     """Test car data generation in one-way mode"""
     with patch('generate_car_data.get_route_from_osrm') as mock_route, \
-         patch('generate_car_data.generate_intermediate_points') as mock_points, \
          patch('generate_car_data.clear_existing_car_data') as mock_clear, \
-         patch('generate_car_data.InfluxDBClient') as mock_client:
+         patch('generate_car_data.InfluxDBClient') as mock_client, \
+         patch('generate_car_data.time.sleep') as mock_sleep, \
+         patch('generate_car_data.time.time') as mock_time:
+        
+        # Mock time to control the loop
+        mock_time.side_effect = [1000, 1001, 1002, 1003]  # start_time, then increments
+        mock_sleep.side_effect = [None, None, StopIteration("Test complete")]  # Stop after 3 iterations
         
         # Mock route response - return tuple as expected by generate_car_data
         mock_route.return_value = (
@@ -127,39 +132,41 @@ def test_generate_car_data_one_way():
             [{'location': [0.0, 0.0], 'speed_kmh': 30, 'instruction': 'depart'}]  # step_locations
         )
         
-        # Mock intermediate points - not used in this test but needed for consistency
-        mock_points.return_value = [
-            {'latitude': 0.0, 'longitude': 0.0, 'timestamp': '2023-01-01T00:00:00Z'},
-            {'latitude': 0.5, 'longitude': 0.5, 'timestamp': '2023-01-01T00:30:00Z'},
-            {'latitude': 1.0, 'longitude': 1.0, 'timestamp': '2023-01-01T01:00:00Z'}
-        ]
-        
         # Mock InfluxDB client
         mock_write_api = MagicMock()
         mock_client.return_value.write_api.return_value = mock_write_api
+        mock_client.return_value.health.return_value.status = 'pass'
+        mock_client.return_value.buckets_api.return_value.find_bucket_by_name.return_value.name = 'test_bucket'
         
-        # Run the function
-        generate_car_data(
-            duration=60,
-            origin=[0, 0],
-            destination=[1, 1],
-            osrm_url='http://localhost:5000',
-            movement_mode='one-way'
-        )
+        # Run the function and expect it to be stopped by our mock
+        try:
+            generate_car_data(
+                duration=1,  # 1 hour but will be stopped by mock
+                origin=[0, 0],
+                destination=[1, 1],
+                osrm_url='http://localhost:5000',
+                movement_mode='one-way'
+            )
+        except StopIteration:
+            pass  # Expected from our mock
         
         # Verify calls
         mock_route.assert_called_once()
-        mock_points.assert_called_once()
         mock_clear.assert_called_once()
-        mock_write_api.write.assert_called()
+        assert mock_write_api.write.call_count >= 1
 
 
 def test_generate_car_data_round_trip():
     """Test car data generation in round-trip mode"""
     with patch('generate_car_data.get_route_from_osrm') as mock_route, \
-         patch('generate_car_data.generate_intermediate_points') as mock_points, \
          patch('generate_car_data.clear_existing_car_data') as mock_clear, \
-         patch('generate_car_data.InfluxDBClient') as mock_client:
+         patch('generate_car_data.InfluxDBClient') as mock_client, \
+         patch('generate_car_data.time.sleep') as mock_sleep, \
+         patch('generate_car_data.time.time') as mock_time:
+        
+        # Mock time to control the loop
+        mock_time.side_effect = [1000, 1001, 1002, 1003]  # start_time, then increments
+        mock_sleep.side_effect = [None, None, StopIteration("Test complete")]  # Stop after 3 iterations
         
         # Mock route response - return tuple as expected by generate_car_data
         mock_route.return_value = (
@@ -169,42 +176,45 @@ def test_generate_car_data_round_trip():
             [{'location': [0.0, 0.0], 'speed_kmh': 30, 'instruction': 'depart'}]  # step_locations
         )
         
-        # Mock intermediate points - not used in this test but needed for consistency
-        mock_points.return_value = [
-            {'latitude': 0.0, 'longitude': 0.0, 'timestamp': '2023-01-01T00:00:00Z'},
-            {'latitude': 1.0, 'longitude': 1.0, 'timestamp': '2023-01-01T00:30:00Z'}
-        ]
-        
         # Mock InfluxDB client
         mock_write_api = MagicMock()
         mock_client.return_value.write_api.return_value = mock_write_api
+        mock_client.return_value.health.return_value.status = 'pass'
+        mock_client.return_value.buckets_api.return_value.find_bucket_by_name.return_value.name = 'test_bucket'
         
-        # Run the function
-        generate_car_data(
-            duration=60,
-            origin=[0, 0],
-            destination=[1, 1],
-            osrm_url='http://localhost:5000',
-            movement_mode='round-trip'
-        )
+        # Run the function and expect it to be stopped by our mock
+        try:
+            generate_car_data(
+                duration=1,  # 1 hour but will be stopped by mock
+                origin=[0, 0],
+                destination=[1, 1],
+                osrm_url='http://localhost:5000',
+                movement_mode='round-trip'
+            )
+        except StopIteration:
+            pass  # Expected from our mock
         
         # Verify route was called twice (there and back)
         assert mock_route.call_count == 2
-        assert mock_points.call_count == 2
 
 
 def test_generate_car_data_no_route():
     """Test car data generation when no route is found"""
     with patch('generate_car_data.get_route_from_osrm') as mock_route, \
-         patch('generate_car_data.clear_existing_car_data') as mock_clear:
+         patch('generate_car_data.clear_existing_car_data') as mock_clear, \
+         patch('generate_car_data.InfluxDBClient') as mock_client:
+        
+        # Mock InfluxDB client setup
+        mock_client.return_value.health.return_value.status = 'pass'
+        mock_client.return_value.buckets_api.return_value.find_bucket_by_name.return_value.name = 'test_bucket'
         
         # Mock no route found
-        mock_route.return_value = None
+        mock_route.return_value = (None, None, None, None)
         
         # This should handle the error gracefully
         try:
             generate_car_data(
-                duration=60,
+                duration=1,
                 origin=[0, 0],
                 destination=[1, 1],
                 osrm_url='http://localhost:5000'
