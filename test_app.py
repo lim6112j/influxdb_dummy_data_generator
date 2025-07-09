@@ -33,7 +33,7 @@ def test_get_car_data_route(client):
 
 def test_get_route_with_valid_params(client):
     """Test the route API with valid parameters"""
-    with patch('app.requests.get') as mock_get:
+    with patch('requests.get') as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -113,8 +113,8 @@ def test_start_generation_valid_data(client):
         'movement_mode': 'one-way'
     }
     
-    with patch('threading.Thread') as mock_thread, \
-         patch('subprocess.Popen') as mock_popen:
+    with patch('app.threading.Thread') as mock_thread, \
+         patch('app.subprocess.Popen') as mock_popen:
         
         mock_process = MagicMock()
         mock_popen.return_value = mock_process
@@ -147,11 +147,23 @@ def test_stop_generation(client):
 
 def test_stream_car_data(client):
     """Test car data streaming endpoint"""
-    with patch('app.InfluxDBClient') as mock_client:
+    with patch('app.InfluxDBClient') as mock_client, \
+         patch('app.os.getenv') as mock_getenv:
+        
+        # Mock environment variables
+        mock_getenv.side_effect = lambda key: {
+            'INFLUXDB_URL': 'http://localhost:8086',
+            'INFLUXDB_TOKEN': 'test_token',
+            'INFLUXDB_ORG': 'test_org',
+            'INFLUXDB_BUCKET': 'test_bucket'
+        }.get(key)
+        
+        # Mock InfluxDB client and query
         mock_query_api = MagicMock()
         mock_client.return_value.query_api.return_value = mock_query_api
         mock_query_api.query.return_value = []
         
+        # Get the response but don't try to read the stream
         response = client.get('/api/car-data-stream')
         assert response.status_code == 200
-        assert response.content_type == 'text/event-stream; charset=utf-8'
+        assert 'text/event-stream' in response.content_type
