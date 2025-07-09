@@ -28,7 +28,7 @@ jobs:
 
     - name: Test with updated dependencies
       run: |
-        uv sync --dev
+        uv sync --group dev
         uv run pytest test_app.py test_generate_car_data.py -v
 
     - name: Create Pull Request
