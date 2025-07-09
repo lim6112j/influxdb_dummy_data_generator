@@ -21,16 +21,16 @@ def test_index_route(client):
 
 def test_get_car_data_route(client):
     """Test the car data API endpoint"""
-    with patch('app.InfluxDBClient') as mock_client, \
-         patch('app.os.getenv') as mock_getenv:
+    with patch('app.os.getenv') as mock_getenv, \
+         patch('app.InfluxDBClient') as mock_client:
         
         # Mock environment variables
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'INFLUXDB_URL': 'http://localhost:8086',
             'INFLUXDB_TOKEN': 'test_token',
             'INFLUXDB_ORG': 'test_org',
             'INFLUXDB_BUCKET': 'test_bucket'
-        }.get(key)
+        }.get(key, default)
         
         mock_query_api = MagicMock()
         mock_client.return_value.query_api.return_value = mock_query_api
@@ -93,16 +93,16 @@ def test_check_osrm_status(client):
 
 def test_check_influxdb_status(client):
     """Test InfluxDB status check"""
-    with patch('app.InfluxDBClient') as mock_client, \
-         patch('app.os.getenv') as mock_getenv:
+    with patch('app.os.getenv') as mock_getenv, \
+         patch('app.InfluxDBClient') as mock_client:
         
         # Mock environment variables
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'INFLUXDB_URL': 'http://localhost:8086',
             'INFLUXDB_TOKEN': 'test_token',
             'INFLUXDB_ORG': 'test_org',
             'INFLUXDB_BUCKET': 'test_bucket'
-        }.get(key)
+        }.get(key, default)
         
         # Mock InfluxDB client and query
         mock_query_api = MagicMock()
@@ -163,17 +163,17 @@ def test_stop_generation(client):
 
 def test_stream_car_data(client):
     """Test car data streaming endpoint"""
-    with patch('app.InfluxDBClient') as mock_client, \
-         patch('app.os.getenv') as mock_getenv, \
+    with patch('app.os.getenv') as mock_getenv, \
+         patch('app.InfluxDBClient') as mock_client, \
          patch('app.time.sleep') as mock_sleep:
         
         # Mock environment variables
-        mock_getenv.side_effect = lambda key: {
+        mock_getenv.side_effect = lambda key, default=None: {
             'INFLUXDB_URL': 'http://localhost:8086',
             'INFLUXDB_TOKEN': 'test_token',
             'INFLUXDB_ORG': 'test_org',
             'INFLUXDB_BUCKET': 'test_bucket'
-        }.get(key)
+        }.get(key, default)
         
         # Mock InfluxDB client and query
         mock_query_api = MagicMock()
