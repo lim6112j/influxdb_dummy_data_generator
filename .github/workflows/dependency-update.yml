@@ -1,0 +1,47 @@
+name: Dependency Update
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v2
+
+    - name: Update dependencies
+      run: |
+        uv lock --upgrade
+
+    - name: Test with updated dependencies
+      run: |
+        uv sync
+        uv run pytest test_app.py test_generate_car_data.py -v
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'chore: update dependencies'
+        title: 'chore: update dependencies'
+        body: |
+          This PR updates project dependencies to their latest versions.
+          
+          Changes:
+          - Updated uv.lock with latest dependency versions
+          - All tests pass with updated dependencies
+        branch: dependency-updates
+        delete-branch: true
