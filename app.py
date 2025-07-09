@@ -97,7 +97,7 @@ def get_route():
         dest_lon = request.args.get('dest_lon', type=float)
         osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
         
-        if not all([origin_lat, origin_lon, dest_lat, dest_lon]):
+        if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required parameters: origin_lat, origin_lon, dest_lat, dest_lon'}), 400
         
         # Format coordinates for OSRM (longitude,latitude)
@@ -287,7 +287,7 @@ def start_generation():
         osrm_url = data.get('osrm_url', 'http://localhost:5001')
         movement_mode = data.get('movement_mode', 'one-way')  # Default one-way
         
-        if not all([origin_lat, origin_lon, dest_lat, dest_lon]):
+        if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
         
         # Build command to run generate_car_data.py (it will clear existing data by default)
