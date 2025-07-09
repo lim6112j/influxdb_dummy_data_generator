@@ -2,6 +2,8 @@ from flask import Flask, render_template, jsonify, request
 import os
 import requests
 import time
+import subprocess
+import threading
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient
 
@@ -274,8 +276,6 @@ def check_influxdb_status():
 @app.route('/api/start-generation', methods=['POST'])
 def start_generation():
     """Start the car data generation script with given coordinates"""
-    import subprocess
-    import threading
     
     try:
         data = request.get_json()

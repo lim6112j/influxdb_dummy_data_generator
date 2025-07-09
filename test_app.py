@@ -33,7 +33,7 @@ def test_get_car_data_route(client):
 
 def test_get_route_with_valid_params(client):
     """Test the route API with valid parameters"""
-    with patch('requests.get') as mock_get:
+    with patch('app.requests.get') as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -65,7 +65,7 @@ def test_get_route_missing_params(client):
 
 def test_check_osrm_status(client):
     """Test OSRM status check"""
-    with patch('requests.get') as mock_get:
+    with patch('app.requests.get') as mock_get:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {'code': 'Ok'}
