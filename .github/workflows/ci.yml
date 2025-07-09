@@ -26,20 +26,20 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --dev --no-editable
+        uv sync --dev
 
     - name: Lint with flake8
       run: |
-        uv run --no-project flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
-        uv run --no-project flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics || true
+        uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics || true
+        uv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics || true
 
     - name: Test with pytest
       run: |
-        uv run --no-project pytest test_app.py test_generate_car_data.py -v --tb=short
+        uv run pytest test_app.py test_generate_car_data.py -v --tb=short
 
     - name: Check code formatting with black
       run: |
-        uv run --no-project black --check --diff . || true
+        uv run black --check --diff . || true
 
   security:
     runs-on: ubuntu-latest
@@ -56,16 +56,16 @@ jobs:
 
     - name: Install dependencies
       run: |
-        uv sync --dev --no-editable
+        uv sync --dev
 
     - name: Run safety check
       run: |
-        uv run --no-project safety check || true
+        uv run safety check || true
 
     - name: Run bandit security linter
       run: |
-        uv run --no-project bandit -r . -f json -o bandit-report.json || true
-        uv run --no-project bandit -r . -ll || true
+        uv run bandit -r . -f json -o bandit-report.json || true
+        uv run bandit -r . -ll || true
 
   docker:
     runs-on: ubuntu-latest

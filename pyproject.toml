@@ -27,15 +27,21 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["."]
+include = [
+    "*.py",
+    "templates/",
+    "static/",
+    "requirements.txt"
+]
 exclude = [
-    ".git",
-    ".github",
-    ".pytest_cache",
-    "__pycache__",
+    ".git/",
+    ".github/",
+    ".pytest_cache/",
+    "__pycache__/",
     "*.pyc",
     ".env*",
-    "uv.lock"
+    "uv.lock",
+    "test_*.py"
 ]
 
 [tool.black]
