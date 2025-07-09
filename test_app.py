@@ -48,6 +48,9 @@ def test_get_route_with_valid_params(client):
         mock_get.return_value = mock_response
         
         response = client.get('/api/route?origin_lat=0&origin_lon=0&dest_lat=1&dest_lon=1')
+        if response.status_code != 200:
+            print(f"Response status: {response.status_code}")
+            print(f"Response data: {response.data}")
         assert response.status_code == 200
         data = json.loads(response.data)
         assert 'route_points' in data
@@ -122,6 +125,9 @@ def test_start_generation_valid_data(client):
         response = client.post('/api/start-generation', 
                              data=json.dumps(test_data),
                              content_type='application/json')
+        if response.status_code != 200:
+            print(f"Response status: {response.status_code}")
+            print(f"Response data: {response.data}")
         assert response.status_code == 200
         data = json.loads(response.data)
         assert 'message' in data
