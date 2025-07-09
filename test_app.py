@@ -35,6 +35,7 @@ def test_get_route_with_valid_params(client):
     """Test the route API with valid parameters"""
     with patch('app.requests.get') as mock_get:
         mock_response = MagicMock()
+        mock_response.status_code = 200
         mock_response.json.return_value = {
             'code': 'Ok',
             'routes': [{
@@ -48,6 +49,10 @@ def test_get_route_with_valid_params(client):
         
         response = client.get('/api/route?origin_lat=0&origin_lon=0&dest_lat=1&dest_lon=1')
         assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'route_points' in data
+        assert 'duration' in data
+        assert 'distance' in data
 
 
 def test_get_route_missing_params(client):
@@ -108,7 +113,12 @@ def test_start_generation_valid_data(client):
         'movement_mode': 'one-way'
     }
     
-    with patch('threading.Thread') as mock_thread:
+    with patch('threading.Thread') as mock_thread, \
+         patch('subprocess.Popen') as mock_popen:
+        
+        mock_process = MagicMock()
+        mock_popen.return_value = mock_process
+        
         response = client.post('/api/start-generation', 
                              data=json.dumps(test_data),
                              content_type='application/json')
