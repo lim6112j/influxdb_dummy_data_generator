@@ -13,20 +13,41 @@ def test_get_route_from_osrm_success():
     with patch('generate_car_data.requests.get') as mock_get:
         mock_response = MagicMock()
         mock_response.json.return_value = {
+            'code': 'Ok',
             'routes': [{
-                'geometry': 'test_geometry',
+                'geometry': {'coordinates': [[0, 0], [1, 1]]},
                 'duration': 3600,
-                'distance': 10000
+                'distance': 10000,
+                'legs': [{
+                    'steps': [{
+                        'maneuver': {
+                            'location': [0, 0],
+                            'type': 'depart'
+                        },
+                        'duration': 1800,
+                        'distance': 5000,
+                        'name': 'Test Street'
+                    }, {
+                        'maneuver': {
+                            'location': [1, 1],
+                            'type': 'arrive'
+                        },
+                        'duration': 1800,
+                        'distance': 5000,
+                        'name': 'Destination'
+                    }]
+                }]
             }]
         }
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
         
-        result = get_route_from_osrm([0, 0], [1, 1], 'http://localhost:5000')
+        route_points, duration, distance, step_locations = get_route_from_osrm([0, 0], [1, 1], 'http://localhost:5000')
         
-        assert result is not None
-        assert 'geometry' in result
-        assert result['geometry'] == 'test_geometry'
+        assert route_points is not None
+        assert duration == 3600
+        assert distance == 10000
+        assert len(step_locations) == 2
 
 
 def test_get_route_from_osrm_failure():
@@ -34,9 +55,12 @@ def test_get_route_from_osrm_failure():
     with patch('generate_car_data.requests.get') as mock_get:
         mock_get.side_effect = Exception("Connection error")
         
-        result = get_route_from_osrm([0, 0], [1, 1], 'http://localhost:5000')
+        route_points, duration, distance, step_locations = get_route_from_osrm([0, 0], [1, 1], 'http://localhost:5000')
         
-        assert result is None
+        assert route_points is None
+        assert duration is None
+        assert distance is None
+        assert step_locations is None
 
 
 def test_generate_intermediate_points():
@@ -50,17 +74,17 @@ def test_generate_intermediate_points():
     
     assert len(points) > 0
     assert all(isinstance(point, dict) for point in points)
-    assert all('lat' in point and 'lon' in point and 'timestamp' in point for point in points)
+    assert all('latitude' in point and 'longitude' in point and 'timestamp' in point for point in points)
     
     # First point should be close to start location
     first_point = points[0]
-    assert abs(first_point['lat'] - start_location[0]) < 0.1
-    assert abs(first_point['lon'] - start_location[1]) < 0.1
+    assert abs(first_point['latitude'] - start_location[0]) < 0.1
+    assert abs(first_point['longitude'] - start_location[1]) < 0.1
     
     # Last point should be close to end location
     last_point = points[-1]
-    assert abs(last_point['lat'] - end_location[0]) < 0.1
-    assert abs(last_point['lon'] - end_location[1]) < 0.1
+    assert abs(last_point['latitude'] - end_location[0]) < 0.1
+    assert abs(last_point['longitude'] - end_location[1]) < 0.1
 
 
 def test_generate_intermediate_points_zero_duration():
@@ -95,18 +119,19 @@ def test_generate_car_data_one_way():
          patch('generate_car_data.clear_existing_car_data') as mock_clear, \
          patch('generate_car_data.InfluxDBClient') as mock_client:
         
-        # Mock route response
-        mock_route.return_value = {
-            'geometry': 'test_geometry',
-            'duration': 3600,
-            'distance': 10000
-        }
+        # Mock route response - return tuple as expected by generate_car_data
+        mock_route.return_value = (
+            [[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]],  # route_points
+            3600,  # route_duration
+            10000,  # route_distance
+            [{'location': [0.0, 0.0], 'speed_kmh': 30, 'instruction': 'depart'}]  # step_locations
+        )
         
-        # Mock intermediate points
+        # Mock intermediate points - not used in this test but needed for consistency
         mock_points.return_value = [
-            {'lat': 0.0, 'lon': 0.0, 'timestamp': '2023-01-01T00:00:00Z'},
-            {'lat': 0.5, 'lon': 0.5, 'timestamp': '2023-01-01T00:30:00Z'},
-            {'lat': 1.0, 'lon': 1.0, 'timestamp': '2023-01-01T01:00:00Z'}
+            {'latitude': 0.0, 'longitude': 0.0, 'timestamp': '2023-01-01T00:00:00Z'},
+            {'latitude': 0.5, 'longitude': 0.5, 'timestamp': '2023-01-01T00:30:00Z'},
+            {'latitude': 1.0, 'longitude': 1.0, 'timestamp': '2023-01-01T01:00:00Z'}
         ]
         
         # Mock InfluxDB client
@@ -136,17 +161,18 @@ def test_generate_car_data_round_trip():
          patch('generate_car_data.clear_existing_car_data') as mock_clear, \
          patch('generate_car_data.InfluxDBClient') as mock_client:
         
-        # Mock route response
-        mock_route.return_value = {
-            'geometry': 'test_geometry',
-            'duration': 1800,  # 30 minutes
-            'distance': 5000
-        }
+        # Mock route response - return tuple as expected by generate_car_data
+        mock_route.return_value = (
+            [[0.0, 0.0], [1.0, 1.0]],  # route_points
+            1800,  # route_duration (30 minutes)
+            5000,  # route_distance
+            [{'location': [0.0, 0.0], 'speed_kmh': 30, 'instruction': 'depart'}]  # step_locations
+        )
         
-        # Mock intermediate points
+        # Mock intermediate points - not used in this test but needed for consistency
         mock_points.return_value = [
-            {'lat': 0.0, 'lon': 0.0, 'timestamp': '2023-01-01T00:00:00Z'},
-            {'lat': 1.0, 'lon': 1.0, 'timestamp': '2023-01-01T00:30:00Z'}
+            {'latitude': 0.0, 'longitude': 0.0, 'timestamp': '2023-01-01T00:00:00Z'},
+            {'latitude': 1.0, 'longitude': 1.0, 'timestamp': '2023-01-01T00:30:00Z'}
         ]
         
         # Mock InfluxDB client
