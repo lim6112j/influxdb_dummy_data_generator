@@ -154,7 +154,8 @@ def test_stop_generation(client):
 def test_stream_car_data(client):
     """Test car data streaming endpoint"""
     with patch('app.InfluxDBClient') as mock_client, \
-         patch('app.os.getenv') as mock_getenv:
+         patch('app.os.getenv') as mock_getenv, \
+         patch('app.time.sleep') as mock_sleep:
         
         # Mock environment variables
         mock_getenv.side_effect = lambda key: {
@@ -169,7 +170,17 @@ def test_stream_car_data(client):
         mock_client.return_value.query_api.return_value = mock_query_api
         mock_query_api.query.return_value = []
         
-        # Get the response but don't try to read the stream
+        # Make sleep raise an exception to break the infinite loop after first iteration
+        mock_sleep.side_effect = StopIteration("Test complete")
+        
+        # Get the response and read just the first chunk to test the stream starts
         response = client.get('/api/car-data-stream')
         assert response.status_code == 200
         assert 'text/event-stream' in response.content_type
+        
+        # Try to read one chunk from the stream to verify it works
+        try:
+            next(response.response)
+        except (StopIteration, RuntimeError):
+            # Expected when the mocked sleep raises StopIteration
+            pass
