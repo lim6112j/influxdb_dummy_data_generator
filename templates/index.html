@@ -1917,12 +1917,12 @@
           clearInterval(routeCheckInterval);
         }
         
-        // Check for route updates every 2 seconds during streaming
+        // Check for route updates every 5 seconds during streaming
         routeCheckInterval = setInterval(() => {
           checkForRouteUpdates();
-        }, 2000);
+        }, 5000);
         
-        console.log('Started automatic route update checking every 2 seconds');
+        console.log('Started automatic route update checking every 5 seconds');
       }
 
       function stopRouteUpdateCheck() {
