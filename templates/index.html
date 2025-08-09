@@ -487,6 +487,80 @@
           <!-- Data will be populated here -->
         </div>
       </div>
+
+      <div class="info-panel">
+        <h3>API Information</h3>
+        <div style="font-size: 14px; line-height: 1.6;">
+          <h4 style="margin: 15px 0 10px 0; color: #333;">Available Endpoints:</h4>
+          
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>GET /api/car-data</strong>
+            <p style="margin: 5px 0; color: #666;">Fetch historical car data from InfluxDB (last 500 points)</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>GET /api/route</strong>
+            <p style="margin: 5px 0; color: #666;">Get route geometry from OSRM between two points</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: origin_lat, origin_lon, dest_lat, dest_lon, osrm_url</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>GET /api/waypoints</strong>
+            <p style="margin: 5px 0; color: #666;">Get predefined waypoints for route planning</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>GET /api/route-from-current</strong>
+            <p style="margin: 5px 0; color: #666;">Calculate new route from current car position through waypoints</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: osrm_url</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>POST /api/update-route</strong>
+            <p style="margin: 5px 0; color: #666;">Update car's route with new waypoints while streaming</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..."}</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>GET /api/status/osrm</strong>
+            <p style="margin: 5px 0; color: #666;">Check OSRM server status and connectivity</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: osrm_url</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>GET /api/status/influxdb</strong>
+            <p style="margin: 5px 0; color: #666;">Check InfluxDB server status and configuration</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: influxdb_url, influxdb_token, influxdb_org, influxdb_bucket</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>POST /api/start-generation</strong>
+            <p style="margin: 5px 0; color: #666;">Start car data generation with specified route</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {origin_lat, origin_lon, dest_lat, dest_lon, duration, osrm_url, movement_mode}</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>POST /api/stop-generation</strong>
+            <p style="margin: 5px 0; color: #666;">Stop the running car data generation process</p>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>GET /api/car-data-stream</strong>
+            <p style="margin: 5px 0; color: #666;">Real-time streaming of car data using Server-Sent Events (SSE)</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Returns: text/event-stream with JSON car position data</p>
+          </div>
+
+          <h4 style="margin: 20px 0 10px 0; color: #333;">Usage Notes:</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #666;">
+            <li>Use "Show Route" first to plan your path before starting streaming</li>
+            <li>During streaming, use "Get New Route" to dynamically change the car's path</li>
+            <li>The system supports both one-way and round-trip movement modes</li>
+            <li>All coordinates should be in decimal degrees (latitude, longitude)</li>
+            <li>OSRM server must be running and accessible for route calculations</li>
+            <li>InfluxDB must be configured and accessible for data storage/retrieval</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <script>
