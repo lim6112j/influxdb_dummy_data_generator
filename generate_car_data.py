@@ -374,7 +374,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             # When paused, keep streaming the same position
             if last_position is not None:
                 latitude, longitude = last_position['location']
-                speed = 0  # Car is stopped
+                speed = 0.0  # Car is stopped (use float to match existing field type)
                 heading = last_position.get('heading', 0)
                 
                 # Create a Point object for paused state
@@ -382,7 +382,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                     .tag("car_id", "1") \
                     .field("latitude", latitude) \
                     .field("longitude", longitude) \
-                    .field("speed", speed) \
+                    .field("speed", float(speed)) \
                     .field("heading", heading) \
                     .field("step_index", int(last_position.get('step_index', 0))) \
                     .field("instruction", "paused") \
@@ -565,7 +565,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             .tag("car_id", "1") \
             .field("latitude", latitude) \
             .field("longitude", longitude) \
-            .field("speed", speed) \
+            .field("speed", float(speed)) \
             .field("heading", heading) \
             .field("step_index", int(current_point.get('step_index', 0))) \
             .field("instruction", current_point.get('instruction', 'moving')) \
