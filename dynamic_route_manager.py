@@ -152,8 +152,10 @@ class DynamicRouteManager:
         """Get route from OSRM with current position and waypoints"""
         try:
             # Build coordinate string for OSRM (longitude,latitude)
+            # current_position is (lat, lon), so we need to swap for OSRM
             coordinates = [f"{current_position[1]},{current_position[0]}"]  # Start from current position
             
+            # waypoints have 'lat' and 'lng' keys, convert to OSRM format (lng,lat)
             for waypoint in waypoints:
                 coordinates.append(f"{waypoint['lng']},{waypoint['lat']}")
             
@@ -178,7 +180,7 @@ class DynamicRouteManager:
             
             # Extract route geometry (coordinates are in [longitude, latitude] format)
             coordinates = route['geometry']['coordinates']
-            route_points = [(coord[1], coord[0]) for coord in coordinates]  # Convert to [lat, lon]
+            route_points = [(coord[1], coord[0]) for coord in coordinates]  # Convert to (lat, lon)
             
             # Extract step-by-step locations
             step_locations = []
@@ -187,7 +189,7 @@ class DynamicRouteManager:
                     # Get maneuver location (intersection/turn point)
                     maneuver_location = step['maneuver']['location']
                     step_info = {
-                        'location': [maneuver_location[1], maneuver_location[0]],  # [lat, lon]
+                        'location': (maneuver_location[1], maneuver_location[0]),  # (lat, lon)
                         'duration': step['duration'],  # seconds
                         'distance': step['distance'],  # meters
                         'instruction': step['maneuver']['type'],

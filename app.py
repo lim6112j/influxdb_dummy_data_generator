@@ -217,6 +217,7 @@ def get_route_from_current():
         route_points, step_locations, _, _ = route_manager.get_current_route_data()
         
         # Convert route points to Google Maps format for frontend
+        # route_points from OSRM are already in (lat, lon) format
         route_points_gm = [[point[0], point[1]] for point in route_points]
         
         # Calculate approximate duration and distance
