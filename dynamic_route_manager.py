@@ -62,8 +62,13 @@ class DynamicRouteManager:
             was_updated = self.route_updated
             update_timestamp = self.route_update_timestamp
             
-            if reset_update_flag:
+            # Debug logging
+            if was_updated:
+                print(f"🔍 Route manager: Returning updated route with {len(route_points)} points, flag: {was_updated}")
+            
+            if reset_update_flag and self.route_updated:
                 self.route_updated = False
+                print(f"🔍 Route manager: Reset update flag to False")
                 
             return route_points, step_locations, was_updated, update_timestamp
     
