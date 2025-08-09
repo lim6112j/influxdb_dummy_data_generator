@@ -205,13 +205,16 @@ def get_route_from_current():
 
         osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
         
+        print(f"🔄 Current car position: {current_lat}, {current_lon}")
+        print(f"🔄 OSRM URL: {osrm_url}")
+        
         # Update the route in the route manager - this will affect actual car movement
         success = route_manager.update_route_from_current(
             (current_lat, current_lon), waypoints, osrm_url
         )
         
         if not success:
-            return jsonify({'error': 'Failed to update route'}), 500
+            return jsonify({'error': 'Failed to update route - check server logs for details'}), 500
         
         # Get the updated route data for response
         route_points, step_locations, _, _ = route_manager.get_current_route_data()
@@ -469,8 +472,17 @@ def update_route():
         waypoints = data.get('waypoints', [])
         osrm_url = data.get('osrm_url', 'http://localhost:5001')
         
+        print(f"🔄 /api/update-route called with {len(waypoints)} waypoints")
+        print(f"🔄 Request data: {data}")
+        
         if not waypoints:
             return jsonify({'error': 'No waypoints provided'}), 400
+        
+        # Validate waypoints format
+        for i, waypoint in enumerate(waypoints):
+            print(f"🔄 Waypoint {i+1}: {waypoint}")
+            if not isinstance(waypoint, dict) or 'lat' not in waypoint or 'lng' not in waypoint:
+                return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
         
         # Get current car position from the latest data point
         influxdb_url = os.getenv('INFLUXDB_URL')

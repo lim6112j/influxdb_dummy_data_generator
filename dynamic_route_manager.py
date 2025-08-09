@@ -37,7 +37,23 @@ class DynamicRouteManager:
     def update_route_from_current(self, current_position: Tuple[float, float], waypoints: List[Dict], osrm_url: str) -> bool:
         """Update the route from current position through waypoints"""
         try:
-            print(f"🔄 Starting route update from position {current_position} with {len(waypoints)} waypoints")
+            print(f"🔄 Starting route update from position {current_position}")
+            print(f"🔄 Waypoints to visit:")
+            for i, wp in enumerate(waypoints):
+                print(f"   {i+1}. {wp.get('name', 'Unnamed')} at ({wp['lat']}, {wp['lng']})")
+            
+            # Validate waypoints format
+            for i, waypoint in enumerate(waypoints):
+                if 'lat' not in waypoint or 'lng' not in waypoint:
+                    print(f"❌ Invalid waypoint {i+1}: missing 'lat' or 'lng' keys")
+                    return False
+                
+                try:
+                    float(waypoint['lat'])
+                    float(waypoint['lng'])
+                except (ValueError, TypeError):
+                    print(f"❌ Invalid waypoint {i+1}: lat/lng must be numbers")
+                    return False
             
             # Get new route from OSRM
             new_route_points, new_step_locations = self._get_route_from_osrm_with_waypoints(
@@ -54,6 +70,7 @@ class DynamicRouteManager:
                 self.current_step_locations = new_step_locations
                 self.route_updated = True
                 self.route_update_timestamp = time.time()
+                self.osrm_url = osrm_url  # Update OSRM URL as well
                 
                 print(f"✅ ROUTE UPDATED SUCCESSFULLY!")
                 print(f"   - Old route: {old_points_count} points")
@@ -69,6 +86,8 @@ class DynamicRouteManager:
             
         except Exception as e:
             print(f"❌ Error updating route: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def get_current_route_data(self, reset_update_flag: bool = False) -> Tuple[List, List, bool, float]:
@@ -151,15 +170,21 @@ class DynamicRouteManager:
                                           waypoints: List[Dict], osrm_url: str) -> Tuple[List, List]:
         """Get route from OSRM with current position and waypoints"""
         try:
+            print(f"🗺️ Building route from current position {current_position} through {len(waypoints)} waypoints")
+            
             # Build coordinate string for OSRM (longitude,latitude)
             # current_position is (lat, lon), so we need to swap for OSRM
             coordinates = [f"{current_position[1]},{current_position[0]}"]  # Start from current position
+            print(f"🗺️ Starting point: {current_position[1]},{current_position[0]} (lng,lat)")
             
             # waypoints have 'lat' and 'lng' keys, convert to OSRM format (lng,lat)
-            for waypoint in waypoints:
-                coordinates.append(f"{waypoint['lng']},{waypoint['lat']}")
+            for i, waypoint in enumerate(waypoints):
+                coord_str = f"{waypoint['lng']},{waypoint['lat']}"
+                coordinates.append(coord_str)
+                print(f"🗺️ Waypoint {i+1}: {coord_str} (lng,lat) - {waypoint.get('name', 'Unnamed')}")
             
             coordinate_string = ";".join(coordinates)
+            print(f"🗺️ OSRM coordinate string: {coordinate_string}")
             
             # OSRM route API endpoint with multiple waypoints
             url = f"{osrm_url}/route/v1/driving/{coordinate_string}"
@@ -169,23 +194,29 @@ class DynamicRouteManager:
                 'steps': 'true'
             }
             
-            response = requests.get(url, params=params)
+            print(f"🗺️ Requesting route from OSRM: {url}")
+            response = requests.get(url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
             
             if data['code'] != 'Ok':
+                print(f"❌ OSRM returned error: {data.get('message', 'Unknown error')}")
                 raise Exception(f"OSRM error: {data.get('message', 'Unknown error')}")
             
             route = data['routes'][0]
+            print(f"✓ OSRM route received: {route['distance']/1000:.2f}km, {route['duration']/60:.1f}min")
             
             # Extract route geometry (coordinates are in [longitude, latitude] format)
-            coordinates = route['geometry']['coordinates']
-            route_points = [(coord[1], coord[0]) for coord in coordinates]  # Convert to (lat, lon)
+            geometry_coordinates = route['geometry']['coordinates']
+            route_points = [(coord[1], coord[0]) for coord in geometry_coordinates]  # Convert to (lat, lon)
+            print(f"✓ Extracted {len(route_points)} route geometry points")
             
             # Extract step-by-step locations
             step_locations = []
-            for leg in route['legs']:
-                for step in leg['steps']:
+            step_count = 0
+            for leg_idx, leg in enumerate(route['legs']):
+                print(f"🗺️ Processing leg {leg_idx + 1}/{len(route['legs'])}: {leg['distance']/1000:.2f}km, {leg['duration']/60:.1f}min")
+                for step_idx, step in enumerate(leg['steps']):
                     # Get maneuver location (intersection/turn point)
                     maneuver_location = step['maneuver']['location']
                     step_info = {
@@ -194,21 +225,33 @@ class DynamicRouteManager:
                         'distance': step['distance'],  # meters
                         'instruction': step['maneuver']['type'],
                         'name': step.get('name', ''),
-                        'speed_kmh': 0  # Will calculate below
+                        'speed_kmh': 30  # Default speed
                     }
                     
                     # Calculate speed for this step
                     if step['duration'] > 0:
                         speed_ms = step['distance'] / step['duration']
-                        step_info['speed_kmh'] = round(speed_ms * 3.6, 2)  # Convert m/s to km/h
+                        step_info['speed_kmh'] = max(10, min(80, round(speed_ms * 3.6, 2)))  # Clamp between 10-80 km/h
                     
                     step_locations.append(step_info)
+                    step_count += 1
+                    
+                    if step_count <= 5:  # Log first few steps for debugging
+                        print(f"   Step {step_count}: {step_info['instruction']} at ({step_info['location'][0]:.6f}, {step_info['location'][1]:.6f}) - {step_info['speed_kmh']} km/h")
             
-            print(f"✓ New route calculated: {len(route_points)} points, {len(step_locations)} steps")
+            print(f"✅ New route calculated successfully:")
+            print(f"   - Route points: {len(route_points)}")
+            print(f"   - Step locations: {len(step_locations)}")
+            print(f"   - Total distance: {route['distance']/1000:.2f}km")
+            print(f"   - Total duration: {route['duration']/60:.1f}min")
+            
             return route_points, step_locations
             
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Network error getting route from OSRM: {e}")
+            return [], []
         except Exception as e:
-            print(f"Error getting route from OSRM: {e}")
+            print(f"❌ Error getting route from OSRM: {e}")
             return [], []
 
 # Global instance for route management
