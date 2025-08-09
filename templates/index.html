@@ -442,6 +442,7 @@
           Stop Streaming
         </button>
         <button onclick="showRoute()" id="routeBtn">Show Route</button>
+        <button onclick="getNewRoute()" id="newRouteBtn" disabled>Get New Route</button>
         <button onclick="clearMap()">Clear Map</button>
       </div>
 
@@ -646,6 +647,7 @@
         document.getElementById("streamBtn").disabled = true;
         document.getElementById("stopStreamBtn").disabled = false;
         document.getElementById("routeBtn").disabled = true;
+        document.getElementById("newRouteBtn").disabled = false;
 
         updateStatus("Starting data generation and streaming...", "loading");
 
@@ -803,6 +805,7 @@
         document.getElementById("streamBtn").disabled = false;
         document.getElementById("stopStreamBtn").disabled = true;
         document.getElementById("routeBtn").disabled = false;
+        document.getElementById("newRouteBtn").disabled = true;
 
         if (eventSource) {
           eventSource.close();
@@ -1182,6 +1185,71 @@
           .catch((error) => {
             console.error("Error fetching route:", error);
             updateStatus(`Error fetching route: ${error.message}`, "error");
+          });
+      }
+
+      function getNewRoute() {
+        if (!isStreaming) {
+          updateStatus("Cannot get new route - streaming is not active", "error");
+          return;
+        }
+
+        updateStatus("Getting new route from current position...", "loading");
+
+        const osrmUrl =
+          document.getElementById("osrmUrlInput").value.trim() ||
+          "http://localhost:5001";
+
+        fetch(`/api/route-from-current?osrm_url=${osrmUrl}`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              updateStatus(`New route error: ${data.error}`, "error");
+              return;
+            }
+
+            // Convert route points to Google Maps format
+            const routePath = data.route_points.map((point) => ({
+              lat: point[0],
+              lng: point[1],
+            }));
+
+            // Update the route polyline with new route (change color to indicate it's a new route)
+            routePolyline.setPath(routePath);
+            routePolyline.setOptions({
+              strokeColor: "#FF6600", // Orange color for new route
+              strokeOpacity: 0.8,
+              strokeWeight: 4,
+            });
+
+            // Add waypoint markers
+            data.waypoints.forEach((waypoint, index) => {
+              new google.maps.Marker({
+                position: { lat: waypoint.lat, lng: waypoint.lng },
+                map: map,
+                title: waypoint.name,
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 6,
+                  fillColor: "#FF6600",
+                  fillOpacity: 1,
+                  strokeColor: "#CC4400",
+                  strokeWeight: 2,
+                },
+                zIndex: 998,
+              });
+            });
+
+            updateStatus(
+              `New route loaded: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min. Car will follow new path.`,
+              "success",
+            );
+
+            console.log("New route loaded with waypoints:", data.waypoints);
+          })
+          .catch((error) => {
+            console.error("Error getting new route:", error);
+            updateStatus(`Error getting new route: ${error.message}`, "error");
           });
       }
 

@@ -138,6 +138,118 @@ def get_route():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/waypoints')
+def get_waypoints():
+    """Get major waypoints for the car to pass through"""
+    # This is a mock implementation - replace with your actual waypoint logic
+    waypoints = [
+        {"lat": 35.8450, "lng": 128.5200, "name": "Checkpoint 1"},
+        {"lat": 35.8500, "lng": 128.5800, "name": "Checkpoint 2"},
+        {"lat": 35.8600, "lng": 128.6200, "name": "Checkpoint 3"},
+        {"lat": 35.8519, "lng": 128.6727, "name": "Final Destination"}
+    ]
+    
+    return jsonify({
+        'waypoints': waypoints,
+        'message': 'Waypoints retrieved successfully'
+    })
+
+
+@app.route('/api/route-from-current')
+def get_route_from_current():
+    """Get a new route from current car position through waypoints"""
+    try:
+        # Get current car position from the latest data point
+        influxdb_url = os.getenv('INFLUXDB_URL')
+        influxdb_token = os.getenv('INFLUXDB_TOKEN')
+        influxdb_org = os.getenv('INFLUXDB_ORG')
+        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+
+        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
+            return jsonify({'error': 'Missing InfluxDB configuration'}), 500
+
+        client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        query_api = client.query_api()
+
+        # Get the latest car position
+        query = f'''
+        from(bucket: "{influxdb_bucket}")
+          |> range(start: -1h)
+          |> filter(fn: (r) => r["_measurement"] == "car_data")
+          |> filter(fn: (r) => r["car_id"] == "1")
+          |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+          |> last()
+          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+        '''
+
+        result = query_api.query(query=query)
+        client.close()
+
+        current_lat = None
+        current_lon = None
+        
+        for table in result:
+            for record in table.records:
+                current_lat = record.values.get('latitude')
+                current_lon = record.values.get('longitude')
+                break
+
+        if current_lat is None or current_lon is None:
+            return jsonify({'error': 'No current car position found'}), 404
+
+        # Get waypoints (you can modify this to accept waypoints from request)
+        waypoints_response = get_waypoints()
+        waypoints_data = waypoints_response.get_json()
+        waypoints = waypoints_data['waypoints']
+
+        # Build coordinate string for OSRM with current position + waypoints
+        osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
+        
+        # Format coordinates for OSRM (longitude,latitude)
+        coordinates = [f"{current_lon},{current_lat}"]  # Start from current position
+        
+        for waypoint in waypoints:
+            coordinates.append(f"{waypoint['lng']},{waypoint['lat']}")
+        
+        coordinate_string = ";".join(coordinates)
+        
+        # OSRM route API endpoint with multiple waypoints
+        url = f"{osrm_url}/route/v1/driving/{coordinate_string}"
+        params = {
+            'overview': 'full',
+            'geometries': 'geojson',
+            'steps': 'true'
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data['code'] != 'Ok':
+            return jsonify({'error': f"OSRM error: {data.get('message', 'Unknown error')}"}), 500
+        
+        route = data['routes'][0]
+        
+        # Extract route geometry (coordinates are in [longitude, latitude] format)
+        coordinates = route['geometry']['coordinates']
+        # Convert to [latitude, longitude] for Google Maps
+        route_points = [[coord[1], coord[0]] for coord in coordinates]
+        
+        return jsonify({
+            'route_points': route_points,
+            'duration': route['duration'],
+            'distance': route['distance'],
+            'current_position': {'lat': current_lat, 'lng': current_lon},
+            'waypoints': waypoints,
+            'message': 'New route calculated from current position'
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/status/osrm')
 def check_osrm_status():
     """Check if OSRM server is running and accessible"""
@@ -356,6 +468,100 @@ def stop_generation():
             
     except Exception as e:
         print(f"Error stopping data generation: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/update-route', methods=['POST'])
+def update_route():
+    """Update the car's route with new waypoints while streaming"""
+    try:
+        data = request.get_json()
+        waypoints = data.get('waypoints', [])
+        osrm_url = data.get('osrm_url', 'http://localhost:5001')
+        
+        if not waypoints:
+            return jsonify({'error': 'No waypoints provided'}), 400
+        
+        # Get current car position from the latest data point
+        influxdb_url = os.getenv('INFLUXDB_URL')
+        influxdb_token = os.getenv('INFLUXDB_TOKEN')
+        influxdb_org = os.getenv('INFLUXDB_ORG')
+        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+
+        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
+            return jsonify({'error': 'Missing InfluxDB configuration'}), 500
+
+        client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        query_api = client.query_api()
+
+        # Get the latest car position
+        query = f'''
+        from(bucket: "{influxdb_bucket}")
+          |> range(start: -1h)
+          |> filter(fn: (r) => r["_measurement"] == "car_data")
+          |> filter(fn: (r) => r["car_id"] == "1")
+          |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+          |> last()
+          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+        '''
+
+        result = query_api.query(query=query)
+        client.close()
+
+        current_lat = None
+        current_lon = None
+        
+        for table in result:
+            for record in table.records:
+                current_lat = record.values.get('latitude')
+                current_lon = record.values.get('longitude')
+                break
+
+        if current_lat is None or current_lon is None:
+            return jsonify({'error': 'No current car position found'}), 404
+
+        # Build coordinate string for OSRM with current position + waypoints
+        coordinates = [f"{current_lon},{current_lat}"]  # Start from current position
+        
+        for waypoint in waypoints:
+            coordinates.append(f"{waypoint['lng']},{waypoint['lat']}")
+        
+        coordinate_string = ";".join(coordinates)
+        
+        # OSRM route API endpoint with multiple waypoints
+        url = f"{osrm_url}/route/v1/driving/{coordinate_string}"
+        params = {
+            'overview': 'full',
+            'geometries': 'geojson',
+            'steps': 'true'
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        if data['code'] != 'Ok':
+            return jsonify({'error': f"OSRM error: {data.get('message', 'Unknown error')}"}), 500
+        
+        route = data['routes'][0]
+        
+        # Extract route geometry (coordinates are in [longitude, latitude] format)
+        coordinates = route['geometry']['coordinates']
+        # Convert to [latitude, longitude] for Google Maps
+        route_points = [[coord[1], coord[0]] for coord in coordinates]
+        
+        return jsonify({
+            'route_points': route_points,
+            'duration': route['duration'],
+            'distance': route['distance'],
+            'current_position': {'lat': current_lat, 'lng': current_lon},
+            'waypoints': waypoints,
+            'message': 'Route updated successfully'
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
