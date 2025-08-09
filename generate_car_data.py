@@ -359,8 +359,63 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     point_index = 0
     cycle_count = 0
     last_route_check = 0
+    last_position = None
+    pause_start_time = None
 
     while current_time <= end_time:
+        # Check for pause signal
+        is_paused = os.path.exists('car_pause_signal.txt')
+        
+        if is_paused:
+            if pause_start_time is None:
+                pause_start_time = current_time
+                print(f"🛑 Car paused at {time.strftime('%H:%M:%S')}")
+            
+            # When paused, keep streaming the same position
+            if last_position is not None:
+                latitude, longitude = last_position['location']
+                speed = 0  # Car is stopped
+                heading = last_position.get('heading', 0)
+                
+                # Create a Point object for paused state
+                point = Point("car_data") \
+                    .tag("car_id", "1") \
+                    .field("latitude", latitude) \
+                    .field("longitude", longitude) \
+                    .field("speed", speed) \
+                    .field("heading", heading) \
+                    .field("step_index", int(last_position.get('step_index', 0))) \
+                    .field("instruction", "paused") \
+                    .field("intermediate_index", int(last_position.get('intermediate_index', 0))) \
+                    .field("cycle_count", int(cycle_count)) \
+                    .field("step_duration", 0.0) \
+                    .field("step_distance", 0.0) \
+                    .field("step_name", "Car Paused") \
+                    .time(int(current_time * 1e9), "ns")
+
+                # Write the paused data to InfluxDB
+                try:
+                    write_api.write(bucket=influxdb_bucket, org=influxdb_org, record=point)
+                    if int(current_time) % 30 == 0:  # Print every 30 seconds when paused
+                        print(f"🛑 Car paused at {latitude:.6f}, {longitude:.6f} - {time.strftime('%H:%M:%S')}")
+                except Exception as e:
+                    print(f"Error writing paused data: {e}")
+                
+                current_time += 1
+                time.sleep(1)
+                continue
+            else:
+                # If no last position, just wait
+                current_time += 1
+                time.sleep(1)
+                continue
+        else:
+            # Car is not paused
+            if pause_start_time is not None:
+                pause_duration = current_time - pause_start_time
+                print(f"▶️ Car resumed after {pause_duration:.0f} seconds at {time.strftime('%H:%M:%S')}")
+                pause_start_time = None
+
         # Check for route updates every iteration (immediate response)
         current_route_points, current_step_locations, route_was_updated, update_timestamp = route_manager.get_current_route_data(reset_update_flag=True)
         
@@ -486,6 +541,15 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             heading = 0  # At destination
         
         heading = float(round(heading, 2))
+        
+        # Store current position for pause functionality
+        last_position = {
+            'location': (latitude, longitude),
+            'speed': speed,
+            'heading': heading,
+            'step_index': current_point.get('step_index', 0),
+            'intermediate_index': current_point.get('intermediate_index', 0)
+        }
 
         # Debug output every 60 seconds
         if int(current_time) % 60 == 0:
@@ -537,6 +601,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
 
     # Close the client
     client.close()
+    
+    # Clean up pause signal file
+    if os.path.exists('car_pause_signal.txt'):
+        os.remove('car_pause_signal.txt')
+        print("🧹 Cleaned up pause signal file")
     
     # Calculate actual points generated
     actual_points = int(current_time - start_time)
