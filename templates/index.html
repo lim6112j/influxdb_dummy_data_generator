@@ -502,6 +502,7 @@
             <strong>GET /api/route</strong>
             <p style="margin: 5px 0; color: #666;">Get route geometry from OSRM between two points</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: origin_lat, origin_lon, dest_lat, dest_lon, osrm_url</p>
+            <p style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace;">Example: /api/route?origin_lat=35.84&origin_lon=128.48&dest_lat=35.8519&dest_lon=128.6727&osrm_url=http://localhost:5001</p>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
@@ -513,30 +514,55 @@
             <strong>GET /api/route-from-current</strong>
             <p style="margin: 5px 0; color: #666;">Calculate new route from current car position through waypoints</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: osrm_url</p>
+            <p style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace;">Example: /api/route-from-current?osrm_url=http://localhost:5001</p>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>POST /api/update-route</strong>
             <p style="margin: 5px 0; color: #666;">Update car's route with new waypoints while streaming</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..."}</p>
+            <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
+              Example JSON:<br>
+              {<br>
+              &nbsp;&nbsp;"waypoints": [<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8450, "lng": 128.5200, "name": "Checkpoint 1"},<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8500, "lng": 128.5800, "name": "Checkpoint 2"}<br>
+              &nbsp;&nbsp;],<br>
+              &nbsp;&nbsp;"osrm_url": "http://localhost:5001"<br>
+              }
+            </div>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>GET /api/status/osrm</strong>
             <p style="margin: 5px 0; color: #666;">Check OSRM server status and connectivity</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: osrm_url</p>
+            <p style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace;">Example: /api/status/osrm?osrm_url=http://localhost:5001</p>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>GET /api/status/influxdb</strong>
             <p style="margin: 5px 0; color: #666;">Check InfluxDB server status and configuration</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: influxdb_url, influxdb_token, influxdb_org, influxdb_bucket</p>
+            <p style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace;">Example: /api/status/influxdb?influxdb_url=http://localhost:8086&influxdb_org=myorg&influxdb_bucket=car_tracking</p>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>POST /api/start-generation</strong>
             <p style="margin: 5px 0; color: #666;">Start car data generation with specified route</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {origin_lat, origin_lon, dest_lat, dest_lon, duration, osrm_url, movement_mode}</p>
+            <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
+              Example JSON:<br>
+              {<br>
+              &nbsp;&nbsp;"origin_lat": 35.84,<br>
+              &nbsp;&nbsp;"origin_lon": 128.48,<br>
+              &nbsp;&nbsp;"dest_lat": 35.8519,<br>
+              &nbsp;&nbsp;"dest_lon": 128.6727,<br>
+              &nbsp;&nbsp;"duration": 1,<br>
+              &nbsp;&nbsp;"osrm_url": "http://localhost:5001",<br>
+              &nbsp;&nbsp;"movement_mode": "one-way"<br>
+              }
+            </div>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
