@@ -448,9 +448,6 @@
           Stop Streaming
         </button>
         <button onclick="showRoute()" id="routeBtn">Show Route</button>
-        <button onclick="getNewRoute()" id="newRouteBtn" disabled>Get New Route</button>
-        <button onclick="testRouteUpdate()" id="testRouteBtn" disabled>Test Route Update</button>
-        <button onclick="testUpdateRouteAPI()" id="testUpdateAPIBtn" disabled>Test Update Route API</button>
         <button onclick="clearMap()">Clear Map</button>
       </div>
 
@@ -827,9 +824,6 @@
         document.getElementById("resumeCarBtn").style.display = "none";
         document.getElementById("stopStreamBtn").disabled = false;
         document.getElementById("routeBtn").disabled = true;
-        document.getElementById("newRouteBtn").disabled = false;
-        document.getElementById("testRouteBtn").disabled = false;
-        document.getElementById("testUpdateAPIBtn").disabled = false;
         
         // Start checking for route updates
         startRouteUpdateCheck();
@@ -994,9 +988,6 @@
         document.getElementById("resumeCarBtn").style.display = "none";
         document.getElementById("stopStreamBtn").disabled = true;
         document.getElementById("routeBtn").disabled = false;
-        document.getElementById("newRouteBtn").disabled = true;
-        document.getElementById("testRouteBtn").disabled = true;
-        document.getElementById("testUpdateAPIBtn").disabled = true;
         
         // Stop checking for route updates
         stopRouteUpdateCheck();
@@ -1385,81 +1376,6 @@
           });
       }
 
-      function getNewRoute() {
-        if (!isStreaming) {
-          updateStatus("Cannot get new route - streaming is not active", "error");
-          return;
-        }
-
-        updateStatus("Getting new route from current position...", "loading");
-
-        const osrmUrl =
-          document.getElementById("osrmUrlInput").value.trim() ||
-          "http://localhost:5001";
-
-        fetch(`/api/route-from-current?osrm_url=${osrmUrl}`)
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) {
-              updateStatus(`New route error: ${data.error}`, "error");
-              return;
-            }
-
-            // Clear old waypoint markers
-            clearWaypointMarkers();
-
-            // Convert route points to Google Maps format
-            const routePath = data.route_points.map((point) => ({
-              lat: point[0],
-              lng: point[1],
-            }));
-
-            // Update the route polyline with new route (change color to indicate it's a new route)
-            routePolyline.setPath(routePath);
-            routePolyline.setOptions({
-              strokeColor: "#FF6600", // Orange color for new route
-              strokeOpacity: 0.8,
-              strokeWeight: 4,
-            });
-
-            // Add waypoint markers
-            data.waypoints.forEach((waypoint, index) => {
-              const marker = new google.maps.Marker({
-                position: { lat: waypoint.lat, lng: waypoint.lng },
-                map: map,
-                title: waypoint.name,
-                icon: {
-                  path: google.maps.SymbolPath.CIRCLE,
-                  scale: 8,
-                  fillColor: "#FF6600",
-                  fillOpacity: 1,
-                  strokeColor: "#CC4400",
-                  strokeWeight: 2,
-                },
-                zIndex: 998,
-              });
-              waypointMarkers.push(marker);
-            });
-
-            // Fit map to show the new route
-            if (routePath.length > 0) {
-              const bounds = new google.maps.LatLngBounds();
-              routePath.forEach((point) => bounds.extend(point));
-              map.fitBounds(bounds);
-            }
-
-            updateStatus(
-              `New route activated: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min. Car is now following this path!`,
-              "success",
-            );
-
-            console.log("New route loaded with waypoints:", data.waypoints);
-          })
-          .catch((error) => {
-            console.error("Error getting new route:", error);
-            updateStatus(`Error getting new route: ${error.message}`, "error");
-          });
-      }
 
       function clearWaypointMarkers() {
         waypointMarkers.forEach(marker => {
@@ -1689,201 +1605,7 @@
           });
       }
 
-      function testRouteUpdate() {
-        if (!isStreaming) {
-          updateStatus("Cannot test route update - streaming is not active", "error");
-          return;
-        }
 
-        updateStatus("Testing route update...", "loading");
-
-        fetch('/api/test-route-update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) {
-              updateStatus(`Test route update error: ${data.error}`, "error");
-              return;
-            }
-
-            if (data.success && data.route_points && data.route_points.length > 0) {
-              // Clear old waypoint markers
-              clearWaypointMarkers();
-
-              // Convert route points to Google Maps format
-              const routePath = data.route_points.map((point) => ({
-                lat: point[0],
-                lng: point[1],
-              }));
-
-              // Update the route polyline with new route (change color to indicate it's a test route)
-              routePolyline.setPath(routePath);
-              routePolyline.setOptions({
-                strokeColor: "#E91E63", // Pink color for test route
-                strokeOpacity: 0.8,
-                strokeWeight: 4,
-              });
-
-              // Add waypoint markers
-              data.waypoints.forEach((waypoint, index) => {
-                const marker = new google.maps.Marker({
-                  position: { lat: waypoint.lat, lng: waypoint.lng },
-                  map: map,
-                  title: waypoint.name || `Test Waypoint ${index + 1}`,
-                  icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 8,
-                    fillColor: "#E91E63",
-                    fillOpacity: 1,
-                    strokeColor: "#C2185B",
-                    strokeWeight: 2,
-                  },
-                  zIndex: 998,
-                });
-                waypointMarkers.push(marker);
-              });
-
-              // Fit map to show the test route
-              if (routePath.length > 0) {
-                const bounds = new google.maps.LatLngBounds();
-                routePath.forEach((point) => bounds.extend(point));
-                map.fitBounds(bounds);
-              }
-
-              updateStatus(
-                `Test route applied: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min. Car is now following the test path!`,
-                "success",
-              );
-
-              console.log("Test route applied with waypoints:", data.waypoints);
-            } else {
-              updateStatus(`Test route update failed: ${data.message}`, "error");
-            }
-          })
-          .catch((error) => {
-            console.error("Error testing route update:", error);
-            updateStatus(`Error testing route update: ${error.message}`, "error");
-          });
-      }
-
-      function testUpdateRouteAPI() {
-        if (!isStreaming) {
-          updateStatus("Cannot test update route API - streaming is not active", "error");
-          return;
-        }
-
-        updateStatus("Testing update route API...", "loading");
-
-        // Test waypoints - different from the test-route-update endpoint
-        const testWaypoints = [
-          {"lat": 35.838193, "lng": 128.742013, "name": "API Test Checkpoint 1"},
-          {"lat": 35.835442, "lng": 128.348375, "name": "API Test Checkpoint 2"}
-        ];
-
-        const osrmUrl = document.getElementById("osrmUrlInput").value.trim();
-
-        console.log("🔄 Sending update route API request with waypoints:", testWaypoints);
-
-        // Only include osrm_url if it's provided, otherwise let the server use the stored value
-        const requestBody = { waypoints: testWaypoints };
-        if (osrmUrl) {
-          requestBody.osrm_url = osrmUrl;
-        }
-
-        fetch('/api/update-route', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody)
-        })
-          .then((response) => {
-            console.log("🔄 Update route API response status:", response.status);
-            return response.json();
-          })
-          .then((data) => {
-            console.log("🔄 Update route API response data:", data);
-            
-            if (data.error) {
-              updateStatus(`Update route API error: ${data.error}`, "error");
-              return;
-            }
-
-            // Check if we have route data to display
-            if (data.route_points && data.route_points.length > 0) {
-              console.log("🔄 Displaying updated route with", data.route_points.length, "points");
-              
-              // Clear old waypoint markers
-              clearWaypointMarkers();
-
-              // Convert route points to Google Maps format
-              const routePath = data.route_points.map((point) => ({
-                lat: point[0],
-                lng: point[1],
-              }));
-
-              console.log("🔄 Route path first few points:", routePath.slice(0, 5));
-
-              // Update the route polyline with new route (change color to indicate it's an API test route)
-              routePolyline.setPath(routePath);
-              routePolyline.setOptions({
-                strokeColor: "#FF5722", // Deep orange color for API test route
-                strokeOpacity: 0.8,
-                strokeWeight: 4,
-              });
-
-              console.log("🔄 Route polyline updated with", routePath.length, "points");
-
-              // Add waypoint markers
-              if (data.waypoints && data.waypoints.length > 0) {
-                data.waypoints.forEach((waypoint, index) => {
-                  const marker = new google.maps.Marker({
-                    position: { lat: waypoint.lat, lng: waypoint.lng },
-                    map: map,
-                    title: waypoint.name || `API Test Waypoint ${index + 1}`,
-                    icon: {
-                      path: google.maps.SymbolPath.CIRCLE,
-                      scale: 8,
-                      fillColor: "#FF5722",
-                      fillOpacity: 1,
-                      strokeColor: "#D84315",
-                      strokeWeight: 2,
-                    },
-                    zIndex: 998,
-                  });
-                  waypointMarkers.push(marker);
-                  console.log("🔄 Added waypoint marker:", waypoint.name, "at", waypoint.lat, waypoint.lng);
-                });
-              }
-
-              // Fit map to show the API test route
-              if (routePath.length > 0) {
-                const bounds = new google.maps.LatLngBounds();
-                routePath.forEach((point) => bounds.extend(point));
-                map.fitBounds(bounds);
-                console.log("🔄 Map bounds fitted to show route");
-              }
-
-              updateStatus(
-                `Update route API successful: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min. Car is now following the updated path!`,
-                "success",
-              );
-
-              console.log("✅ Update route API test completed successfully");
-            } else {
-              console.log("❌ No route points in response:", data);
-              updateStatus(`Update route API failed: No route data received`, "error");
-            }
-          })
-          .catch((error) => {
-            console.error("❌ Error testing update route API:", error);
-            updateStatus(`Error testing update route API: ${error.message}`, "error");
-          });
-      }
 
       // Generic function to update route with custom waypoints (can be called from console)
       function updateRouteWithCustomWaypoints(waypoints) {
