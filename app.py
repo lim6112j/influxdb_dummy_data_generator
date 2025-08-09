@@ -218,10 +218,6 @@ def get_route_from_current():
         if request.args.get('osrm_url'):
             route_manager.osrm_url = osrm_url
         
-        # Update the stored OSRM URL in route manager if a new one was provided
-        if data.get('osrm_url'):
-            route_manager.osrm_url = osrm_url
-        
         if not success:
             return jsonify({'error': 'Failed to update route - check server logs for details'}), 500
         
