@@ -744,6 +744,43 @@
           });
       }
 
+      function checkGenerationStatus() {
+        fetch('/api/generation-status')
+          .then(response => response.json())
+          .then(data => {
+            if (data.running) {
+              isDataGenerationRunning = true;
+              // Check if car is paused
+              if (data.paused) {
+                isCarPaused = true;
+                document.getElementById("pauseCarBtn").disabled = true;
+                document.getElementById("resumeCarBtn").style.display = "inline-block";
+                document.getElementById("resumeCarBtn").disabled = false;
+                
+                // Show different message based on pause reason
+                if (data.pause_reason === 'waypoint' && data.waypoint_name) {
+                  updateStatus(`Car auto-paused at waypoint: ${data.waypoint_name}. Click Resume to continue.`, "success");
+                } else {
+                  updateStatus("Car is paused. Streaming current position.", "success");
+                }
+              } else {
+                isCarPaused = false;
+                document.getElementById("pauseCarBtn").disabled = false;
+                document.getElementById("resumeCarBtn").style.display = "none";
+                updateStatus("Data generation is running.", "success");
+              }
+            } else {
+              isDataGenerationRunning = false;
+              isCarPaused = false;
+              document.getElementById("pauseCarBtn").disabled = true;
+              document.getElementById("resumeCarBtn").style.display = "none";
+            }
+          })
+          .catch(error => {
+            console.log('Could not check generation status:', error);
+          });
+      }
+
       function loadInfluxDBSettings() {
         fetch('/api/influxdb-config')
           .then(response => response.json())
