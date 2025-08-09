@@ -317,6 +317,21 @@
                 "
                 placeholder="InfluxDB Server URL"
               />
+              <label for="influxdbTokenInput" style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Token:</label>
+              <input
+                type="password"
+                id="influxdbTokenInput"
+                value=""
+                style="
+                  width: 100%;
+                  padding: 4px;
+                  border: 1px solid #ddd;
+                  border-radius: 3px;
+                  font-size: 12px;
+                  margin-bottom: 4px;
+                "
+                placeholder="InfluxDB Token"
+              />
               <div style="display: flex; gap: 4%;">
                 <div style="width: 48%;">
                   <label for="influxdbOrgInput" style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Organization:</label>
@@ -562,6 +577,7 @@
               document.getElementById('influxdbUrlInput').value = data.url || 'http://localhost:8086';
               document.getElementById('influxdbOrgInput').value = data.org || 'myorg';
               document.getElementById('influxdbBucketInput').value = data.bucket || 'car_tracking';
+              // Note: Token is not loaded from config for security reasons
             }
           })
           .catch(error => {
@@ -1232,6 +1248,8 @@
         const influxdbUrl =
           document.getElementById("influxdbUrlInput").value.trim() ||
           "http://localhost:8086";
+        const influxdbToken =
+          document.getElementById("influxdbTokenInput").value.trim();
         const influxdbOrg =
           document.getElementById("influxdbOrgInput").value.trim() || "myorg";
         const influxdbBucket =
@@ -1243,6 +1261,11 @@
           influxdb_org: influxdbOrg,
           influxdb_bucket: influxdbBucket,
         });
+
+        // Add token to params if provided
+        if (influxdbToken) {
+          params.append('influxdb_token', influxdbToken);
+        }
 
         fetch(`/api/status/influxdb?${params}`)
           .then((response) => response.json())

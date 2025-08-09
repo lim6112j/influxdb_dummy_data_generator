@@ -198,7 +198,7 @@ def check_influxdb_status():
     try:
         # Get configuration from query parameters or environment variables
         influxdb_url = request.args.get('influxdb_url') or os.getenv('INFLUXDB_URL')
-        influxdb_token = os.getenv('INFLUXDB_TOKEN')  # Token should remain from env for security
+        influxdb_token = request.args.get('influxdb_token') or os.getenv('INFLUXDB_TOKEN')
         influxdb_org = request.args.get('influxdb_org') or os.getenv('INFLUXDB_ORG')
         influxdb_bucket = request.args.get('influxdb_bucket') or os.getenv('INFLUXDB_BUCKET')
 
