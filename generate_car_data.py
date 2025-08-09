@@ -364,14 +364,18 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         
         if route_was_updated and current_route_points:
             print(f"🔄 ROUTE UPDATE DETECTED at {time.strftime('%H:%M:%S')}! Switching to new route with {len(current_route_points)} points")
+            print(f"🔄 Old route had {len(all_route_points)} points, current point_index: {point_index}")
             
             # Store current position before switching
             if point_index < len(all_route_points):
                 current_lat, current_lon = all_route_points[point_index]['location']
+                print(f"🔄 Current position: {current_lat:.6f}, {current_lon:.6f}")
             else:
                 current_lat, current_lon = all_route_points[-1]['location'] if all_route_points else (0, 0)
+                print(f"🔄 Using last position: {current_lat:.6f}, {current_lon:.6f}")
             
             # Rebuild all_route_points with the new route
+            print(f"🔄 Rebuilding route points from {len(current_route_points)} OSRM points...")
             all_route_points = []
             
             # Always use one-way mode for new routes to ensure immediate application
@@ -391,6 +395,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                     'direction': 'forward'
                 })
             
+            print(f"🔄 Built {len(all_route_points)} route points from new route")
+            
             # Find the closest point on the new route to continue smoothly
             if all_route_points and current_lat != 0 and current_lon != 0:
                 min_distance = float('inf')
@@ -406,7 +412,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 
                 # Start from the closest point on the new route
                 point_index = closest_index
-                print(f"✓ Switched to new route, continuing from point {point_index + 1} (closest to current position)")
+                print(f"✓ Switched to new route, continuing from point {point_index + 1}/{len(all_route_points)} (closest to current position)")
             else:
                 # Start from beginning if no current position
                 point_index = 0
@@ -418,7 +424,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             
             # Force movement mode to one-way for new routes to ensure they complete
             movement_mode = 'one-way'
-            print(f"✓ Route switch complete: {len(all_route_points)} points, mode: {movement_mode}")
+            print(f"✅ ROUTE SWITCH COMPLETE: {len(all_route_points)} points, mode: {movement_mode}, starting at point {point_index + 1}")
 
         # Calculate elapsed time and determine current point
         elapsed_time = current_time - start_time
