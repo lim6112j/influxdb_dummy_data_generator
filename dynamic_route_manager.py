@@ -44,7 +44,8 @@ class DynamicRouteManager:
                 self.current_step_locations = new_step_locations
                 self.route_updated = True
                 self.route_update_timestamp = time.time()
-                print(f"✓ Route updated with {len(new_route_points)} points from current position")
+                print(f"✓ Route updated with {len(new_route_points)} points from current position at {time.strftime('%H:%M:%S')}")
+                print(f"✓ Route update flag set to True, timestamp: {self.route_update_timestamp}")
                 
             return True
             

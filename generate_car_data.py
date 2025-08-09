@@ -355,12 +355,12 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     last_route_check = 0
 
     while current_time <= end_time:
-        # Check for route updates every 5 seconds
-        if current_time - last_route_check >= 5:
+        # Check for route updates every 2 seconds (more frequent)
+        if current_time - last_route_check >= 2:
             current_route_points, current_step_locations, route_was_updated, update_timestamp = route_manager.get_current_route_data(reset_update_flag=True)
             
             if route_was_updated and current_route_points:
-                print(f"🔄 Route updated! Switching to new route with {len(current_route_points)} points")
+                print(f"🔄 Route updated detected at {time.strftime('%H:%M:%S')}! Switching to new route with {len(current_route_points)} points")
                 
                 # Rebuild all_route_points with the new route
                 all_route_points = []
@@ -401,10 +401,30 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                             'direction': 'forward'
                         })
                 
-                # Reset point index to start from the beginning of the new route
-                point_index = 0
-                total_route_time = len(all_route_points)
-                print(f"✓ Switched to new route with {len(all_route_points)} points")
+                # Find the closest point on the new route to continue smoothly
+                if all_route_points:
+                    current_lat, current_lon = all_route_points[min(point_index, len(all_route_points) - 1)]['location']
+                    
+                    # Find the closest point on the new route
+                    min_distance = float('inf')
+                    closest_index = 0
+                    
+                    for i, route_point in enumerate(all_route_points):
+                        new_lat, new_lon = route_point['location']
+                        # Calculate distance using simple Euclidean distance (good enough for close points)
+                        distance = math.sqrt((current_lat - new_lat)**2 + (current_lon - new_lon)**2)
+                        if distance < min_distance:
+                            min_distance = distance
+                            closest_index = i
+                    
+                    # Start from the closest point on the new route
+                    point_index = closest_index
+                    total_route_time = len(all_route_points)
+                    print(f"✓ Switched to new route with {len(all_route_points)} points, continuing from point {point_index + 1}")
+                else:
+                    point_index = 0
+                    total_route_time = len(all_route_points)
+                    print(f"✓ Switched to new route with {len(all_route_points)} points")
             
             last_route_check = current_time
 
@@ -501,7 +521,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             return
 
         current_time += 1
-        point_index += 1
+        
+        # Only increment point_index for one-way mode, round-trip uses time-based calculation
+        if movement_mode == 'one-way':
+            point_index += 1
+        
         time.sleep(1)
 
     # Close the client
