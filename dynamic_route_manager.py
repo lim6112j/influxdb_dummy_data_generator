@@ -46,6 +46,7 @@ class DynamicRouteManager:
                 self.route_update_timestamp = time.time()
                 print(f"✓ Route updated with {len(new_route_points)} points from current position at {time.strftime('%H:%M:%S')}")
                 print(f"✓ Route update flag set to True, timestamp: {self.route_update_timestamp}")
+                print(f"✓ First few new route points: {new_route_points[:3] if len(new_route_points) >= 3 else new_route_points}")
                 
             return True
             

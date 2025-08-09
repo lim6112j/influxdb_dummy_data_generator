@@ -355,63 +355,47 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     last_route_check = 0
 
     while current_time <= end_time:
-        # Check for route updates every 2 seconds (more frequent)
-        if current_time - last_route_check >= 2:
+        # Check for route updates every 1 second (immediate response)
+        if current_time - last_route_check >= 1:
             current_route_points, current_step_locations, route_was_updated, update_timestamp = route_manager.get_current_route_data(reset_update_flag=True)
             
             if route_was_updated and current_route_points:
                 print(f"🔄 Route updated detected at {time.strftime('%H:%M:%S')}! Switching to new route with {len(current_route_points)} points")
                 
+                # Store current position before switching
+                if point_index < len(all_route_points):
+                    current_lat, current_lon = all_route_points[point_index]['location']
+                else:
+                    current_lat, current_lon = all_route_points[-1]['location'] if all_route_points else (0, 0)
+                
                 # Rebuild all_route_points with the new route
                 all_route_points = []
                 
-                if movement_mode == 'round-trip':
-                    # For round-trip, we need to handle the new route appropriately
-                    # For simplicity, we'll treat the new route as one-way for now
-                    for i, point in enumerate(current_route_points):
-                        step_index = min(i // max(1, len(current_route_points) // len(current_step_locations)), len(current_step_locations) - 1)
-                        current_step = current_step_locations[step_index] if step_index < len(current_step_locations) else current_step_locations[-1]
-                        
-                        all_route_points.append({
-                            'location': point,
-                            'speed_kmh': current_step.get('speed_kmh', 30),
-                            'instruction': current_step.get('instruction', 'continue'),
-                            'step_index': step_index,
-                            'intermediate_index': i % max(1, len(current_route_points) // len(current_step_locations)),
-                            'step_duration': current_step.get('duration', 0),
-                            'step_distance': current_step.get('distance', 0),
-                            'step_name': current_step.get('name', ''),
-                            'direction': 'forward'
-                        })
-                else:
-                    # One-way mode: use the new route directly
-                    for i, point in enumerate(current_route_points):
-                        step_index = min(i // max(1, len(current_route_points) // len(current_step_locations)), len(current_step_locations) - 1)
-                        current_step = current_step_locations[step_index] if step_index < len(current_step_locations) else current_step_locations[-1]
-                        
-                        all_route_points.append({
-                            'location': point,
-                            'speed_kmh': current_step.get('speed_kmh', 30),
-                            'instruction': current_step.get('instruction', 'continue'),
-                            'step_index': step_index,
-                            'intermediate_index': i % max(1, len(current_route_points) // len(current_step_locations)),
-                            'step_duration': current_step.get('duration', 0),
-                            'step_distance': current_step.get('distance', 0),
-                            'step_name': current_step.get('name', ''),
-                            'direction': 'forward'
-                        })
+                # Always use one-way mode for new routes to ensure immediate application
+                for i, point in enumerate(current_route_points):
+                    step_index = min(i // max(1, len(current_route_points) // len(current_step_locations)), len(current_step_locations) - 1)
+                    current_step = current_step_locations[step_index] if step_index < len(current_step_locations) else current_step_locations[-1]
+                    
+                    all_route_points.append({
+                        'location': point,
+                        'speed_kmh': current_step.get('speed_kmh', 30),
+                        'instruction': current_step.get('instruction', 'continue'),
+                        'step_index': step_index,
+                        'intermediate_index': i % max(1, len(current_route_points) // len(current_step_locations)),
+                        'step_duration': current_step.get('duration', 0),
+                        'step_distance': current_step.get('distance', 0),
+                        'step_name': current_step.get('name', ''),
+                        'direction': 'forward'
+                    })
                 
                 # Find the closest point on the new route to continue smoothly
-                if all_route_points:
-                    current_lat, current_lon = all_route_points[min(point_index, len(all_route_points) - 1)]['location']
-                    
-                    # Find the closest point on the new route
+                if all_route_points and current_lat != 0 and current_lon != 0:
                     min_distance = float('inf')
                     closest_index = 0
                     
                     for i, route_point in enumerate(all_route_points):
                         new_lat, new_lon = route_point['location']
-                        # Calculate distance using simple Euclidean distance (good enough for close points)
+                        # Calculate distance using simple Euclidean distance
                         distance = math.sqrt((current_lat - new_lat)**2 + (current_lon - new_lon)**2)
                         if distance < min_distance:
                             min_distance = distance
@@ -419,12 +403,19 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                     
                     # Start from the closest point on the new route
                     point_index = closest_index
-                    total_route_time = len(all_route_points)
-                    print(f"✓ Switched to new route with {len(all_route_points)} points, continuing from point {point_index + 1}")
+                    print(f"✓ Switched to new route, continuing from point {point_index + 1} (closest to current position)")
                 else:
+                    # Start from beginning if no current position
                     point_index = 0
-                    total_route_time = len(all_route_points)
-                    print(f"✓ Switched to new route with {len(all_route_points)} points")
+                    print(f"✓ Switched to new route, starting from beginning")
+                
+                # Reset cycle count and update total route time
+                cycle_count = 0
+                total_route_time = len(all_route_points)
+                
+                # Force movement mode to one-way for new routes to ensure they complete
+                movement_mode = 'one-way'
+                print(f"✓ Route switch complete: {len(all_route_points)} points, mode: {movement_mode}")
             
             last_route_check = current_time
 
