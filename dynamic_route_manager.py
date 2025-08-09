@@ -2,6 +2,8 @@ import threading
 import time
 import requests
 import math
+import json
+import os
 from typing import List, Dict, Optional, Tuple
 
 class DynamicRouteManager:
@@ -15,6 +17,8 @@ class DynamicRouteManager:
         self.route_update_timestamp = 0
         self.osrm_url = "http://localhost:5001"
         self.movement_mode = "one-way"
+        self.route_file = "current_route.json"
+        self.last_file_check = 0
         
     def set_initial_route(self, route_points: List, step_locations: List, osrm_url: str, movement_mode: str):
         """Set the initial route for the car"""
@@ -26,6 +30,9 @@ class DynamicRouteManager:
             self.route_updated = False
             self.route_update_timestamp = time.time()
             print(f"✓ Initial route set with {len(route_points)} points")
+            
+            # Save initial route to file
+            self._save_route_to_file()
     
     def update_route_from_current(self, current_position: Tuple[float, float], waypoints: List[Dict], osrm_url: str) -> bool:
         """Update the route from current position through waypoints"""
@@ -55,6 +62,9 @@ class DynamicRouteManager:
                 print(f"   - Timestamp: {self.route_update_timestamp}")
                 print(f"   - Time: {time.strftime('%H:%M:%S')}")
                 
+                # Save updated route to file for subprocess communication
+                self._save_route_to_file()
+                
             return True
             
         except Exception as e:
@@ -63,6 +73,9 @@ class DynamicRouteManager:
     
     def get_current_route_data(self, reset_update_flag: bool = False) -> Tuple[List, List, bool, float]:
         """Get current route data and optionally reset the update flag"""
+        # Check for file updates first (for subprocess communication)
+        self._check_route_file_updates()
+        
         with self.lock:
             route_points = self.current_route_points.copy()
             step_locations = self.current_step_locations.copy()
@@ -77,6 +90,62 @@ class DynamicRouteManager:
                 print(f"🔍 Route manager: Reset update flag to False")
                 
             return route_points, step_locations, was_updated, update_timestamp
+    
+    def _save_route_to_file(self):
+        """Save current route to file for subprocess communication"""
+        try:
+            route_data = {
+                'route_points': self.current_route_points,
+                'step_locations': self.current_step_locations,
+                'route_updated': self.route_updated,
+                'route_update_timestamp': self.route_update_timestamp,
+                'osrm_url': self.osrm_url,
+                'movement_mode': self.movement_mode
+            }
+            
+            with open(self.route_file, 'w') as f:
+                json.dump(route_data, f)
+            
+            print(f"💾 Route saved to file: {self.route_file}")
+            
+        except Exception as e:
+            print(f"❌ Error saving route to file: {e}")
+    
+    def _check_route_file_updates(self):
+        """Check if route file has been updated (for subprocess communication)"""
+        try:
+            # Only check file every 1 second to avoid excessive I/O
+            current_time = time.time()
+            if current_time - self.last_file_check < 1:
+                return
+            
+            self.last_file_check = current_time
+            
+            if not os.path.exists(self.route_file):
+                return
+            
+            # Get file modification time
+            file_mtime = os.path.getmtime(self.route_file)
+            
+            # If file is newer than our last update, load it
+            if file_mtime > self.route_update_timestamp:
+                with open(self.route_file, 'r') as f:
+                    route_data = json.load(f)
+                
+                with self.lock:
+                    old_points = len(self.current_route_points)
+                    self.current_route_points = route_data['route_points']
+                    self.current_step_locations = route_data['step_locations']
+                    self.route_updated = route_data.get('route_updated', True)
+                    self.route_update_timestamp = route_data['route_update_timestamp']
+                    self.osrm_url = route_data.get('osrm_url', self.osrm_url)
+                    self.movement_mode = route_data.get('movement_mode', self.movement_mode)
+                    
+                    print(f"📁 Route loaded from file: {old_points} -> {len(self.current_route_points)} points")
+                    print(f"📁 File timestamp: {file_mtime}, Route timestamp: {self.route_update_timestamp}")
+                    
+        except Exception as e:
+            print(f"❌ Error checking route file: {e}")
     
     def _get_route_from_osrm_with_waypoints(self, current_position: Tuple[float, float], 
                                           waypoints: List[Dict], osrm_url: str) -> Tuple[List, List]:

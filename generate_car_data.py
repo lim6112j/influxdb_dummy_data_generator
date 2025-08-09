@@ -343,6 +343,12 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     
     print(f"Generated {len(all_route_points)} total points for {movement_mode} movement")
     
+    # Clean up any existing route file and set initial route in the route manager
+    route_file = "current_route.json"
+    if os.path.exists(route_file):
+        os.remove(route_file)
+        print(f"🗑️ Cleaned up existing route file: {route_file}")
+    
     # Set initial route in the route manager
     route_manager.set_initial_route(route_points, step_locations, osrm_url, movement_mode)
     
