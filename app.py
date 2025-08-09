@@ -534,6 +534,10 @@ def update_route():
             (current_lat, current_lon), waypoints, osrm_url
         )
         
+        # Update the stored OSRM URL in route manager if a new one was provided
+        if data.get('osrm_url'):
+            route_manager.osrm_url = osrm_url
+        
         if not success:
             return jsonify({'error': 'Failed to update route - check server logs for details'}), 500
         
