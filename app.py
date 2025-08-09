@@ -547,7 +547,8 @@ def update_route():
             'current_position': {'lat': current_lat, 'lng': current_lon},
             'waypoints': waypoints,
             'message': 'Route updated and activated immediately - car is now following this path',
-            'auto_applied': True
+            'auto_applied': True,
+            'success': True
         })
         
     except requests.exceptions.RequestException as e:
@@ -635,11 +636,25 @@ def test_route_update():
             (current_lat, current_lon), test_waypoints, 'http://localhost:5001'
         )
         
+        # Get the updated route data for response
+        if success:
+            updated_route_points, updated_step_locations, _, _ = route_manager.get_current_route_data()
+            route_points_gm = [[point[0], point[1]] for point in updated_route_points]
+            total_distance = sum(step.get('distance', 0) for step in updated_step_locations)
+            total_duration = sum(step.get('duration', 0) for step in updated_step_locations)
+        else:
+            route_points_gm = []
+            total_distance = 0
+            total_duration = 0
+        
         return jsonify({
             'message': 'Test route update triggered',
             'success': success,
             'current_position': {'lat': current_lat, 'lng': current_lon},
-            'test_waypoints': test_waypoints,
+            'waypoints': test_waypoints,
+            'route_points': route_points_gm,
+            'distance': total_distance,
+            'duration': total_duration,
             'previous_route_points': len(route_points),
             'was_previously_updated': was_updated,
             'timestamp': timestamp

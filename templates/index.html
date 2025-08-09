@@ -443,6 +443,7 @@
         </button>
         <button onclick="showRoute()" id="routeBtn">Show Route</button>
         <button onclick="getNewRoute()" id="newRouteBtn" disabled>Get New Route</button>
+        <button onclick="testRouteUpdate()" id="testRouteBtn" disabled>Test Route Update</button>
         <button onclick="clearMap()">Clear Map</button>
       </div>
 
@@ -749,6 +750,7 @@
         document.getElementById("stopStreamBtn").disabled = false;
         document.getElementById("routeBtn").disabled = true;
         document.getElementById("newRouteBtn").disabled = false;
+        document.getElementById("testRouteBtn").disabled = false;
 
         updateStatus("Starting data generation and streaming...", "loading");
 
@@ -907,6 +909,7 @@
         document.getElementById("stopStreamBtn").disabled = true;
         document.getElementById("routeBtn").disabled = false;
         document.getElementById("newRouteBtn").disabled = true;
+        document.getElementById("testRouteBtn").disabled = true;
 
         if (eventSource) {
           eventSource.close();
