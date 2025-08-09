@@ -452,21 +452,31 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             # Update the last route check timestamp to prevent repeated processing
             last_route_check = update_timestamp
             
-            # Extract waypoints from step locations for auto-pause functionality
+            # Load user-specified waypoints from route file for auto-pause functionality
             current_waypoints = []
             reached_waypoints = set()
-            for i, step in enumerate(current_step_locations):
-                if step.get('name') and step['name'].strip() and step['name'] not in ['', 'unnamed']:
-                    waypoint_info = {
-                        'location': step['location'],
-                        'name': step['name'],
-                        'step_index': i
-                    }
-                    current_waypoints.append(waypoint_info)
             
-            print(f"🎯 Extracted {len(current_waypoints)} waypoints for auto-pause:")
-            for wp in current_waypoints:
-                print(f"   - {wp['name']} at ({wp['location'][0]:.6f}, {wp['location'][1]:.6f})")
+            # Try to load waypoints from the route file
+            try:
+                import json
+                if os.path.exists('current_route.json'):
+                    with open('current_route.json', 'r') as f:
+                        route_data = json.load(f)
+                        user_waypoints = route_data.get('user_waypoints', [])
+                        
+                        for i, waypoint in enumerate(user_waypoints):
+                            waypoint_info = {
+                                'location': (waypoint['lat'], waypoint['lng']),
+                                'name': waypoint.get('name', f'Waypoint {i+1}'),
+                                'waypoint_index': i
+                            }
+                            current_waypoints.append(waypoint_info)
+                        
+                        print(f"🎯 Loaded {len(current_waypoints)} user-specified waypoints for auto-pause:")
+                        for wp in current_waypoints:
+                            print(f"   - {wp['name']} at ({wp['location'][0]:.6f}, {wp['location'][1]:.6f})")
+            except Exception as e:
+                print(f"Warning: Could not load user waypoints: {e}")
             
             # Store current position before switching
             if point_index < len(all_route_points):
@@ -589,26 +599,23 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             'intermediate_index': current_point.get('intermediate_index', 0)
         }
         
-        # Check if car has reached a major waypoint and should auto-pause
+        # Check if car has reached a user-specified waypoint and should auto-pause
         if current_waypoints and not waypoint_pause_active:
-            current_step_index = current_point.get('step_index', 0)
-            
             for waypoint in current_waypoints:
-                waypoint_id = f"{waypoint['name']}_{waypoint['step_index']}"
+                waypoint_id = f"{waypoint['name']}_{waypoint['waypoint_index']}"
                 
-                # Check if we've reached this waypoint (within step index range)
-                if (waypoint['step_index'] <= current_step_index <= waypoint['step_index'] + 2 and 
-                    waypoint_id not in reached_waypoints):
-                    
+                # Check if we haven't reached this waypoint yet
+                if waypoint_id not in reached_waypoints:
                     # Calculate distance to waypoint location
                     wp_lat, wp_lon = waypoint['location']
                     distance = math.sqrt((latitude - wp_lat)**2 + (longitude - wp_lon)**2)
                     
-                    # If within reasonable distance (about 100 meters in degrees)
-                    if distance < 0.001:  # Approximately 100 meters
-                        print(f"🎯 WAYPOINT REACHED: {waypoint['name']} at {time.strftime('%H:%M:%S')}")
+                    # If within reasonable distance (about 200 meters in degrees)
+                    if distance < 0.002:  # Approximately 200 meters
+                        print(f"🎯 USER WAYPOINT REACHED: {waypoint['name']} at {time.strftime('%H:%M:%S')}")
                         print(f"   Location: ({latitude:.6f}, {longitude:.6f})")
-                        print(f"   Auto-pausing car for waypoint...")
+                        print(f"   Distance to waypoint: {distance:.6f} degrees")
+                        print(f"   Auto-pausing car for user waypoint...")
                         
                         # Create pause signal file for waypoint pause
                         with open('car_pause_signal.txt', 'w') as f:
@@ -618,7 +625,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                         reached_waypoints.add(waypoint_id)
                         pause_start_time = current_time
                         
-                        print(f"🛑 Car auto-paused at waypoint: {waypoint['name']}")
+                        print(f"🛑 Car auto-paused at user waypoint: {waypoint['name']}")
                         break
 
         # Debug output every 60 seconds

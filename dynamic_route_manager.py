@@ -31,14 +31,14 @@ class DynamicRouteManager:
             self.route_update_timestamp = time.time()
             print(f"✓ Initial route set with {len(route_points)} points")
             
-            # Save initial route to file
+            # Save initial route to file (no user waypoints for initial route)
             self._save_route_to_file()
     
     def update_route_from_current(self, current_position: Tuple[float, float], waypoints: List[Dict], osrm_url: str) -> bool:
         """Update the route from current position through waypoints"""
         try:
             print(f"🔄 Starting route update from position {current_position}")
-            print(f"🔄 Waypoints to visit:")
+            print(f"🔄 User waypoints for auto-pause:")
             for i, wp in enumerate(waypoints):
                 print(f"   {i+1}. {wp.get('name', 'Unnamed')} at ({wp['lat']}, {wp['lng']})")
             
@@ -79,8 +79,8 @@ class DynamicRouteManager:
                 print(f"   - Timestamp: {self.route_update_timestamp}")
                 print(f"   - Time: {time.strftime('%H:%M:%S')}")
                 
-                # Save updated route to file for subprocess communication
-                self._save_route_to_file()
+                # Save updated route to file for subprocess communication, including user waypoints
+                self._save_route_to_file(user_waypoints=waypoints)
                 
             return True
             
@@ -113,7 +113,7 @@ class DynamicRouteManager:
                 
             return route_points, step_locations, was_updated, update_timestamp
     
-    def _save_route_to_file(self):
+    def _save_route_to_file(self, user_waypoints=None):
         """Save current route to file for subprocess communication"""
         try:
             route_data = {
@@ -122,7 +122,8 @@ class DynamicRouteManager:
                 'route_updated': False,  # Always save as False to prevent infinite loops
                 'route_update_timestamp': self.route_update_timestamp,
                 'osrm_url': self.osrm_url,
-                'movement_mode': self.movement_mode
+                'movement_mode': self.movement_mode,
+                'user_waypoints': user_waypoints or []  # Store user-specified waypoints
             }
             
             with open(self.route_file, 'w') as f:
