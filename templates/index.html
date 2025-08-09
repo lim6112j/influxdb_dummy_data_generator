@@ -522,15 +522,15 @@
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>POST /api/update-route</strong>
             <p style="margin: 5px 0; color: #666;">Update car's route with new waypoints while streaming (applied immediately)</p>
-            <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..."}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..." (optional)}</p>
             <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
               Example JSON:<br>
               {<br>
               &nbsp;&nbsp;"waypoints": [<br>
               &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8450, "lng": 128.5200, "name": "Checkpoint 1"},<br>
               &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8500, "lng": 128.5800, "name": "Checkpoint 2"}<br>
-              &nbsp;&nbsp;],<br>
-              &nbsp;&nbsp;"osrm_url": "http://localhost:5001"<br>
+              &nbsp;&nbsp;]<br>
+              &nbsp;&nbsp;// osrm_url is optional - uses stored value if not provided<br>
               }
             </div>
           </div>
@@ -1534,19 +1534,20 @@
 
         updateStatus("Updating route with new waypoints...", "loading");
 
-        const osrmUrl =
-          document.getElementById("osrmUrlInput").value.trim() ||
-          "http://localhost:5001";
+        const osrmUrl = document.getElementById("osrmUrlInput").value.trim();
+
+        // Only include osrm_url if it's provided, otherwise let the server use the stored value
+        const requestBody = { waypoints: waypoints };
+        if (osrmUrl) {
+          requestBody.osrm_url = osrmUrl;
+        }
 
         fetch('/api/update-route', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            waypoints: waypoints,
-            osrm_url: osrmUrl
-          })
+          body: JSON.stringify(requestBody)
         })
           .then((response) => response.json())
           .then((data) => {
@@ -1706,19 +1707,22 @@
           {"lat": 35.835442, "lng": 128.348375, "name": "API Test Checkpoint 2"}
         ];
 
-        const osrmUrl = document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001";
+        const osrmUrl = document.getElementById("osrmUrlInput").value.trim();
 
         console.log("🔄 Sending update route API request with waypoints:", testWaypoints);
+
+        // Only include osrm_url if it's provided, otherwise let the server use the stored value
+        const requestBody = { waypoints: testWaypoints };
+        if (osrmUrl) {
+          requestBody.osrm_url = osrmUrl;
+        }
 
         fetch('/api/update-route', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            waypoints: testWaypoints,
-            osrm_url: osrmUrl
-          })
+          body: JSON.stringify(requestBody)
         })
           .then((response) => {
             console.log("🔄 Update route API response status:", response.status);
@@ -1815,17 +1819,20 @@
         console.log("🔄 Updating route with custom waypoints:", waypoints);
         updateStatus("Updating route with custom waypoints...", "loading");
 
-        const osrmUrl = document.getElementById("osrmUrlInput").value.trim() || "http://localhost:5001";
+        const osrmUrl = document.getElementById("osrmUrlInput").value.trim();
+
+        // Only include osrm_url if it's provided, otherwise let the server use the stored value
+        const requestBody = { waypoints: waypoints };
+        if (osrmUrl) {
+          requestBody.osrm_url = osrmUrl;
+        }
 
         return fetch('/api/update-route', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            waypoints: waypoints,
-            osrm_url: osrmUrl
-          })
+          body: JSON.stringify(requestBody)
         })
           .then((response) => {
             console.log("🔄 Custom route update response status:", response.status);

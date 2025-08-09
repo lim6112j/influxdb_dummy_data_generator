@@ -203,7 +203,8 @@ def get_route_from_current():
         waypoints_data = waypoints_response.get_json()
         waypoints = waypoints_data['waypoints']
 
-        osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
+        # Use provided OSRM URL or fall back to the one stored in route manager
+        osrm_url = request.args.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
         
         print(f"🔄 Current car position: {current_lat}, {current_lon}")
         print(f"🔄 OSRM URL: {osrm_url}")
@@ -470,10 +471,12 @@ def update_route():
     try:
         data = request.get_json()
         waypoints = data.get('waypoints', [])
-        osrm_url = data.get('osrm_url', 'http://localhost:5001')
+        # Use provided OSRM URL or fall back to the one stored in route manager
+        osrm_url = data.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
         
         print(f"🔄 /api/update-route called with {len(waypoints)} waypoints")
         print(f"🔄 Request data: {data}")
+        print(f"🔄 Using OSRM URL: {osrm_url}")
         
         if not waypoints:
             return jsonify({'error': 'No waypoints provided'}), 400
@@ -631,9 +634,12 @@ def test_route_update():
         if current_lat is None or current_lon is None:
             return jsonify({'error': 'No current car position found'}), 404
 
+        # Use stored OSRM URL or fall back to default
+        osrm_url = route_manager.osrm_url or 'http://localhost:5001'
+        
         # Force update the route
         success = route_manager.update_route_from_current(
-            (current_lat, current_lon), test_waypoints, 'http://localhost:5001'
+            (current_lat, current_lon), test_waypoints, osrm_url
         )
         
         # Get the updated route data for response
