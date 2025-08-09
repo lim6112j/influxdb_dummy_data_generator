@@ -677,6 +677,9 @@
         // Load InfluxDB settings from environment on page load
         loadInfluxDBSettings();
 
+        // Check if data generation is already running and if car is paused
+        checkGenerationStatus();
+
         // Start automatic status checking every 10 seconds
         startAutoStatusCheck();
       }
@@ -807,6 +810,10 @@
         // Check status every 10 seconds
         statusCheckInterval = setInterval(() => {
           checkServiceStatus();
+          // Also check generation status to detect auto-pause at waypoints
+          if (isStreaming) {
+            checkGenerationStatus();
+          }
         }, 10000);
         
         console.log('Started automatic status checking every 10 seconds');
