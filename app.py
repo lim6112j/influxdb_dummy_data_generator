@@ -566,6 +566,76 @@ def get_influxdb_config():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/test-route-update', methods=['POST'])
+def test_route_update():
+    """Test endpoint to manually trigger a route update for debugging"""
+    try:
+        # Get current route status
+        route_points, step_locations, was_updated, timestamp = route_manager.get_current_route_data()
+        
+        # Force a route update with test waypoints
+        test_waypoints = [
+            {"lat": 35.8450, "lng": 128.5200, "name": "Test Checkpoint 1"},
+            {"lat": 35.8500, "lng": 128.5800, "name": "Test Checkpoint 2"}
+        ]
+        
+        # Get current car position
+        influxdb_url = os.getenv('INFLUXDB_URL')
+        influxdb_token = os.getenv('INFLUXDB_TOKEN')
+        influxdb_org = os.getenv('INFLUXDB_ORG')
+        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+
+        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
+            return jsonify({'error': 'Missing InfluxDB configuration'}), 500
+
+        client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        query_api = client.query_api()
+
+        # Get the latest car position
+        query = f'''
+        from(bucket: "{influxdb_bucket}")
+          |> range(start: -1h)
+          |> filter(fn: (r) => r["_measurement"] == "car_data")
+          |> filter(fn: (r) => r["car_id"] == "1")
+          |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+          |> last()
+          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+        '''
+
+        result = query_api.query(query=query)
+        client.close()
+
+        current_lat = None
+        current_lon = None
+        
+        for table in result:
+            for record in table.records:
+                current_lat = record.values.get('latitude')
+                current_lon = record.values.get('longitude')
+                break
+
+        if current_lat is None or current_lon is None:
+            return jsonify({'error': 'No current car position found'}), 404
+
+        # Force update the route
+        success = route_manager.update_route_from_current(
+            (current_lat, current_lon), test_waypoints, 'http://localhost:5001'
+        )
+        
+        return jsonify({
+            'message': 'Test route update triggered',
+            'success': success,
+            'current_position': {'lat': current_lat, 'lng': current_lon},
+            'test_waypoints': test_waypoints,
+            'previous_route_points': len(route_points),
+            'was_previously_updated': was_updated,
+            'timestamp': timestamp
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/car-data-stream')
 def stream_car_data():
     """Stream car data from InfluxDB in real-time"""

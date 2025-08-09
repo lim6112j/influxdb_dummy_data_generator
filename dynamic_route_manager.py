@@ -30,28 +30,35 @@ class DynamicRouteManager:
     def update_route_from_current(self, current_position: Tuple[float, float], waypoints: List[Dict], osrm_url: str) -> bool:
         """Update the route from current position through waypoints"""
         try:
+            print(f"🔄 Starting route update from position {current_position} with {len(waypoints)} waypoints")
+            
             # Get new route from OSRM
             new_route_points, new_step_locations = self._get_route_from_osrm_with_waypoints(
                 current_position, waypoints, osrm_url
             )
             
             if not new_route_points or not new_step_locations:
-                print("Failed to get new route from OSRM")
+                print("❌ Failed to get new route from OSRM")
                 return False
             
             with self.lock:
+                old_points_count = len(self.current_route_points)
                 self.current_route_points = new_route_points
                 self.current_step_locations = new_step_locations
                 self.route_updated = True
                 self.route_update_timestamp = time.time()
-                print(f"✓ Route updated with {len(new_route_points)} points from current position at {time.strftime('%H:%M:%S')}")
-                print(f"✓ Route update flag set to True, timestamp: {self.route_update_timestamp}")
-                print(f"✓ First few new route points: {new_route_points[:3] if len(new_route_points) >= 3 else new_route_points}")
+                
+                print(f"✅ ROUTE UPDATED SUCCESSFULLY!")
+                print(f"   - Old route: {old_points_count} points")
+                print(f"   - New route: {len(new_route_points)} points")
+                print(f"   - Update flag: {self.route_updated}")
+                print(f"   - Timestamp: {self.route_update_timestamp}")
+                print(f"   - Time: {time.strftime('%H:%M:%S')}")
                 
             return True
             
         except Exception as e:
-            print(f"Error updating route: {e}")
+            print(f"❌ Error updating route: {e}")
             return False
     
     def get_current_route_data(self, reset_update_flag: bool = False) -> Tuple[List, List, bool, float]:
@@ -136,3 +143,46 @@ class DynamicRouteManager:
 
 # Global instance for route management
 route_manager = DynamicRouteManager()
+
+def test_route_manager():
+    """Simple test function to verify route manager functionality"""
+    print("🧪 Testing route manager...")
+    
+    # Test setting initial route
+    test_points = [(35.84, 128.48), (35.845, 128.485), (35.85, 128.49)]
+    test_steps = [
+        {'location': [35.84, 128.48], 'duration': 10, 'distance': 100, 'instruction': 'start', 'speed_kmh': 30},
+        {'location': [35.845, 128.485], 'duration': 15, 'distance': 150, 'instruction': 'continue', 'speed_kmh': 35},
+        {'location': [35.85, 128.49], 'duration': 20, 'distance': 200, 'instruction': 'arrive', 'speed_kmh': 25}
+    ]
+    
+    route_manager.set_initial_route(test_points, test_steps, "http://localhost:5001", "one-way")
+    
+    # Test getting route data
+    points, steps, updated, timestamp = route_manager.get_current_route_data()
+    print(f"   Initial route: {len(points)} points, updated: {updated}")
+    
+    # Test updating route
+    test_waypoints = [{"lat": 35.86, "lng": 128.50, "name": "Test Point"}]
+    # This would normally call OSRM, but for testing we'll just simulate
+    with route_manager.lock:
+        route_manager.current_route_points = [(35.84, 128.48), (35.86, 128.50)]
+        route_manager.current_step_locations = [
+            {'location': [35.84, 128.48], 'duration': 10, 'distance': 100, 'instruction': 'start', 'speed_kmh': 30},
+            {'location': [35.86, 128.50], 'duration': 25, 'distance': 250, 'instruction': 'arrive', 'speed_kmh': 40}
+        ]
+        route_manager.route_updated = True
+        route_manager.route_update_timestamp = time.time()
+    
+    # Test getting updated route data
+    points, steps, updated, timestamp = route_manager.get_current_route_data(reset_update_flag=True)
+    print(f"   Updated route: {len(points)} points, updated: {updated}")
+    
+    # Test that flag was reset
+    points, steps, updated, timestamp = route_manager.get_current_route_data()
+    print(f"   After reset: {len(points)} points, updated: {updated}")
+    
+    print("✅ Route manager test completed")
+
+if __name__ == "__main__":
+    test_route_manager()
