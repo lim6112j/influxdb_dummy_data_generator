@@ -349,6 +349,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         os.remove(route_file)
         print(f"🗑️ Cleaned up existing route file: {route_file}")
     
+    # Clean up any existing pause signal file at the start
+    if os.path.exists('car_pause_signal.txt'):
+        os.remove('car_pause_signal.txt')
+        print("🧹 Cleaned up existing pause signal file")
+    
     # Set initial route in the route manager
     route_manager.set_initial_route(route_points, step_locations, osrm_url, movement_mode)
     
