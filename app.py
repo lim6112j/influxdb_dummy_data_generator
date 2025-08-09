@@ -229,7 +229,8 @@ def get_route_from_current():
             'distance': total_distance,
             'current_position': {'lat': current_lat, 'lng': current_lon},
             'waypoints': waypoints,
-            'message': 'New route calculated and activated - car will follow this path'
+            'message': 'New route calculated and activated - car will follow this path',
+            'auto_applied': True
         })
         
     except requests.exceptions.RequestException as e:
@@ -532,7 +533,8 @@ def update_route():
             'distance': total_distance,
             'current_position': {'lat': current_lat, 'lng': current_lon},
             'waypoints': waypoints,
-            'message': 'Route updated and activated - car will follow this path'
+            'message': 'Route updated and activated immediately - car is now following this path',
+            'auto_applied': True
         })
         
     except requests.exceptions.RequestException as e:

@@ -512,14 +512,14 @@
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>GET /api/route-from-current</strong>
-            <p style="margin: 5px 0; color: #666;">Calculate new route from current car position through waypoints</p>
+            <p style="margin: 5px 0; color: #666;">Calculate new route from current car position through waypoints (applied immediately)</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: osrm_url</p>
             <p style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace;">Example: /api/route-from-current?osrm_url=http://localhost:5001</p>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>POST /api/update-route</strong>
-            <p style="margin: 5px 0; color: #666;">Update car's route with new waypoints while streaming</p>
+            <p style="margin: 5px 0; color: #666;">Update car's route with new waypoints while streaming (applied immediately)</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..."}</p>
             <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
               Example JSON:<br>
