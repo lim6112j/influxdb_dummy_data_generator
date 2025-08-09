@@ -7,6 +7,7 @@ import requests
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient, Point
 from influxdb_client.client.write_api import SYNCHRONOUS
+from dynamic_route_manager import route_manager
 
 
 def get_route_from_osrm(origin, destination, osrm_url):
@@ -342,22 +343,76 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     
     print(f"Generated {len(all_route_points)} total points for {movement_mode} movement")
     
+    # Set initial route in the route manager
+    route_manager.set_initial_route(route_points, step_locations, osrm_url, movement_mode)
+    
     # Calculate total route time based on generated points
     total_route_time = len(all_route_points)  # 1 second per point
     
     current_time = start_time
     point_index = 0
     cycle_count = 0
+    last_route_check = 0
 
     while current_time <= end_time:
+        # Check for route updates every 5 seconds
+        if current_time - last_route_check >= 5:
+            current_route_points, current_step_locations, route_was_updated, update_timestamp = route_manager.get_current_route_data(reset_update_flag=True)
+            
+            if route_was_updated and current_route_points:
+                print(f"🔄 Route updated! Switching to new route with {len(current_route_points)} points")
+                
+                # Rebuild all_route_points with the new route
+                all_route_points = []
+                
+                if movement_mode == 'round-trip':
+                    # For round-trip, we need to handle the new route appropriately
+                    # For simplicity, we'll treat the new route as one-way for now
+                    for i, point in enumerate(current_route_points):
+                        step_index = min(i // max(1, len(current_route_points) // len(current_step_locations)), len(current_step_locations) - 1)
+                        current_step = current_step_locations[step_index] if step_index < len(current_step_locations) else current_step_locations[-1]
+                        
+                        all_route_points.append({
+                            'location': point,
+                            'speed_kmh': current_step.get('speed_kmh', 30),
+                            'instruction': current_step.get('instruction', 'continue'),
+                            'step_index': step_index,
+                            'intermediate_index': i % max(1, len(current_route_points) // len(current_step_locations)),
+                            'step_duration': current_step.get('duration', 0),
+                            'step_distance': current_step.get('distance', 0),
+                            'step_name': current_step.get('name', ''),
+                            'direction': 'forward'
+                        })
+                else:
+                    # One-way mode: use the new route directly
+                    for i, point in enumerate(current_route_points):
+                        step_index = min(i // max(1, len(current_route_points) // len(current_step_locations)), len(current_step_locations) - 1)
+                        current_step = current_step_locations[step_index] if step_index < len(current_step_locations) else current_step_locations[-1]
+                        
+                        all_route_points.append({
+                            'location': point,
+                            'speed_kmh': current_step.get('speed_kmh', 30),
+                            'instruction': current_step.get('instruction', 'continue'),
+                            'step_index': step_index,
+                            'intermediate_index': i % max(1, len(current_route_points) // len(current_step_locations)),
+                            'step_duration': current_step.get('duration', 0),
+                            'step_distance': current_step.get('distance', 0),
+                            'step_name': current_step.get('name', ''),
+                            'direction': 'forward'
+                        })
+                
+                # Reset point index to start from the beginning of the new route
+                point_index = 0
+                total_route_time = len(all_route_points)
+                print(f"✓ Switched to new route with {len(all_route_points)} points")
+            
+            last_route_check = current_time
+
         # Calculate elapsed time and determine current point
         elapsed_time = current_time - start_time
         
         # For one-way mode, stop when we reach the destination
         if movement_mode == 'one-way':
-            point_index = int(elapsed_time) % len(all_route_points)
-            
-            # If we've reached the end of the route in one-way mode, stop generating data
             if point_index >= len(all_route_points) - 1:
                 print(f"✓ Reached destination in one-way mode. Stopping data generation.")
                 break
@@ -374,6 +429,10 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             
             # Calculate point index based on elapsed time
             point_index = int(time_in_current_cycle) % len(all_route_points)
+        
+        # Ensure point_index is within bounds
+        if point_index >= len(all_route_points):
+            point_index = len(all_route_points) - 1
         
         # Get current point data
         current_point = all_route_points[point_index]
@@ -442,6 +501,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             return
 
         current_time += 1
+        point_index += 1
         time.sleep(1)
 
     # Close the client

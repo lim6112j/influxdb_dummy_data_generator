@@ -6,6 +6,7 @@ import subprocess
 import threading
 from dotenv import load_dotenv
 from influxdb_client import InfluxDBClient
+from dynamic_route_manager import route_manager
 
 app = Flask(__name__)
 
@@ -157,7 +158,7 @@ def get_waypoints():
 
 @app.route('/api/route-from-current')
 def get_route_from_current():
-    """Get a new route from current car position through waypoints"""
+    """Get a new route from current car position through waypoints and update the active route"""
     try:
         # Get current car position from the latest data point
         influxdb_url = os.getenv('INFLUXDB_URL')
@@ -202,46 +203,33 @@ def get_route_from_current():
         waypoints_data = waypoints_response.get_json()
         waypoints = waypoints_data['waypoints']
 
-        # Build coordinate string for OSRM with current position + waypoints
         osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
         
-        # Format coordinates for OSRM (longitude,latitude)
-        coordinates = [f"{current_lon},{current_lat}"]  # Start from current position
+        # Update the route in the route manager - this will affect actual car movement
+        success = route_manager.update_route_from_current(
+            (current_lat, current_lon), waypoints, osrm_url
+        )
         
-        for waypoint in waypoints:
-            coordinates.append(f"{waypoint['lng']},{waypoint['lat']}")
+        if not success:
+            return jsonify({'error': 'Failed to update route'}), 500
         
-        coordinate_string = ";".join(coordinates)
+        # Get the updated route data for response
+        route_points, step_locations, _, _ = route_manager.get_current_route_data()
         
-        # OSRM route API endpoint with multiple waypoints
-        url = f"{osrm_url}/route/v1/driving/{coordinate_string}"
-        params = {
-            'overview': 'full',
-            'geometries': 'geojson',
-            'steps': 'true'
-        }
+        # Convert route points to Google Maps format for frontend
+        route_points_gm = [[point[0], point[1]] for point in route_points]
         
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        
-        if data['code'] != 'Ok':
-            return jsonify({'error': f"OSRM error: {data.get('message', 'Unknown error')}"}), 500
-        
-        route = data['routes'][0]
-        
-        # Extract route geometry (coordinates are in [longitude, latitude] format)
-        coordinates = route['geometry']['coordinates']
-        # Convert to [latitude, longitude] for Google Maps
-        route_points = [[coord[1], coord[0]] for coord in coordinates]
+        # Calculate approximate duration and distance
+        total_distance = sum(step.get('distance', 0) for step in step_locations)
+        total_duration = sum(step.get('duration', 0) for step in step_locations)
         
         return jsonify({
-            'route_points': route_points,
-            'duration': route['duration'],
-            'distance': route['distance'],
+            'route_points': route_points_gm,
+            'duration': total_duration,
+            'distance': total_distance,
             'current_position': {'lat': current_lat, 'lng': current_lon},
             'waypoints': waypoints,
-            'message': 'New route calculated from current position'
+            'message': 'New route calculated and activated - car will follow this path'
         })
         
     except requests.exceptions.RequestException as e:
@@ -520,47 +508,58 @@ def update_route():
         if current_lat is None or current_lon is None:
             return jsonify({'error': 'No current car position found'}), 404
 
-        # Build coordinate string for OSRM with current position + waypoints
-        coordinates = [f"{current_lon},{current_lat}"]  # Start from current position
+        # Update the route in the route manager - this will affect actual car movement
+        success = route_manager.update_route_from_current(
+            (current_lat, current_lon), waypoints, osrm_url
+        )
         
-        for waypoint in waypoints:
-            coordinates.append(f"{waypoint['lng']},{waypoint['lat']}")
+        if not success:
+            return jsonify({'error': 'Failed to update route'}), 500
         
-        coordinate_string = ";".join(coordinates)
+        # Get the updated route data for response
+        route_points, step_locations, _, _ = route_manager.get_current_route_data()
         
-        # OSRM route API endpoint with multiple waypoints
-        url = f"{osrm_url}/route/v1/driving/{coordinate_string}"
-        params = {
-            'overview': 'full',
-            'geometries': 'geojson',
-            'steps': 'true'
-        }
+        # Convert route points to Google Maps format for frontend
+        route_points_gm = [[point[0], point[1]] for point in route_points]
         
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        
-        if data['code'] != 'Ok':
-            return jsonify({'error': f"OSRM error: {data.get('message', 'Unknown error')}"}), 500
-        
-        route = data['routes'][0]
-        
-        # Extract route geometry (coordinates are in [longitude, latitude] format)
-        coordinates = route['geometry']['coordinates']
-        # Convert to [latitude, longitude] for Google Maps
-        route_points = [[coord[1], coord[0]] for coord in coordinates]
+        # Calculate approximate duration and distance
+        total_distance = sum(step.get('distance', 0) for step in step_locations)
+        total_duration = sum(step.get('duration', 0) for step in step_locations)
         
         return jsonify({
-            'route_points': route_points,
-            'duration': route['duration'],
-            'distance': route['distance'],
+            'route_points': route_points_gm,
+            'duration': total_duration,
+            'distance': total_distance,
             'current_position': {'lat': current_lat, 'lng': current_lon},
             'waypoints': waypoints,
-            'message': 'Route updated successfully'
+            'message': 'Route updated and activated - car will follow this path'
         })
         
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/influxdb-config')
+def get_influxdb_config():
+    """Get InfluxDB configuration from environment variables"""
+    try:
+        config = {
+            'url': os.getenv('INFLUXDB_URL'),
+            'org': os.getenv('INFLUXDB_ORG'),
+            'bucket': os.getenv('INFLUXDB_BUCKET')
+            # Note: Token is not included for security reasons
+        }
+        
+        # Remove None values
+        config = {k: v for k, v in config.items() if v is not None}
+        
+        if not config:
+            return jsonify({'error': 'No InfluxDB configuration found'}), 404
+            
+        return jsonify(config)
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
