@@ -601,6 +601,7 @@
       let clickMode = "start"; // 'start' or 'destination'
       let startMarker = null;
       let destinationMarker = null;
+      let waypointMarkers = [];
       let statusCheckInterval = null;
       let lastOSRMStatus = null;
       let lastInfluxDBStatus = null;
@@ -1121,6 +1122,9 @@
           destinationMarker = null;
         }
 
+        // Clear waypoint markers
+        clearWaypointMarkers();
+
         pathPolyline.setPath([]);
         routePolyline.setPath([]);
         carData = [];
@@ -1308,6 +1312,9 @@
               return;
             }
 
+            // Clear old waypoint markers
+            clearWaypointMarkers();
+
             // Convert route points to Google Maps format
             const routePath = data.route_points.map((point) => ({
               lat: point[0],
@@ -1324,13 +1331,13 @@
 
             // Add waypoint markers
             data.waypoints.forEach((waypoint, index) => {
-              new google.maps.Marker({
+              const marker = new google.maps.Marker({
                 position: { lat: waypoint.lat, lng: waypoint.lng },
                 map: map,
                 title: waypoint.name,
                 icon: {
                   path: google.maps.SymbolPath.CIRCLE,
-                  scale: 6,
+                  scale: 8,
                   fillColor: "#FF6600",
                   fillOpacity: 1,
                   strokeColor: "#CC4400",
@@ -1338,7 +1345,15 @@
                 },
                 zIndex: 998,
               });
+              waypointMarkers.push(marker);
             });
+
+            // Fit map to show the new route
+            if (routePath.length > 0) {
+              const bounds = new google.maps.LatLngBounds();
+              routePath.forEach((point) => bounds.extend(point));
+              map.fitBounds(bounds);
+            }
 
             updateStatus(
               `New route activated: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min. Car is now following this path!`,
@@ -1351,6 +1366,13 @@
             console.error("Error getting new route:", error);
             updateStatus(`Error getting new route: ${error.message}`, "error");
           });
+      }
+
+      function clearWaypointMarkers() {
+        waypointMarkers.forEach(marker => {
+          marker.setMap(null);
+        });
+        waypointMarkers = [];
       }
 
       function checkServiceStatus() {
@@ -1486,6 +1508,91 @@
 
       function refreshServiceStatus() {
         checkServiceStatus();
+      }
+
+      function updateRouteWithWaypoints(waypoints) {
+        if (!isStreaming) {
+          updateStatus("Cannot update route - streaming is not active", "error");
+          return;
+        }
+
+        updateStatus("Updating route with new waypoints...", "loading");
+
+        const osrmUrl =
+          document.getElementById("osrmUrlInput").value.trim() ||
+          "http://localhost:5001";
+
+        fetch('/api/update-route', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            waypoints: waypoints,
+            osrm_url: osrmUrl
+          })
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              updateStatus(`Route update error: ${data.error}`, "error");
+              return;
+            }
+
+            // Clear old waypoint markers
+            clearWaypointMarkers();
+
+            // Convert route points to Google Maps format
+            const routePath = data.route_points.map((point) => ({
+              lat: point[0],
+              lng: point[1],
+            }));
+
+            // Update the route polyline with new route (change color to indicate it's an updated route)
+            routePolyline.setPath(routePath);
+            routePolyline.setOptions({
+              strokeColor: "#9C27B0", // Purple color for updated route
+              strokeOpacity: 0.8,
+              strokeWeight: 4,
+            });
+
+            // Add waypoint markers
+            data.waypoints.forEach((waypoint, index) => {
+              const marker = new google.maps.Marker({
+                position: { lat: waypoint.lat, lng: waypoint.lng },
+                map: map,
+                title: waypoint.name || `Waypoint ${index + 1}`,
+                icon: {
+                  path: google.maps.SymbolPath.CIRCLE,
+                  scale: 8,
+                  fillColor: "#9C27B0",
+                  fillOpacity: 1,
+                  strokeColor: "#7B1FA2",
+                  strokeWeight: 2,
+                },
+                zIndex: 998,
+              });
+              waypointMarkers.push(marker);
+            });
+
+            // Fit map to show the updated route
+            if (routePath.length > 0) {
+              const bounds = new google.maps.LatLngBounds();
+              routePath.forEach((point) => bounds.extend(point));
+              map.fitBounds(bounds);
+            }
+
+            updateStatus(
+              `Route updated: ${(data.distance / 1000).toFixed(2)}km, ${(data.duration / 60).toFixed(1)}min. Car is now following the new path!`,
+              "success",
+            );
+
+            console.log("Route updated with waypoints:", data.waypoints);
+          })
+          .catch((error) => {
+            console.error("Error updating route:", error);
+            updateStatus(`Error updating route: ${error.message}`, "error");
+          });
       }
 
       // Stop auto-checking when page is about to unload

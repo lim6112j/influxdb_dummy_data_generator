@@ -528,7 +528,7 @@ def update_route():
         )
         
         if not success:
-            return jsonify({'error': 'Failed to update route'}), 500
+            return jsonify({'error': 'Failed to update route - check server logs for details'}), 500
         
         # Get the updated route data for response
         route_points, step_locations, _, _ = route_manager.get_current_route_data()
