@@ -101,12 +101,15 @@ class DynamicRouteManager:
             was_updated = self.route_updated
             update_timestamp = self.route_update_timestamp
             
-            # Debug logging - always show current state
-            print(f"🔍 Route manager: points={len(route_points)}, updated={was_updated}, timestamp={update_timestamp}")
+            # Only log when there's actually an update or every 30 seconds
+            current_time = time.time()
+            if was_updated or int(current_time) % 30 == 0:
+                print(f"🔍 Route manager: points={len(route_points)}, updated={was_updated}, timestamp={update_timestamp}")
             
             if reset_update_flag and self.route_updated:
                 self.route_updated = False
-                print(f"🔍 Route manager: Reset update flag to False")
+                if was_updated:  # Only log when actually resetting
+                    print(f"🔍 Route manager: Reset update flag to False")
                 
             return route_points, step_locations, was_updated, update_timestamp
     
@@ -116,7 +119,7 @@ class DynamicRouteManager:
             route_data = {
                 'route_points': self.current_route_points,
                 'step_locations': self.current_step_locations,
-                'route_updated': self.route_updated,
+                'route_updated': False,  # Always save as False to prevent infinite loops
                 'route_update_timestamp': self.route_update_timestamp,
                 'osrm_url': self.osrm_url,
                 'movement_mode': self.movement_mode
@@ -125,7 +128,7 @@ class DynamicRouteManager:
             with open(self.route_file, 'w') as f:
                 json.dump(route_data, f)
             
-            print(f"💾 Route saved to file: {self.route_file}")
+            print(f"💾 Route saved to file: {self.route_file} (timestamp: {self.route_update_timestamp})")
             
         except Exception as e:
             print(f"❌ Error saving route to file: {e}")
@@ -133,9 +136,9 @@ class DynamicRouteManager:
     def _check_route_file_updates(self):
         """Check if route file has been updated (for subprocess communication)"""
         try:
-            # Only check file every 1 second to avoid excessive I/O
+            # Only check file every 2 seconds to avoid excessive I/O
             current_time = time.time()
-            if current_time - self.last_file_check < 1:
+            if current_time - self.last_file_check < 2:
                 return
             
             self.last_file_check = current_time
@@ -147,21 +150,28 @@ class DynamicRouteManager:
             file_mtime = os.path.getmtime(self.route_file)
             
             # If file is newer than our last update, load it
-            if file_mtime > self.route_update_timestamp:
+            # Add a small tolerance (0.1 seconds) to avoid timestamp precision issues
+            if file_mtime > (self.route_update_timestamp + 0.1):
                 with open(self.route_file, 'r') as f:
                     route_data = json.load(f)
                 
                 with self.lock:
                     old_points = len(self.current_route_points)
-                    self.current_route_points = route_data['route_points']
-                    self.current_step_locations = route_data['step_locations']
-                    self.route_updated = route_data.get('route_updated', True)
-                    self.route_update_timestamp = route_data['route_update_timestamp']
-                    self.osrm_url = route_data.get('osrm_url', self.osrm_url)
-                    self.movement_mode = route_data.get('movement_mode', self.movement_mode)
+                    new_points = len(route_data['route_points'])
                     
-                    print(f"📁 Route loaded from file: {old_points} -> {len(self.current_route_points)} points")
-                    print(f"📁 File timestamp: {file_mtime}, Route timestamp: {self.route_update_timestamp}")
+                    # Only update if the route actually changed
+                    if (new_points != old_points or 
+                        route_data['route_update_timestamp'] > self.route_update_timestamp):
+                        
+                        self.current_route_points = route_data['route_points']
+                        self.current_step_locations = route_data['step_locations']
+                        self.route_updated = True  # Mark as updated when loaded from file
+                        self.route_update_timestamp = route_data['route_update_timestamp']
+                        self.osrm_url = route_data.get('osrm_url', self.osrm_url)
+                        self.movement_mode = route_data.get('movement_mode', self.movement_mode)
+                        
+                        print(f"📁 Route loaded from file: {old_points} -> {new_points} points")
+                        print(f"📁 File mtime: {file_mtime}, Route timestamp: {self.route_update_timestamp}")
                     
         except Exception as e:
             print(f"❌ Error checking route file: {e}")
