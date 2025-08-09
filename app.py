@@ -664,6 +664,55 @@ def test_route_update():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/route-status')
+def get_route_status():
+    """Get current route status and data for frontend polling"""
+    try:
+        # Get current route data from route manager
+        route_points, step_locations, was_updated, update_timestamp = route_manager.get_current_route_data()
+        
+        if not route_points:
+            return jsonify({
+                'route_updated': False,
+                'update_timestamp': 0,
+                'route_points': [],
+                'waypoints': [],
+                'distance': 0,
+                'duration': 0,
+                'message': 'No route data available'
+            })
+        
+        # Convert route points to Google Maps format for frontend
+        route_points_gm = [[point[0], point[1]] for point in route_points]
+        
+        # Calculate approximate duration and distance
+        total_distance = sum(step.get('distance', 0) for step in step_locations)
+        total_duration = sum(step.get('duration', 0) for step in step_locations)
+        
+        # Extract waypoints from step locations (simplified)
+        waypoints = []
+        for i, step in enumerate(step_locations[::max(1, len(step_locations)//4)]):  # Sample every few steps as waypoints
+            if step.get('name') and step['name'].strip():
+                waypoints.append({
+                    'lat': step['location'][0],
+                    'lng': step['location'][1], 
+                    'name': step['name']
+                })
+        
+        return jsonify({
+            'route_updated': was_updated,
+            'update_timestamp': update_timestamp,
+            'route_points': route_points_gm,
+            'waypoints': waypoints,
+            'distance': total_distance,
+            'duration': total_duration,
+            'message': 'Route status retrieved successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/car-data-stream')
 def stream_car_data():
     """Stream car data from InfluxDB in real-time"""

@@ -605,8 +605,10 @@
       let destinationMarker = null;
       let waypointMarkers = [];
       let statusCheckInterval = null;
+      let routeCheckInterval = null;
       let lastOSRMStatus = null;
       let lastInfluxDBStatus = null;
+      let lastRouteTimestamp = 0;
 
       function initMap() {
         // Initialize map centered on Los Angeles (matching the data generation area)
@@ -755,6 +757,9 @@
         document.getElementById("newRouteBtn").disabled = false;
         document.getElementById("testRouteBtn").disabled = false;
         document.getElementById("testUpdateAPIBtn").disabled = false;
+        
+        // Start checking for route updates
+        startRouteUpdateCheck();
 
         updateStatus("Starting data generation and streaming...", "loading");
 
@@ -915,6 +920,9 @@
         document.getElementById("newRouteBtn").disabled = true;
         document.getElementById("testRouteBtn").disabled = true;
         document.getElementById("testUpdateAPIBtn").disabled = true;
+        
+        // Stop checking for route updates
+        stopRouteUpdateCheck();
 
         if (eventSource) {
           eventSource.close();
@@ -1903,9 +1911,121 @@
       // Make the function globally available for console access
       window.updateRouteWithCustomWaypoints = updateRouteWithCustomWaypoints;
 
+      function startRouteUpdateCheck() {
+        // Clear any existing interval
+        if (routeCheckInterval) {
+          clearInterval(routeCheckInterval);
+        }
+        
+        // Check for route updates every 2 seconds during streaming
+        routeCheckInterval = setInterval(() => {
+          checkForRouteUpdates();
+        }, 2000);
+        
+        console.log('Started automatic route update checking every 2 seconds');
+      }
+
+      function stopRouteUpdateCheck() {
+        if (routeCheckInterval) {
+          clearInterval(routeCheckInterval);
+          routeCheckInterval = null;
+          console.log('Stopped automatic route update checking');
+        }
+      }
+
+      function checkForRouteUpdates() {
+        if (!isStreaming) {
+          return; // Only check during streaming
+        }
+
+        // Get current route data to check if it has been updated
+        fetch('/api/route-status')
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              console.log('Route status check error:', data.error);
+              return;
+            }
+
+            // Check if route has been updated since last check
+            if (data.route_updated && data.update_timestamp > lastRouteTimestamp) {
+              console.log('🔄 Route update detected via polling! Updating map...');
+              lastRouteTimestamp = data.update_timestamp;
+              
+              // Update the map with the new route
+              updateMapWithNewRoute(data);
+            }
+          })
+          .catch(error => {
+            console.log('Route status check failed:', error);
+          });
+      }
+
+      function updateMapWithNewRoute(routeData) {
+        if (!routeData.route_points || routeData.route_points.length === 0) {
+          console.log('No route points to display');
+          return;
+        }
+
+        console.log('🗺️ Updating map with new route:', routeData.route_points.length, 'points');
+
+        // Clear old waypoint markers
+        clearWaypointMarkers();
+
+        // Convert route points to Google Maps format
+        const routePath = routeData.route_points.map((point) => ({
+          lat: point[0],
+          lng: point[1],
+        }));
+
+        // Update the route polyline with new route (use teal color for auto-detected updates)
+        routePolyline.setPath(routePath);
+        routePolyline.setOptions({
+          strokeColor: "#009688", // Teal color for auto-detected route updates
+          strokeOpacity: 0.8,
+          strokeWeight: 4,
+        });
+
+        // Add waypoint markers if available
+        if (routeData.waypoints && routeData.waypoints.length > 0) {
+          routeData.waypoints.forEach((waypoint, index) => {
+            const marker = new google.maps.Marker({
+              position: { lat: waypoint.lat, lng: waypoint.lng },
+              map: map,
+              title: waypoint.name || `Auto Waypoint ${index + 1}`,
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: "#009688",
+                fillOpacity: 1,
+                strokeColor: "#00695C",
+                strokeWeight: 2,
+              },
+              zIndex: 998,
+            });
+            waypointMarkers.push(marker);
+          });
+        }
+
+        // Fit map to show the updated route
+        if (routePath.length > 0) {
+          const bounds = new google.maps.LatLngBounds();
+          routePath.forEach((point) => bounds.extend(point));
+          map.fitBounds(bounds);
+        }
+
+        updateStatus(
+          `Route auto-updated: ${(routeData.distance / 1000).toFixed(2)}km, ${(routeData.duration / 60).toFixed(1)}min. Map updated automatically!`,
+          "success",
+        );
+
+        console.log("✅ Map updated with auto-detected route change");
+      }
+
       // Stop auto-checking when page is about to unload
       window.addEventListener('beforeunload', function() {
         stopAutoStatusCheck();
+        stopRouteUpdateCheck();
       });
     </script>
 
