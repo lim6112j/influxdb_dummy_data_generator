@@ -438,6 +438,12 @@
         <button onclick="startStreaming()" id="streamBtn" disabled>
           Start Streaming Data
         </button>
+        <button onclick="pauseCar()" id="pauseCarBtn" disabled>
+          Pause Car
+        </button>
+        <button onclick="resumeCar()" id="resumeCarBtn" disabled style="display: none;">
+          Resume Car
+        </button>
         <button onclick="stopStreaming()" id="stopStreamBtn" disabled>
           Stop Streaming
         </button>
@@ -600,6 +606,7 @@
       let showAllData = false;
       let eventSource = null;
       let isStreaming = false;
+      let isCarPaused = false;
       let clickMode = "start"; // 'start' or 'destination'
       let startMarker = null;
       let destinationMarker = null;
@@ -677,6 +684,69 @@
         startAutoStatusCheck();
       }
 
+      function pauseCar() {
+        if (!isStreaming || isCarPaused) return;
+
+        updateStatus("Pausing car movement...", "loading");
+
+        fetch("/api/pause-car", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              updateStatus(`Error pausing car: ${data.error}`, "error");
+              return;
+            }
+
+            isCarPaused = true;
+            document.getElementById("pauseCarBtn").disabled = true;
+            document.getElementById("resumeCarBtn").style.display = "inline-block";
+            document.getElementById("resumeCarBtn").disabled = false;
+            
+            updateStatus("Car paused. Streaming current position.", "success");
+            console.log("Car paused successfully");
+          })
+          .catch((error) => {
+            console.error("Error pausing car:", error);
+            updateStatus(`Error pausing car: ${error.message}`, "error");
+          });
+      }
+
+      function resumeCar() {
+        if (!isStreaming || !isCarPaused) return;
+
+        updateStatus("Resuming car movement...", "loading");
+
+        fetch("/api/resume-car", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              updateStatus(`Error resuming car: ${data.error}`, "error");
+              return;
+            }
+
+            isCarPaused = false;
+            document.getElementById("pauseCarBtn").disabled = false;
+            document.getElementById("resumeCarBtn").style.display = "none";
+            
+            updateStatus("Car resumed. Continuing movement.", "success");
+            console.log("Car resumed successfully");
+          })
+          .catch((error) => {
+            console.error("Error resuming car:", error);
+            updateStatus(`Error resuming car: ${error.message}`, "error");
+          });
+      }
+
       function loadInfluxDBSettings() {
         fetch('/api/influxdb-config')
           .then(response => response.json())
@@ -751,7 +821,10 @@
         }
 
         isStreaming = true;
+        isCarPaused = false;
         document.getElementById("streamBtn").disabled = true;
+        document.getElementById("pauseCarBtn").disabled = false;
+        document.getElementById("resumeCarBtn").style.display = "none";
         document.getElementById("stopStreamBtn").disabled = false;
         document.getElementById("routeBtn").disabled = true;
         document.getElementById("newRouteBtn").disabled = false;
@@ -914,7 +987,11 @@
         if (!isStreaming) return;
 
         isStreaming = false;
+        isCarPaused = false;
+        
         document.getElementById("streamBtn").disabled = false;
+        document.getElementById("pauseCarBtn").disabled = true;
+        document.getElementById("resumeCarBtn").style.display = "none";
         document.getElementById("stopStreamBtn").disabled = true;
         document.getElementById("routeBtn").disabled = false;
         document.getElementById("newRouteBtn").disabled = true;

@@ -469,6 +469,66 @@ def stop_generation():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/pause-car', methods=['POST'])
+def pause_car():
+    """Pause the car movement (keep streaming current position)"""
+    try:
+        # Create or update pause signal file
+        with open('car_pause_signal.txt', 'w') as f:
+            f.write('PAUSED')
+        
+        print("Car pause signal sent")
+        return jsonify({
+            'message': 'Car paused successfully',
+            'paused': True
+        })
+        
+    except Exception as e:
+        print(f"Error pausing car: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/resume-car', methods=['POST'])
+def resume_car():
+    """Resume the car movement"""
+    try:
+        # Remove pause signal file
+        import os
+        if os.path.exists('car_pause_signal.txt'):
+            os.remove('car_pause_signal.txt')
+        
+        print("Car resume signal sent")
+        return jsonify({
+            'message': 'Car resumed successfully',
+            'paused': False
+        })
+        
+    except Exception as e:
+        print(f"Error resuming car: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/generation-status')
+def get_generation_status():
+    """Check if data generation process is currently running and if car is paused"""
+    global running_process
+    
+    try:
+        is_running = running_process is not None and running_process.poll() is None
+        
+        # Check if car is paused
+        import os
+        is_paused = os.path.exists('car_pause_signal.txt')
+        
+        return jsonify({
+            'running': is_running,
+            'paused': is_paused,
+            'message': f'Data generation is {"running" if is_running else "not running"}{" (car paused)" if is_paused else ""}'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/update-route', methods=['POST'])
 def update_route():
     """Update the car's route with new waypoints while streaming"""
