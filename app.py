@@ -425,14 +425,37 @@ def get_generation_status():
     try:
         is_running = running_process is not None and running_process.poll() is None
         
-        # Check if car is paused
+        # Check if car is paused and get pause reason
         import os
         is_paused = os.path.exists('car_pause_signal.txt')
+        pause_reason = None
+        waypoint_name = None
+        
+        if is_paused:
+            try:
+                with open('car_pause_signal.txt', 'r') as f:
+                    pause_content = f.read().strip()
+                    if pause_content.startswith('WAYPOINT_PAUSE:'):
+                        pause_reason = 'waypoint'
+                        waypoint_name = pause_content.split(':', 1)[1]
+                    else:
+                        pause_reason = 'manual'
+            except:
+                pause_reason = 'manual'
+        
+        message = f'Data generation is {"running" if is_running else "not running"}'
+        if is_paused:
+            if pause_reason == 'waypoint':
+                message += f' (car paused at waypoint: {waypoint_name})'
+            else:
+                message += ' (car paused)'
         
         return jsonify({
             'running': is_running,
             'paused': is_paused,
-            'message': f'Data generation is {"running" if is_running else "not running"}{" (car paused)" if is_paused else ""}'
+            'pause_reason': pause_reason,
+            'waypoint_name': waypoint_name,
+            'message': message
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500

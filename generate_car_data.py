@@ -366,6 +366,9 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     last_route_check = 0
     last_position = None
     pause_start_time = None
+    waypoint_pause_active = False
+    current_waypoints = []
+    reached_waypoints = set()
 
     while current_time <= end_time:
         # Check for pause signal
@@ -374,7 +377,17 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         if is_paused:
             if pause_start_time is None:
                 pause_start_time = current_time
-                print(f"🛑 Car paused at {time.strftime('%H:%M:%S')}")
+                # Check if this is a waypoint pause
+                try:
+                    with open('car_pause_signal.txt', 'r') as f:
+                        pause_content = f.read().strip()
+                        if pause_content.startswith('WAYPOINT_PAUSE:'):
+                            waypoint_name = pause_content.split(':', 1)[1]
+                            print(f"🛑 Car paused at waypoint: {waypoint_name} at {time.strftime('%H:%M:%S')}")
+                        else:
+                            print(f"🛑 Car paused at {time.strftime('%H:%M:%S')}")
+                except:
+                    print(f"🛑 Car paused at {time.strftime('%H:%M:%S')}")
             
             # When paused, keep streaming the same position
             if last_position is not None:
@@ -418,7 +431,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             # Car is not paused
             if pause_start_time is not None:
                 pause_duration = current_time - pause_start_time
-                print(f"▶️ Car resumed after {pause_duration:.0f} seconds at {time.strftime('%H:%M:%S')}")
+                if waypoint_pause_active:
+                    print(f"▶️ Car resumed from waypoint pause after {pause_duration:.0f} seconds at {time.strftime('%H:%M:%S')}")
+                    waypoint_pause_active = False
+                else:
+                    print(f"▶️ Car resumed after {pause_duration:.0f} seconds at {time.strftime('%H:%M:%S')}")
                 pause_start_time = None
 
         # Check for route updates every iteration (immediate response)
@@ -434,6 +451,22 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             
             # Update the last route check timestamp to prevent repeated processing
             last_route_check = update_timestamp
+            
+            # Extract waypoints from step locations for auto-pause functionality
+            current_waypoints = []
+            reached_waypoints = set()
+            for i, step in enumerate(current_step_locations):
+                if step.get('name') and step['name'].strip() and step['name'] not in ['', 'unnamed']:
+                    waypoint_info = {
+                        'location': step['location'],
+                        'name': step['name'],
+                        'step_index': i
+                    }
+                    current_waypoints.append(waypoint_info)
+            
+            print(f"🎯 Extracted {len(current_waypoints)} waypoints for auto-pause:")
+            for wp in current_waypoints:
+                print(f"   - {wp['name']} at ({wp['location'][0]:.6f}, {wp['location'][1]:.6f})")
             
             # Store current position before switching
             if point_index < len(all_route_points):
@@ -555,6 +588,38 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             'step_index': current_point.get('step_index', 0),
             'intermediate_index': current_point.get('intermediate_index', 0)
         }
+        
+        # Check if car has reached a major waypoint and should auto-pause
+        if current_waypoints and not waypoint_pause_active:
+            current_step_index = current_point.get('step_index', 0)
+            
+            for waypoint in current_waypoints:
+                waypoint_id = f"{waypoint['name']}_{waypoint['step_index']}"
+                
+                # Check if we've reached this waypoint (within step index range)
+                if (waypoint['step_index'] <= current_step_index <= waypoint['step_index'] + 2 and 
+                    waypoint_id not in reached_waypoints):
+                    
+                    # Calculate distance to waypoint location
+                    wp_lat, wp_lon = waypoint['location']
+                    distance = math.sqrt((latitude - wp_lat)**2 + (longitude - wp_lon)**2)
+                    
+                    # If within reasonable distance (about 100 meters in degrees)
+                    if distance < 0.001:  # Approximately 100 meters
+                        print(f"🎯 WAYPOINT REACHED: {waypoint['name']} at {time.strftime('%H:%M:%S')}")
+                        print(f"   Location: ({latitude:.6f}, {longitude:.6f})")
+                        print(f"   Auto-pausing car for waypoint...")
+                        
+                        # Create pause signal file for waypoint pause
+                        with open('car_pause_signal.txt', 'w') as f:
+                            f.write(f'WAYPOINT_PAUSE:{waypoint["name"]}')
+                        
+                        waypoint_pause_active = True
+                        reached_waypoints.add(waypoint_id)
+                        pause_start_time = current_time
+                        
+                        print(f"🛑 Car auto-paused at waypoint: {waypoint['name']}")
+                        break
 
         # Debug output every 60 seconds
         if int(current_time) % 60 == 0:
