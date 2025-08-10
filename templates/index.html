@@ -1677,7 +1677,7 @@
             // Update the route polyline with new route (change color to indicate it's an updated route)
             routePolyline.setPath(routePath);
             routePolyline.setOptions({
-              strokeColor: "#9C27B0", // Purple color for updated route
+              strokeColor: "#FF6B35", // Orange color for updated route with waypoints
               strokeOpacity: 0.8,
               strokeWeight: 4,
             });
@@ -1794,7 +1794,7 @@
                 strokeWeight: 4,
               });
 
-              // Add waypoint markers
+              // Add waypoint markers ONLY for custom routes with waypoints
               if (data.waypoints && data.waypoints.length > 0) {
                 data.waypoints.forEach((waypoint, index) => {
                   const marker = new google.maps.Marker({
@@ -1804,15 +1804,17 @@
                     icon: {
                       path: google.maps.SymbolPath.CIRCLE,
                       scale: 8,
-                      fillColor: "#9C27B0",
+                      fillColor: "#FF6B35",
                       fillOpacity: 1,
-                      strokeColor: "#7B1FA2",
+                      strokeColor: "#E55A2B",
                       strokeWeight: 2,
                     },
                     zIndex: 998,
                   });
                   waypointMarkers.push(marker);
                 });
+                
+                console.log(`Added ${data.waypoints.length} waypoint markers for custom route`);
               }
 
               // Fit map to show the custom route
@@ -1920,7 +1922,7 @@
           strokeWeight: 4,
         });
 
-        // Add waypoint markers if available
+        // Add waypoint markers ONLY if waypoints are available for auto-detected updates
         if (routeData.waypoints && routeData.waypoints.length > 0) {
           routeData.waypoints.forEach((waypoint, index) => {
             const marker = new google.maps.Marker({
@@ -1930,15 +1932,17 @@
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
                 scale: 8,
-                fillColor: "#009688",
+                fillColor: "#FF6B35",
                 fillOpacity: 1,
-                strokeColor: "#00695C",
+                strokeColor: "#E55A2B",
                 strokeWeight: 2,
               },
               zIndex: 998,
             });
             waypointMarkers.push(marker);
           });
+          
+          console.log(`Added ${routeData.waypoints.length} waypoint markers for auto-detected route`);
         }
 
         // Fit map to show the updated route
