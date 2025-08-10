@@ -143,7 +143,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     end_time = start_time + (duration * 3600)  # Convert hours to seconds
 
     # Use provided InfluxDB configuration or defaults
-    influxdb_url = influxdb_url or "http://localhost:8086"
+    influxdb_url = influxdb_url or "http://43.201.26.186:8086"
     influxdb_token = influxdb_token or ""
     influxdb_org = influxdb_org or "ciel mobility"
     influxdb_bucket = influxdb_bucket or "location_202506"
@@ -716,8 +716,8 @@ if __name__ == "__main__":
                         default='one-way', help="Movement mode: one-way or round-trip (default: one-way)")
     parser.add_argument("--no-clear", action='store_true',
                         help="Don't clear existing car data before generating new data")
-    parser.add_argument("--influxdb-url", type=str, default="http://localhost:8086",
-                        help="InfluxDB server URL (default: http://localhost:8086)")
+    parser.add_argument("--influxdb-url", type=str, default="http://43.201.26.186:8086",
+                        help="InfluxDB server URL (default: http://43.201.26.186:8086)")
     parser.add_argument("--influxdb-token", type=str, default="",
                         help="InfluxDB authentication token")
     parser.add_argument("--influxdb-org", type=str, default="ciel mobility",

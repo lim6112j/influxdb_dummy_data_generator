@@ -29,7 +29,7 @@ def get_car_data():
 
     try:
         # Get InfluxDB configuration from request parameters
-        influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
+        influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
@@ -216,7 +216,7 @@ def check_influxdb_status():
     """Check if InfluxDB is accessible and configured properly"""
     try:
         # Get configuration from query parameters with defaults
-        influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
+        influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
@@ -306,7 +306,7 @@ def start_generation():
         movement_mode = data.get('movement_mode', 'one-way')  # Default one-way
         
         # InfluxDB configuration
-        influxdb_url = data.get('influxdb_url', 'http://localhost:8086')
+        influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = data.get('influxdb_token', '')
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
@@ -493,7 +493,7 @@ def update_route():
                 return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
         
         # Get current car position from the latest data point
-        influxdb_url = data.get('influxdb_url', 'http://localhost:8086')
+        influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = data.get('influxdb_token', '')
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
@@ -574,7 +574,7 @@ def get_influxdb_config():
     """Get default InfluxDB configuration"""
     try:
         config = {
-            'url': 'http://localhost:8086',
+            'url': 'http://43.201.26.186:8086',
             'org': 'ciel mobility',
             'bucket': 'location_202506'
             # Note: Token is not included for security reasons
@@ -646,7 +646,7 @@ def stream_car_data():
     def generate_data():
         try:
             # Get InfluxDB configuration from request parameters
-            influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
+            influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
             influxdb_token = request.args.get('influxdb_token', '')
             influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
             influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
