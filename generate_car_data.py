@@ -402,10 +402,12 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
                 point = Point(influxdb_measurement) \
                     .tag(influxdb_tag_name, influxdb_tag_value) \
-                    .field("latitude", latitude) \
-                    .field("longitude", longitude) \
+                    .field("lat", latitude) \
+                    .field("lng", longitude) \
                     .field("speed", float(speed)) \
-                    .field("heading", heading) \
+                    .field("angle", heading) \
+                    .field("alt", 100.0) \
+                    .field("get_date", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))) \
                     .field("step_index", int(last_position.get('step_index', 0))) \
                     .field("instruction", "paused") \
                     .field("intermediate_index", int(last_position.get('intermediate_index', 0))) \
@@ -652,10 +654,12 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
         point = Point(influxdb_measurement) \
             .tag(influxdb_tag_name, influxdb_tag_value) \
-            .field("latitude", latitude) \
-            .field("longitude", longitude) \
+            .field("lat", latitude) \
+            .field("lng", longitude) \
             .field("speed", float(speed)) \
-            .field("heading", heading) \
+            .field("angle", heading) \
+            .field("alt", 100.0) \
+            .field("get_date", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))) \
             .field("step_index", int(current_point.get('step_index', 0))) \
             .field("instruction", current_point.get('instruction', 'moving')) \
             .field("intermediate_index", int(current_point.get('intermediate_index', 0))) \

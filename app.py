@@ -64,10 +64,12 @@ def get_car_data():
             for record in table.records:
                 car_data.append({
                     'time': record.get_time().isoformat(),
-                    'latitude': record.values.get('latitude'),
-                    'longitude': record.values.get('longitude'),
+                    'lat': record.values.get('lat'),
+                    'lng': record.values.get('lng'),
                     'speed': record.values.get('speed'),
-                    'heading': record.values.get('heading'),
+                    'angle': record.values.get('angle'),
+                    'alt': record.values.get('alt'),
+                    'get_date': record.values.get('get_date'),
                     'step_index': record.values.get('step_index'),
                     'instruction': record.values.get('instruction'),
                     'intermediate_index': record.values.get('intermediate_index'),
@@ -531,7 +533,7 @@ def update_route():
               |> range(start: -1h)
               |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
               |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
-              |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+              |> filter(fn: (r) => r["_field"] == "lat" or r["_field"] == "lng")
               |> last()
               |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
             '''
@@ -544,8 +546,8 @@ def update_route():
             
             for table in result:
                 for record in table.records:
-                    current_lat = record.values.get('latitude')
-                    current_lon = record.values.get('longitude')
+                    current_lat = record.values.get('lat')
+                    current_lon = record.values.get('lng')
                     break
 
             if current_lat is None or current_lon is None:
@@ -657,8 +659,8 @@ def append_route():
             
             for table in result:
                 for record in table.records:
-                    current_lat = record.values.get('latitude')
-                    current_lon = record.values.get('longitude')
+                    current_lat = record.values.get('lat')
+                    current_lon = record.values.get('lng')
                     break
 
             if current_lat is None or current_lon is None:
@@ -785,8 +787,8 @@ def append_route_optimized():
             
             for table in result:
                 for record in table.records:
-                    current_lat = record.values.get('latitude')
-                    current_lon = record.values.get('longitude')
+                    current_lat = record.values.get('lat')
+                    current_lon = record.values.get('lng')
                     break
 
             if current_lat is None or current_lon is None:
@@ -1016,18 +1018,20 @@ def stream_car_data():
                             processed_timestamps.add(timestamp_iso)
                             
                             # Validate that we have the required fields
-                            latitude = record.values.get('latitude')
-                            longitude = record.values.get('longitude')
+                            lat = record.values.get('lat')
+                            lng = record.values.get('lng')
                             
-                            if latitude is None or longitude is None:
+                            if lat is None or lng is None:
                                 continue  # Skip incomplete records
                             
                             point_data = {
                                 'time': timestamp_iso,
-                                'latitude': latitude,
-                                'longitude': longitude,
+                                'lat': lat,
+                                'lng': lng,
                                 'speed': record.values.get('speed', 0),
-                                'heading': record.values.get('heading', 0),
+                                'angle': record.values.get('angle', 0),
+                                'alt': record.values.get('alt', 0),
+                                'get_date': record.values.get('get_date', ''),
                                 'step_index': record.values.get('step_index', 0),
                                 'instruction': record.values.get('instruction', 'moving'),
                                 'intermediate_index': record.values.get('intermediate_index', 0),

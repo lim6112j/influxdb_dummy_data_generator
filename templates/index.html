@@ -1089,7 +1089,7 @@
             }
 
             // Validate coordinates before processing
-            if (!isValidCoordinate(newPoint.latitude) || !isValidCoordinate(newPoint.longitude)) {
+            if (!isValidCoordinate(newPoint.lat) || !isValidCoordinate(newPoint.lng)) {
               console.warn("Invalid coordinates received:", newPoint);
               return;
             }
@@ -1103,10 +1103,10 @@
 
             // Update path with validated coordinates
             const path = carData
-              .filter(point => isValidCoordinate(point.latitude) && isValidCoordinate(point.longitude))
+              .filter(point => isValidCoordinate(point.lat) && isValidCoordinate(point.lng))
               .map((point) => ({
-                lat: point.latitude,
-                lng: point.longitude,
+                lat: point.lat,
+                lng: point.lng,
               }));
             pathPolyline.setPath(path);
 
@@ -1114,8 +1114,8 @@
             if (carData.length === 1) {
               // Only center on first point
               map.setCenter({
-                lat: newPoint.latitude,
-                lng: newPoint.longitude,
+                lat: newPoint.lat,
+                lng: newPoint.lng,
               });
               map.setZoom(15);
             }
@@ -1210,12 +1210,12 @@
 
       function updateCarMarker(point) {
         // Validate coordinates before creating position
-        if (!isValidCoordinate(point.latitude) || !isValidCoordinate(point.longitude)) {
+        if (!isValidCoordinate(point.lat) || !isValidCoordinate(point.lng)) {
           console.warn("Cannot update car marker: invalid coordinates", point);
           return;
         }
 
-        const position = { lat: point.latitude, lng: point.longitude };
+        const position = { lat: point.lat, lng: point.lng };
 
         if (!carMarker) {
           // Create new marker
@@ -1230,7 +1230,7 @@
               fillOpacity: 1,
               strokeColor: "#2E7D32",
               strokeWeight: 2,
-              rotation: point.heading || 0,
+              rotation: point.angle || 0,
             },
             zIndex: 1000,
           });
@@ -1244,7 +1244,7 @@
           const currentIcon = carMarker.getIcon();
           const newIcon = {
             ...currentIcon,
-            rotation: point.heading || 0,
+            rotation: point.angle || 0,
           };
           carMarker.setIcon(newIcon);
 
@@ -1257,14 +1257,14 @@
 
       function updateCarInfo(point) {
         // Safely update car info with validation
-        const lat = isValidCoordinate(point.latitude) ? point.latitude.toFixed(6) : 'Invalid';
-        const lng = isValidCoordinate(point.longitude) ? point.longitude.toFixed(6) : 'Invalid';
+        const lat = isValidCoordinate(point.lat) ? point.lat.toFixed(6) : 'Invalid';
+        const lng = isValidCoordinate(point.lng) ? point.lng.toFixed(6) : 'Invalid';
         const speed = (typeof point.speed === 'number' && !isNaN(point.speed)) ? point.speed : 0;
-        const heading = (typeof point.heading === 'number' && !isNaN(point.heading)) ? point.heading : 0;
+        const angle = (typeof point.angle === 'number' && !isNaN(point.angle)) ? point.angle : 0;
 
         document.getElementById("currentPos").textContent = `${lat}, ${lng}`;
         document.getElementById("currentSpeed").textContent = `${speed} km/h`;
-        document.getElementById("currentHeading").textContent = `${heading}°`;
+        document.getElementById("currentHeading").textContent = `${angle}°`;
       }
 
       function calculateTotalDistance(points) {
@@ -1273,10 +1273,10 @@
         let totalDistance = 0;
 
         for (let i = 1; i < points.length; i++) {
-          const lat1 = points[i - 1].latitude;
-          const lon1 = points[i - 1].longitude;
-          const lat2 = points[i].latitude;
-          const lon2 = points[i].longitude;
+          const lat1 = points[i - 1].lat;
+          const lon1 = points[i - 1].lng;
+          const lat2 = points[i].lat;
+          const lon2 = points[i].lng;
 
           // Haversine formula for distance calculation
           const R = 6371; // Earth's radius in kilometers
@@ -1334,7 +1334,7 @@
                 <th>Latitude</th>
                 <th>Longitude</th>
                 <th>Speed (km/h)</th>
-                <th>Heading (°)</th>
+                <th>Angle (°)</th>
               </tr>
             </thead>
             <tbody>
@@ -1342,10 +1342,10 @@
 
         dataToShow.forEach((point, index) => {
           const time = new Date(point.time).toLocaleString();
-          const lat = isValidCoordinate(point.latitude) ? point.latitude.toFixed(6) : 'Invalid';
-          const lng = isValidCoordinate(point.longitude) ? point.longitude.toFixed(6) : 'Invalid';
+          const lat = isValidCoordinate(point.lat) ? point.lat.toFixed(6) : 'Invalid';
+          const lng = isValidCoordinate(point.lng) ? point.lng.toFixed(6) : 'Invalid';
           const speed = (typeof point.speed === 'number' && !isNaN(point.speed)) ? point.speed : 0;
-          const heading = (typeof point.heading === 'number' && !isNaN(point.heading)) ? point.heading : 0;
+          const angle = (typeof point.angle === 'number' && !isNaN(point.angle)) ? point.angle : 0;
           
           tableHTML += `
             <tr onclick="highlightPoint(${carData.indexOf(point)})" style="cursor: pointer;">
@@ -1353,7 +1353,7 @@
               <td>${lat}</td>
               <td>${lng}</td>
               <td>${speed}</td>
-              <td>${heading}</td>
+              <td>${angle}</td>
             </tr>
           `;
         });
@@ -1371,14 +1371,14 @@
           const point = carData[index];
           
           // Only highlight if coordinates are valid
-          if (isValidCoordinate(point.latitude) && isValidCoordinate(point.longitude)) {
+          if (isValidCoordinate(point.lat) && isValidCoordinate(point.lng)) {
             updateCarMarker(point);
             updateCarInfo(point);
 
             // Center map on selected point
             map.setCenter({
-              lat: point.latitude,
-              lng: point.longitude,
+              lat: point.lat,
+              lng: point.lng,
             });
 
             // Zoom in a bit
