@@ -112,7 +112,7 @@ def generate_intermediate_points(start_location, end_location, duration, speed_k
     return points
 
 
-def clear_existing_car_data(client, influxdb_bucket, influxdb_org):
+def clear_existing_car_data(client, influxdb_bucket, influxdb_org, influxdb_measurement, influxdb_tag_name, influxdb_tag_value):
     """Clear existing car data from InfluxDB"""
     try:
         delete_api = client.delete_api()
@@ -215,7 +215,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         # Clear existing data if requested
         if clear_existing:
             print("Clearing existing car data from InfluxDB...")
-            clear_existing_car_data(client, influxdb_bucket, influxdb_org)
+            clear_existing_car_data(client, influxdb_bucket, influxdb_org, influxdb_measurement, influxdb_tag_name, influxdb_tag_value)
 
     except Exception as e:
         print(f"Error connecting to InfluxDB: {e}")
