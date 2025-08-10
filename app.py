@@ -498,37 +498,51 @@ def update_route():
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
 
-        client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
-        query_api = client.query_api()
+        # Check if InfluxDB token is provided
+        if not influxdb_token:
+            return jsonify({'error': 'InfluxDB token is required to get current car position'}), 400
 
-        # Get the latest car position
-        influxdb_measurement = 'locReports'
-        influxdb_device_id = '1'
-        
-        query = f'''
-        from(bucket: "{influxdb_bucket}")
-          |> range(start: -1h)
-          |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
-          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
-          |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
-          |> last()
-          |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-        '''
+        try:
+            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            query_api = client.query_api()
 
-        result = query_api.query(query=query)
-        client.close()
+            # Get the latest car position
+            influxdb_measurement = 'locReports'
+            influxdb_device_id = '1'
+            
+            query = f'''
+            from(bucket: "{influxdb_bucket}")
+              |> range(start: -1h)
+              |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
+              |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+              |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+              |> last()
+              |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+            '''
 
-        current_lat = None
-        current_lon = None
-        
-        for table in result:
-            for record in table.records:
-                current_lat = record.values.get('latitude')
-                current_lon = record.values.get('longitude')
-                break
+            result = query_api.query(query=query)
+            client.close()
 
-        if current_lat is None or current_lon is None:
-            return jsonify({'error': 'No current car position found'}), 404
+            current_lat = None
+            current_lon = None
+            
+            for table in result:
+                for record in table.records:
+                    current_lat = record.values.get('latitude')
+                    current_lon = record.values.get('longitude')
+                    break
+
+            if current_lat is None or current_lon is None:
+                return jsonify({'error': 'No current car position found'}), 404
+
+        except Exception as influx_error:
+            error_msg = str(influx_error)
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                return jsonify({'error': 'InfluxDB authentication failed. Please check your token and permissions.'}), 401
+            elif "connection" in error_msg.lower():
+                return jsonify({'error': 'Cannot connect to InfluxDB server. Please check the URL.'}), 503
+            else:
+                return jsonify({'error': f'InfluxDB error: {error_msg}'}), 500
 
         # Update the route in the route manager - this will affect actual car movement
         success = route_manager.update_route_from_current(
