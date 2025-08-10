@@ -687,15 +687,15 @@ def stream_car_data():
                           |> sort(columns: ["_time"])
                         '''
                     else:
-                        # Get the most recent data point to start streaming
+                        # Get recent data points to start streaming (avoid last() on empty data)
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
-                          |> range(start: -5m)
+                          |> range(start: -10m)
                           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
                           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
-                          |> last()
+                          |> tail(n: 1)
                         '''
 
                     result = query_api.query(query=query)
@@ -727,13 +727,22 @@ def stream_car_data():
                         print(f"📡 Streamed {len(new_points)} data points")
                     else:
                         # Send heartbeat to keep connection alive
-                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time()})}\n\n"
+                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time(), 'message': 'No new data available'})}\n\n"
                     
                     time.sleep(1)  # Check for new data every second
                     
                 except Exception as e:
+                    error_msg = str(e)
                     print(f"❌ Error in streaming loop: {e}")
-                    yield f"data: {json.dumps({'error': f'Streaming error: {str(e)}'})}\n\n"
+                    
+                    # Handle specific InfluxDB errors
+                    if "no column" in error_msg and "_value" in error_msg:
+                        yield f"data: {json.dumps({'error': 'No data available in InfluxDB bucket', 'details': 'The bucket appears to be empty or no matching data found'})}\n\n"
+                    elif "unauthorized" in error_msg.lower():
+                        yield f"data: {json.dumps({'error': 'InfluxDB authentication failed', 'details': 'Check your token and permissions'})}\n\n"
+                    else:
+                        yield f"data: {json.dumps({'error': f'Streaming error: {error_msg}'})}\n\n"
+                    
                     time.sleep(5)  # Wait longer on error
                     
         except Exception as e:
