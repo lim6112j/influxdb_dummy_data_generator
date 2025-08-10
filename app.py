@@ -646,7 +646,7 @@ def append_route():
               |> range(start: -1h)
               |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
               |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
-              |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+              |> filter(fn: (r) => r["_field"] == "lat" or r["_field"] == "lng")
               |> last()
               |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
             '''
@@ -774,7 +774,7 @@ def append_route_optimized():
               |> range(start: -1h)
               |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
               |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
-              |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+              |> filter(fn: (r) => r["_field"] == "lat" or r["_field"] == "lng")
               |> last()
               |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
             '''
