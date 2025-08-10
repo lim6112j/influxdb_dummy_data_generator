@@ -583,6 +583,134 @@ def update_route():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/append-route', methods=['POST'])
+def append_route():
+    """Append new waypoints to the car's current route while streaming"""
+    try:
+        data = request.get_json()
+        new_waypoints = data.get('waypoints', [])
+        # Use provided OSRM URL or fall back to the one stored in route manager
+        osrm_url = data.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
+        
+        print(f"➕ /api/append-route called with {len(new_waypoints)} new waypoints")
+        print(f"➕ Request data: {data}")
+        print(f"➕ Using OSRM URL: {osrm_url}")
+        
+        if not new_waypoints:
+            return jsonify({'error': 'No waypoints provided'}), 400
+        
+        # Validate waypoints format
+        for i, waypoint in enumerate(new_waypoints):
+            print(f"➕ New waypoint {i+1}: {waypoint}")
+            if not isinstance(waypoint, dict) or 'lat' not in waypoint or 'lng' not in waypoint:
+                return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
+        
+        # Get current car position from the latest data point
+        # Use default InfluxDB configuration if not provided
+        influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
+        influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
+        influxdb_org = data.get('influxdb_org', 'ciel mobility')
+        influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+
+        print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}")
+        print(f"➕ Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
+
+        try:
+            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            query_api = client.query_api()
+
+            # Get the latest car position
+            influxdb_measurement = 'locReports'
+            influxdb_device_id = '1'
+            
+            query = f'''
+            from(bucket: "{influxdb_bucket}")
+              |> range(start: -1h)
+              |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
+              |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+              |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
+              |> last()
+              |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+            '''
+
+            result = query_api.query(query=query)
+            client.close()
+
+            current_lat = None
+            current_lon = None
+            
+            for table in result:
+                for record in table.records:
+                    current_lat = record.values.get('latitude')
+                    current_lon = record.values.get('longitude')
+                    break
+
+            if current_lat is None or current_lon is None:
+                return jsonify({'error': 'No current car position found'}), 404
+
+        except Exception as influx_error:
+            error_msg = str(influx_error)
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                return jsonify({'error': 'InfluxDB authentication failed. Please check your token and permissions.'}), 401
+            elif "connection" in error_msg.lower():
+                return jsonify({'error': 'Cannot connect to InfluxDB server. Please check the URL.'}), 503
+            else:
+                return jsonify({'error': f'InfluxDB error: {error_msg}'}), 500
+
+        # Append to the route in the route manager - this will affect actual car movement
+        success = route_manager.append_route_from_current(
+            (current_lat, current_lon), new_waypoints, osrm_url
+        )
+        
+        # Update the stored OSRM URL in route manager if a new one was provided
+        if data.get('osrm_url'):
+            route_manager.osrm_url = osrm_url
+        
+        if not success:
+            return jsonify({'error': 'Failed to append route - check server logs for details'}), 500
+        
+        # Get the updated route data for response
+        route_points, step_locations, _, _ = route_manager.get_current_route_data()
+        
+        # Convert route points to Google Maps format for frontend
+        route_points_gm = [[point[0], point[1]] for point in route_points]
+        
+        # Calculate approximate duration and distance
+        total_distance = sum(step.get('distance', 0) for step in step_locations)
+        total_duration = sum(step.get('duration', 0) for step in step_locations)
+        
+        # Load all waypoints to return in response
+        all_waypoints = []
+        try:
+            import json
+            if os.path.exists('current_route.json'):
+                with open('current_route.json', 'r') as f:
+                    route_data = json.load(f)
+                    all_waypoints = route_data.get('user_waypoints', [])
+        except Exception as e:
+            print(f"Warning: Could not load all waypoints for response: {e}")
+            all_waypoints = new_waypoints  # Fallback to just the new waypoints
+        
+        return jsonify({
+            'route_points': route_points_gm,
+            'duration': total_duration,
+            'distance': total_distance,
+            'current_position': {'lat': current_lat, 'lng': current_lon},
+            'waypoints': all_waypoints,
+            'new_waypoints': new_waypoints,
+            'total_waypoints': len(all_waypoints),
+            'added_waypoints': len(new_waypoints),
+            'message': f'Route extended with {len(new_waypoints)} new waypoints - car will visit all {len(all_waypoints)} waypoints',
+            'auto_applied': True,
+            'success': True
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/influxdb-config')
 def get_influxdb_config():
     """Get default InfluxDB configuration"""

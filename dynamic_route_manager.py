@@ -89,6 +89,80 @@ class DynamicRouteManager:
             import traceback
             traceback.print_exc()
             return False
+
+    def append_route_from_current(self, current_position: Tuple[float, float], new_waypoints: List[Dict], osrm_url: str) -> bool:
+        """Append new waypoints to the current route from current position"""
+        try:
+            print(f"➕ Starting route append from position {current_position}")
+            print(f"➕ New waypoints to append:")
+            for i, wp in enumerate(new_waypoints):
+                print(f"   {i+1}. {wp.get('name', 'Unnamed')} at ({wp['lat']}, {wp['lng']})")
+            
+            # Validate waypoints format
+            for i, waypoint in enumerate(new_waypoints):
+                if 'lat' not in waypoint or 'lng' not in waypoint:
+                    print(f"❌ Invalid waypoint {i+1}: missing 'lat' or 'lng' keys")
+                    return False
+                
+                try:
+                    float(waypoint['lat'])
+                    float(waypoint['lng'])
+                except (ValueError, TypeError):
+                    print(f"❌ Invalid waypoint {i+1}: lat/lng must be numbers")
+                    return False
+            
+            # Load existing waypoints from route file
+            existing_waypoints = []
+            try:
+                import json
+                if os.path.exists(self.route_file):
+                    with open(self.route_file, 'r') as f:
+                        route_data = json.load(f)
+                        existing_waypoints = route_data.get('user_waypoints', [])
+                        print(f"➕ Found {len(existing_waypoints)} existing waypoints")
+            except Exception as e:
+                print(f"Warning: Could not load existing waypoints: {e}")
+            
+            # Combine existing waypoints with new ones
+            all_waypoints = existing_waypoints + new_waypoints
+            print(f"➕ Total waypoints after append: {len(all_waypoints)}")
+            
+            # Get new route from OSRM with all waypoints
+            new_route_points, new_step_locations = self._get_route_from_osrm_with_waypoints(
+                current_position, all_waypoints, osrm_url
+            )
+            
+            if not new_route_points or not new_step_locations:
+                print("❌ Failed to get appended route from OSRM")
+                return False
+            
+            with self.lock:
+                old_points_count = len(self.current_route_points)
+                self.current_route_points = new_route_points
+                self.current_step_locations = new_step_locations
+                self.route_updated = True
+                self.route_update_timestamp = time.time()
+                self.osrm_url = osrm_url  # Update OSRM URL as well
+                
+                print(f"✅ ROUTE APPENDED SUCCESSFULLY!")
+                print(f"   - Old route: {old_points_count} points")
+                print(f"   - New route: {len(new_route_points)} points")
+                print(f"   - Added waypoints: {len(new_waypoints)}")
+                print(f"   - Total waypoints: {len(all_waypoints)}")
+                print(f"   - Update flag: {self.route_updated}")
+                print(f"   - Timestamp: {self.route_update_timestamp}")
+                print(f"   - Time: {time.strftime('%H:%M:%S')}")
+                
+                # Save updated route to file for subprocess communication, including all waypoints
+                self._save_route_to_file(user_waypoints=all_waypoints)
+                
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error appending route: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
     
     def get_current_route_data(self, reset_update_flag: bool = False) -> Tuple[List, List, bool, float]:
         """Get current route data and optionally reset the update flag"""

@@ -524,7 +524,7 @@
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>POST /api/update-route</strong>
-            <p style="margin: 5px 0; color: #666;">Update car's route with new waypoints while streaming (applied immediately)</p>
+            <p style="margin: 5px 0; color: #666;">Update car's route with new waypoints while streaming (replaces current route)</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..." (optional)}</p>
             <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
               Example JSON:<br>
@@ -532,6 +532,22 @@
               &nbsp;&nbsp;"waypoints": [<br>
               &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8450, "lng": 128.5200, "name": "Checkpoint 1"},<br>
               &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8500, "lng": 128.5800, "name": "Checkpoint 2"}<br>
+              &nbsp;&nbsp;]<br>
+              &nbsp;&nbsp;// osrm_url is optional - uses stored value if not provided<br>
+              }
+            </div>
+          </div>
+
+          <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+            <strong>POST /api/append-route</strong>
+            <p style="margin: 5px 0; color: #666;">Append new waypoints to car's current route while streaming (extends existing route)</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..." (optional)}</p>
+            <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
+              Example JSON:<br>
+              {<br>
+              &nbsp;&nbsp;"waypoints": [<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8650, "lng": 128.6000, "name": "Additional Stop 1"},<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8700, "lng": 128.6200, "name": "Additional Stop 2"}<br>
               &nbsp;&nbsp;]<br>
               &nbsp;&nbsp;// osrm_url is optional - uses stored value if not provided<br>
               }
