@@ -554,6 +554,27 @@
             </div>
           </div>
 
+          <div style="margin-bottom: 15px; padding: 10px; background: #e8f5e8; border-radius: 4px; border-left: 4px solid #4CAF50;">
+            <strong>POST /api/append-route-optimized</strong>
+            <p style="margin: 5px 0; color: #666;">Append new waypoints with route optimization while maintaining start-end order (extends and optimizes existing route)</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {waypoints: [...], osrm_url: "..." (optional)}</p>
+            <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
+              Example JSON:<br>
+              {<br>
+              &nbsp;&nbsp;"waypoints": [<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8650, "lng": 128.6000, "name": "Optimized Stop 1"},<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8700, "lng": 128.6200, "name": "Optimized Stop 2"},<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 35.8750, "lng": 128.6400, "name": "Optimized Stop 3"}<br>
+              &nbsp;&nbsp;]<br>
+              &nbsp;&nbsp;// Uses nearest neighbor algorithm to optimize waypoint order<br>
+              &nbsp;&nbsp;// Maintains first and last waypoint positions<br>
+              }
+            </div>
+            <p style="margin: 5px 0; font-size: 11px; color: #2E7D32; font-style: italic;">
+              ⚡ This endpoint optimizes the route through all waypoints (existing + new) to minimize travel time while preserving the start and end waypoint order.
+            </p>
+          </div>
+
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>GET /api/status/osrm</strong>
             <p style="margin: 5px 0; color: #666;">Check OSRM server status and connectivity</p>

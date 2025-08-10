@@ -163,6 +163,251 @@ class DynamicRouteManager:
             import traceback
             traceback.print_exc()
             return False
+
+    def append_route_optimized_from_current(self, current_position: Tuple[float, float], new_waypoints: List[Dict], osrm_url: str) -> bool:
+        """Append new waypoints to the current route with optimization while maintaining start-end order"""
+        try:
+            print(f"🚀 Starting optimized route append from position {current_position}")
+            print(f"🚀 New waypoints to append and optimize:")
+            for i, wp in enumerate(new_waypoints):
+                print(f"   {i+1}. {wp.get('name', 'Unnamed')} at ({wp['lat']}, {wp['lng']})")
+            
+            # Validate waypoints format
+            for i, waypoint in enumerate(new_waypoints):
+                if 'lat' not in waypoint or 'lng' not in waypoint:
+                    print(f"❌ Invalid waypoint {i+1}: missing 'lat' or 'lng' keys")
+                    return False
+                
+                try:
+                    float(waypoint['lat'])
+                    float(waypoint['lng'])
+                except (ValueError, TypeError):
+                    print(f"❌ Invalid waypoint {i+1}: lat/lng must be numbers")
+                    return False
+            
+            # Load existing waypoints from route file
+            existing_waypoints = []
+            try:
+                import json
+                if os.path.exists(self.route_file):
+                    with open(self.route_file, 'r') as f:
+                        route_data = json.load(f)
+                        existing_waypoints = route_data.get('user_waypoints', [])
+                        print(f"🚀 Found {len(existing_waypoints)} existing waypoints")
+            except Exception as e:
+                print(f"Warning: Could not load existing waypoints: {e}")
+            
+            # Combine existing waypoints with new ones
+            all_waypoints = existing_waypoints + new_waypoints
+            print(f"🚀 Total waypoints before optimization: {len(all_waypoints)}")
+            
+            # If we have more than 2 waypoints, optimize the route
+            if len(all_waypoints) > 2:
+                print(f"🚀 Optimizing route through {len(all_waypoints)} waypoints...")
+                optimized_waypoints = self._optimize_waypoint_order(current_position, all_waypoints, osrm_url)
+                if optimized_waypoints:
+                    all_waypoints = optimized_waypoints
+                    print(f"✅ Route optimization completed")
+                else:
+                    print(f"⚠️ Route optimization failed, using original order")
+            else:
+                print(f"🚀 Skipping optimization for {len(all_waypoints)} waypoints (too few to optimize)")
+            
+            # Get optimized route from OSRM with all waypoints
+            new_route_points, new_step_locations = self._get_route_from_osrm_with_waypoints(
+                current_position, all_waypoints, osrm_url
+            )
+            
+            if not new_route_points or not new_step_locations:
+                print("❌ Failed to get optimized route from OSRM")
+                return False
+            
+            with self.lock:
+                old_points_count = len(self.current_route_points)
+                self.current_route_points = new_route_points
+                self.current_step_locations = new_step_locations
+                self.route_updated = True
+                self.route_update_timestamp = time.time()
+                self.osrm_url = osrm_url  # Update OSRM URL as well
+                
+                print(f"✅ OPTIMIZED ROUTE APPENDED SUCCESSFULLY!")
+                print(f"   - Old route: {old_points_count} points")
+                print(f"   - New route: {len(new_route_points)} points")
+                print(f"   - Added waypoints: {len(new_waypoints)}")
+                print(f"   - Total optimized waypoints: {len(all_waypoints)}")
+                print(f"   - Update flag: {self.route_updated}")
+                print(f"   - Timestamp: {self.route_update_timestamp}")
+                print(f"   - Time: {time.strftime('%H:%M:%S')}")
+                
+                # Save updated route to file for subprocess communication, including all optimized waypoints
+                self._save_route_to_file(user_waypoints=all_waypoints)
+                
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error appending optimized route: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _optimize_waypoint_order(self, start_position: Tuple[float, float], waypoints: List[Dict], osrm_url: str) -> List[Dict]:
+        """Optimize the order of waypoints to minimize total travel time while maintaining start-end constraints"""
+        try:
+            if len(waypoints) <= 2:
+                return waypoints  # No optimization needed for 2 or fewer waypoints
+            
+            print(f"🧮 Starting waypoint optimization for {len(waypoints)} waypoints")
+            
+            # Extract first and last waypoints to maintain start-end order
+            if len(waypoints) >= 2:
+                first_waypoint = waypoints[0]
+                last_waypoint = waypoints[-1]
+                middle_waypoints = waypoints[1:-1]
+                print(f"🧮 Fixed start: {first_waypoint.get('name', 'Start')}")
+                print(f"🧮 Fixed end: {last_waypoint.get('name', 'End')}")
+                print(f"🧮 Optimizing {len(middle_waypoints)} middle waypoints")
+            else:
+                # If only one waypoint, no optimization needed
+                return waypoints
+            
+            if not middle_waypoints:
+                # If no middle waypoints, return as-is
+                return waypoints
+            
+            # Create distance matrix for middle waypoints
+            # Points to consider: start_position, first_waypoint, middle_waypoints, last_waypoint
+            all_points = [start_position, (first_waypoint['lat'], first_waypoint['lng'])]
+            all_points.extend([(wp['lat'], wp['lng']) for wp in middle_waypoints])
+            all_points.append((last_waypoint['lat'], last_waypoint['lng']))
+            
+            print(f"🧮 Building distance matrix for {len(all_points)} points")
+            distance_matrix = self._build_distance_matrix(all_points, osrm_url)
+            
+            if not distance_matrix:
+                print("❌ Failed to build distance matrix, using original order")
+                return waypoints
+            
+            # Use nearest neighbor heuristic to optimize middle waypoints
+            # Start from first_waypoint (index 1), visit all middle waypoints, end at last_waypoint
+            optimized_middle_indices = self._nearest_neighbor_optimization(
+                distance_matrix, 
+                start_idx=1,  # first_waypoint
+                end_idx=len(all_points) - 1,  # last_waypoint
+                middle_indices=list(range(2, len(all_points) - 1))  # middle waypoints
+            )
+            
+            # Reconstruct optimized waypoint list
+            optimized_waypoints = [first_waypoint]
+            for idx in optimized_middle_indices:
+                # Convert back to original middle_waypoints index
+                middle_idx = idx - 2  # Adjust for start_position and first_waypoint
+                optimized_waypoints.append(middle_waypoints[middle_idx])
+            optimized_waypoints.append(last_waypoint)
+            
+            print(f"✅ Waypoint optimization completed:")
+            for i, wp in enumerate(optimized_waypoints):
+                print(f"   {i+1}. {wp.get('name', 'Unnamed')} at ({wp['lat']}, {wp['lng']})")
+            
+            return optimized_waypoints
+            
+        except Exception as e:
+            print(f"❌ Error optimizing waypoints: {e}")
+            return waypoints  # Return original order on error
+
+    def _build_distance_matrix(self, points: List[Tuple[float, float]], osrm_url: str) -> List[List[float]]:
+        """Build a distance matrix between all points using OSRM"""
+        try:
+            n = len(points)
+            matrix = [[0.0] * n for _ in range(n)]
+            
+            # Build coordinate string for OSRM table service
+            coordinates = []
+            for lat, lng in points:
+                coordinates.append(f"{lng},{lat}")  # OSRM uses lng,lat format
+            
+            coordinate_string = ";".join(coordinates)
+            
+            # Use OSRM table service to get distance matrix
+            url = f"{osrm_url}/table/v1/driving/{coordinate_string}"
+            params = {
+                'annotations': 'duration,distance'
+            }
+            
+            print(f"🧮 Requesting distance matrix from OSRM: {len(points)} points")
+            response = requests.get(url, params=params, timeout=30)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data['code'] != 'Ok':
+                print(f"❌ OSRM table error: {data.get('message', 'Unknown error')}")
+                return None
+            
+            # Extract duration matrix (in seconds)
+            durations = data['durations']
+            
+            for i in range(n):
+                for j in range(n):
+                    if i != j and durations[i][j] is not None:
+                        matrix[i][j] = durations[i][j]
+                    else:
+                        matrix[i][j] = 0.0 if i == j else float('inf')
+            
+            print(f"✅ Distance matrix built successfully: {n}x{n}")
+            return matrix
+            
+        except Exception as e:
+            print(f"❌ Error building distance matrix: {e}")
+            return None
+
+    def _nearest_neighbor_optimization(self, distance_matrix: List[List[float]], start_idx: int, end_idx: int, middle_indices: List[int]) -> List[int]:
+        """Use nearest neighbor heuristic to optimize the order of middle waypoints"""
+        try:
+            if not middle_indices:
+                return []
+            
+            print(f"🧮 Optimizing {len(middle_indices)} middle waypoints using nearest neighbor")
+            
+            # Start from the start_idx, visit all middle waypoints, end at end_idx
+            current_idx = start_idx
+            unvisited = set(middle_indices)
+            optimized_order = []
+            
+            while unvisited:
+                # Find nearest unvisited waypoint
+                nearest_idx = None
+                nearest_distance = float('inf')
+                
+                for idx in unvisited:
+                    distance = distance_matrix[current_idx][idx]
+                    if distance < nearest_distance:
+                        nearest_distance = distance
+                        nearest_idx = idx
+                
+                if nearest_idx is not None:
+                    optimized_order.append(nearest_idx)
+                    unvisited.remove(nearest_idx)
+                    current_idx = nearest_idx
+                else:
+                    # Fallback: add remaining waypoints in original order
+                    optimized_order.extend(sorted(unvisited))
+                    break
+            
+            # Calculate total distance for comparison
+            total_distance = distance_matrix[start_idx][optimized_order[0]] if optimized_order else 0
+            for i in range(len(optimized_order) - 1):
+                total_distance += distance_matrix[optimized_order[i]][optimized_order[i + 1]]
+            if optimized_order:
+                total_distance += distance_matrix[optimized_order[-1]][end_idx]
+            
+            print(f"✅ Nearest neighbor optimization completed")
+            print(f"   - Optimized order: {optimized_order}")
+            print(f"   - Total estimated time: {total_distance/60:.1f} minutes")
+            
+            return optimized_order
+            
+        except Exception as e:
+            print(f"❌ Error in nearest neighbor optimization: {e}")
+            return middle_indices  # Return original order on error
     
     def get_current_route_data(self, reset_update_flag: bool = False) -> Tuple[List, List, bool, float]:
         """Get current route data and optionally reset the update flag"""
