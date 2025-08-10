@@ -495,11 +495,12 @@ def update_route():
         # Get current car position from the latest data point
         # Use default InfluxDB configuration if not provided
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
-        influxdb_token = data.get('influxdb_token', 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg==')
+        influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
 
         print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}")
+        print(f"🔄 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
 
         try:
             client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
