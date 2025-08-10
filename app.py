@@ -951,6 +951,7 @@ def stream_car_data():
                 try:
                     # Query for new data since last timestamp
                     if last_timestamp:
+                        # Add microsecond precision to avoid timestamp boundary issues
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -10m)
@@ -959,10 +960,11 @@ def stream_car_data():
                           |> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
+                          |> group()
                           |> unique(column: "_time")
                         '''
                     else:
-                        # Get recent data points to start streaming (handle empty bucket gracefully)
+                        # Get the most recent data point to start streaming
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -10m)
@@ -970,6 +972,7 @@ def stream_car_data():
                           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
+                          |> group()
                           |> unique(column: "_time")
                           |> tail(n: 1)
                         '''
@@ -977,43 +980,47 @@ def stream_car_data():
                     result = query_api.query(query=query)
                     
                     new_points = []
-                    seen_timestamps = set()
+                    processed_timestamps = set()
                     
-                    # Check if we have any data at all
-                    has_data = False
+                    # Process all tables and records
                     for table in result:
-                        if len(table.records) > 0:
-                            has_data = True
-                            break
-                    
-                    if has_data:
-                        for table in result:
-                            for record in table.records:
-                                timestamp_iso = record.get_time().isoformat()
-                                
-                                # Skip if we've already seen this timestamp
-                                if timestamp_iso in seen_timestamps:
-                                    continue
-                                
-                                seen_timestamps.add(timestamp_iso)
-                                
-                                point_data = {
-                                    'time': timestamp_iso,
-                                    'latitude': record.values.get('latitude'),
-                                    'longitude': record.values.get('longitude'),
-                                    'speed': record.values.get('speed'),
-                                    'heading': record.values.get('heading'),
-                                    'step_index': record.values.get('step_index'),
-                                    'instruction': record.values.get('instruction'),
-                                    'intermediate_index': record.values.get('intermediate_index'),
-                                    'cycle_count': record.values.get('cycle_count'),
-                                    'step_duration': record.values.get('step_duration'),
-                                    'step_distance': record.values.get('step_distance'),
-                                    'step_name': record.values.get('step_name'),
-                                    'point_sequence': record.values.get('point_sequence')
-                                }
-                                new_points.append(point_data)
-                                last_timestamp = timestamp_iso
+                        for record in table.records:
+                            timestamp_iso = record.get_time().isoformat()
+                            
+                            # Skip if we've already processed this exact timestamp in this iteration
+                            if timestamp_iso in processed_timestamps:
+                                continue
+                            
+                            # Only process if this timestamp is actually newer than our last one
+                            if last_timestamp and timestamp_iso <= last_timestamp:
+                                continue
+                            
+                            processed_timestamps.add(timestamp_iso)
+                            
+                            # Validate that we have the required fields
+                            latitude = record.values.get('latitude')
+                            longitude = record.values.get('longitude')
+                            
+                            if latitude is None or longitude is None:
+                                continue  # Skip incomplete records
+                            
+                            point_data = {
+                                'time': timestamp_iso,
+                                'latitude': latitude,
+                                'longitude': longitude,
+                                'speed': record.values.get('speed', 0),
+                                'heading': record.values.get('heading', 0),
+                                'step_index': record.values.get('step_index', 0),
+                                'instruction': record.values.get('instruction', 'moving'),
+                                'intermediate_index': record.values.get('intermediate_index', 0),
+                                'cycle_count': record.values.get('cycle_count', 0),
+                                'step_duration': record.values.get('step_duration', 0),
+                                'step_distance': record.values.get('step_distance', 0),
+                                'step_name': record.values.get('step_name', ''),
+                                'point_sequence': record.values.get('point_sequence', 0)
+                            }
+                            new_points.append(point_data)
+                            last_timestamp = timestamp_iso
                     
                     if new_points:
                         # Send new data points
@@ -1021,8 +1028,8 @@ def stream_car_data():
                             yield f"data: {json.dumps(point)}\n\n"
                         print(f"📡 Streamed {len(new_points)} new data points")
                     else:
-                        # Send heartbeat to keep connection alive
-                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time(), 'waiting_for_data': True})}\n\n"
+                        # Send heartbeat less frequently to reduce noise
+                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time()})}\n\n"
                     
                     time.sleep(1)  # Check for new data every second
                     
