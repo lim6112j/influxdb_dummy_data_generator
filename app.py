@@ -32,7 +32,7 @@ def get_car_data():
         influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = request.args.get('influxdb_bucket', 'car_tracking')
+        influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
 
         print(f"Connecting to InfluxDB: {influxdb_url}")
         print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
@@ -219,7 +219,7 @@ def check_influxdb_status():
         influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = request.args.get('influxdb_bucket', 'car_tracking')
+        influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
 
         if not all([influxdb_url, influxdb_org, influxdb_bucket]):
             missing = []
@@ -309,7 +309,7 @@ def start_generation():
         influxdb_url = data.get('influxdb_url', 'http://localhost:8086')
         influxdb_token = data.get('influxdb_token', '')
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = data.get('influxdb_bucket', 'car_tracking')
+        influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
@@ -496,7 +496,7 @@ def update_route():
         influxdb_url = data.get('influxdb_url', 'http://localhost:8086')
         influxdb_token = data.get('influxdb_token', '')
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = data.get('influxdb_bucket', 'car_tracking')
+        influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
 
         client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
         query_api = client.query_api()
@@ -576,7 +576,7 @@ def get_influxdb_config():
         config = {
             'url': 'http://localhost:8086',
             'org': 'ciel mobility',
-            'bucket': 'car_tracking'
+            'bucket': 'location_202506'
             # Note: Token is not included for security reasons
         }
         
@@ -649,7 +649,7 @@ def stream_car_data():
             influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
             influxdb_token = request.args.get('influxdb_token', '')
             influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
-            influxdb_bucket = request.args.get('influxdb_bucket', 'car_tracking')
+            influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
 
             client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
