@@ -279,7 +279,7 @@
               <input
                 type="text"
                 id="osrmUrlInput"
-                value="http://localhost:5001"
+                value="http://13.209.66.194:5000"
                 style="
                   width: 100%;
                   padding: 4px;
@@ -1015,7 +1015,7 @@
             duration: 1, // 1 hour of data generation
             osrm_url:
               document.getElementById("osrmUrlInput").value.trim() ||
-              "http://localhost:5001",
+              "http://13.209.66.194:5000",
             movement_mode: movementMode,
             influxdb_url: influxdbUrl,
             influxdb_token: influxdbToken,
@@ -1503,7 +1503,7 @@
         const destLon = parseFloat(document.getElementById("destLon").value);
         const osrmUrl =
           document.getElementById("osrmUrlInput").value.trim() ||
-          "http://localhost:5001";
+          "http://13.209.66.194:5000";
 
         // Validate inputs
         if (
