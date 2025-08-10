@@ -391,7 +391,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 speed = 0.0  # Car is stopped (use float to match existing field type)
                 heading = last_position.get('heading', 0)
                 
-                # Create a Point object for paused state
+                # Create a Point object for paused state with precise timestamp
+                precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
                 point = Point(influxdb_measurement) \
                     .tag("device_id", influxdb_device_id) \
                     .field("latitude", latitude) \
@@ -405,7 +406,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                     .field("step_duration", 0.0) \
                     .field("step_distance", 0.0) \
                     .field("step_name", "Car Paused") \
-                    .time(int(current_time * 1e9), "ns")
+                    .field("point_sequence", int(point_index)) \
+                    .time(precise_timestamp, "ns")
 
                 # Write the paused data to InfluxDB
                 try:
@@ -677,12 +679,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             client.close()
             return
 
-        current_time += 1
-        
         # Only increment point_index for one-way mode, round-trip uses time-based calculation
         if movement_mode == 'one-way':
             point_index += 1
         
+        current_time += 1
         time.sleep(1)
 
     # Close the client

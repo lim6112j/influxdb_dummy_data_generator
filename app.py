@@ -51,7 +51,8 @@ def get_car_data():
           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-          |> sort(columns: ["_time"])
+          |> sort(columns: ["_time", "point_sequence"])
+          |> unique(column: "_time")
           |> limit(n: 500)
         '''
 
@@ -73,7 +74,8 @@ def get_car_data():
                     'cycle_count': record.values.get('cycle_count'),
                     'step_duration': record.values.get('step_duration'),
                     'step_distance': record.values.get('step_distance'),
-                    'step_name': record.values.get('step_name')
+                    'step_name': record.values.get('step_name'),
+                    'point_sequence': record.values.get('point_sequence')
                 })
 
         print(f"Found {len(car_data)} data points")
@@ -956,7 +958,8 @@ def stream_car_data():
                           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                          |> sort(columns: ["_time"])
+                          |> sort(columns: ["_time", "point_sequence"])
+                          |> unique(column: "_time")
                         '''
                     else:
                         # Get recent data points to start streaming (avoid last() on empty data)
@@ -966,7 +969,8 @@ def stream_car_data():
                           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
                           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                          |> sort(columns: ["_time"])
+                          |> sort(columns: ["_time", "point_sequence"])
+                          |> unique(column: "_time")
                           |> tail(n: 1)
                         '''
 
@@ -987,7 +991,8 @@ def stream_car_data():
                                 'cycle_count': record.values.get('cycle_count'),
                                 'step_duration': record.values.get('step_duration'),
                                 'step_distance': record.values.get('step_distance'),
-                                'step_name': record.values.get('step_name')
+                                'step_name': record.values.get('step_name'),
+                                'point_sequence': record.values.get('point_sequence')
                             }
                             new_points.append(point_data)
                             last_timestamp = record.get_time().isoformat()
