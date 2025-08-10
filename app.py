@@ -962,7 +962,7 @@ def stream_car_data():
                           |> unique(column: "_time")
                         '''
                     else:
-                        # Get the most recent data point to start streaming
+                        # Get recent data points to start streaming (handle empty bucket gracefully)
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -10m)
@@ -971,7 +971,7 @@ def stream_car_data():
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
                           |> unique(column: "_time")
-                          |> last()
+                          |> tail(n: 1)
                         '''
 
                     result = query_api.query(query=query)
@@ -979,33 +979,41 @@ def stream_car_data():
                     new_points = []
                     seen_timestamps = set()
                     
+                    # Check if we have any data at all
+                    has_data = False
                     for table in result:
-                        for record in table.records:
-                            timestamp_iso = record.get_time().isoformat()
-                            
-                            # Skip if we've already seen this timestamp
-                            if timestamp_iso in seen_timestamps:
-                                continue
-                            
-                            seen_timestamps.add(timestamp_iso)
-                            
-                            point_data = {
-                                'time': timestamp_iso,
-                                'latitude': record.values.get('latitude'),
-                                'longitude': record.values.get('longitude'),
-                                'speed': record.values.get('speed'),
-                                'heading': record.values.get('heading'),
-                                'step_index': record.values.get('step_index'),
-                                'instruction': record.values.get('instruction'),
-                                'intermediate_index': record.values.get('intermediate_index'),
-                                'cycle_count': record.values.get('cycle_count'),
-                                'step_duration': record.values.get('step_duration'),
-                                'step_distance': record.values.get('step_distance'),
-                                'step_name': record.values.get('step_name'),
-                                'point_sequence': record.values.get('point_sequence')
-                            }
-                            new_points.append(point_data)
-                            last_timestamp = timestamp_iso
+                        if len(table.records) > 0:
+                            has_data = True
+                            break
+                    
+                    if has_data:
+                        for table in result:
+                            for record in table.records:
+                                timestamp_iso = record.get_time().isoformat()
+                                
+                                # Skip if we've already seen this timestamp
+                                if timestamp_iso in seen_timestamps:
+                                    continue
+                                
+                                seen_timestamps.add(timestamp_iso)
+                                
+                                point_data = {
+                                    'time': timestamp_iso,
+                                    'latitude': record.values.get('latitude'),
+                                    'longitude': record.values.get('longitude'),
+                                    'speed': record.values.get('speed'),
+                                    'heading': record.values.get('heading'),
+                                    'step_index': record.values.get('step_index'),
+                                    'instruction': record.values.get('instruction'),
+                                    'intermediate_index': record.values.get('intermediate_index'),
+                                    'cycle_count': record.values.get('cycle_count'),
+                                    'step_duration': record.values.get('step_duration'),
+                                    'step_distance': record.values.get('step_distance'),
+                                    'step_name': record.values.get('step_name'),
+                                    'point_sequence': record.values.get('point_sequence')
+                                }
+                                new_points.append(point_data)
+                                last_timestamp = timestamp_iso
                     
                     if new_points:
                         # Send new data points
@@ -1013,8 +1021,8 @@ def stream_car_data():
                             yield f"data: {json.dumps(point)}\n\n"
                         print(f"📡 Streamed {len(new_points)} new data points")
                     else:
-                        # Send heartbeat to keep connection alive (less frequently)
-                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time()})}\n\n"
+                        # Send heartbeat to keep connection alive
+                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time(), 'waiting_for_data': True})}\n\n"
                     
                     time.sleep(1)  # Check for new data every second
                     
@@ -1024,13 +1032,15 @@ def stream_car_data():
                     
                     # Handle specific InfluxDB errors
                     if "no column" in error_msg and "_value" in error_msg:
-                        yield f"data: {json.dumps({'error': 'No data available in InfluxDB bucket', 'details': 'The bucket appears to be empty or no matching data found'})}\n\n"
+                        # This is expected when bucket is empty - just wait for data
+                        yield f"data: {json.dumps({'status': 'waiting', 'message': 'Waiting for data to be generated...', 'timestamp': time.time()})}\n\n"
+                        time.sleep(2)  # Wait shorter time when waiting for data
                     elif "unauthorized" in error_msg.lower():
                         yield f"data: {json.dumps({'error': 'InfluxDB authentication failed', 'details': 'Check your token and permissions'})}\n\n"
+                        time.sleep(5)  # Wait longer on auth error
                     else:
                         yield f"data: {json.dumps({'error': f'Streaming error: {error_msg}'})}\n\n"
-                    
-                    time.sleep(5)  # Wait longer on error
+                        time.sleep(3)  # Wait moderate time on other errors
                     
         except Exception as e:
             print(f"❌ Error in stream setup: {e}")
