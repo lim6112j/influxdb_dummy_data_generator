@@ -435,14 +435,14 @@
               type="number"
               id="startLat"
               placeholder="Latitude"
-              value="35.84"
+              value="37.227344"
               step="any"
             />
             <input
               type="number"
               id="startLon"
               placeholder="Longitude"
-              value="128.48"
+              value="126.767967"
               step="any"
             />
           </div>
@@ -452,14 +452,14 @@
               type="number"
               id="destLat"
               placeholder="Latitude"
-              value="35.8519"
+              value="37.327344"
               step="any"
             />
             <input
               type="number"
               id="destLon"
               placeholder="Longitude"
-              value="128.6727"
+              value="126.777967"
               step="any"
             />
           </div>
@@ -703,10 +703,10 @@
       let lastRouteTimestamp = 0;
 
       function initMap() {
-        // Initialize map centered on Los Angeles (matching the data generation area)
+        // Initialize map centered on Seoul area (matching the data generation area)
         map = new google.maps.Map(document.getElementById("map"), {
           zoom: 13,
-          center: { lat: 35.84, lng: 128.48 },
+          center: { lat: 37.227344, lng: 126.767967 },
           mapTypeId: "roadmap",
         });
 
