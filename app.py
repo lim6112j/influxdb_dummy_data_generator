@@ -51,7 +51,7 @@ def get_car_data():
           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-          |> sort(columns: ["_time", "point_sequence"])
+          |> sort(columns: ["_time"])
           |> unique(column: "_time")
           |> limit(n: 500)
         '''
@@ -958,29 +958,39 @@ def stream_car_data():
                           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                          |> sort(columns: ["_time", "point_sequence"])
+                          |> sort(columns: ["_time"])
                           |> unique(column: "_time")
                         '''
                     else:
-                        # Get recent data points to start streaming (avoid last() on empty data)
+                        # Get the most recent data point to start streaming
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -10m)
                           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
                           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-                          |> sort(columns: ["_time", "point_sequence"])
+                          |> sort(columns: ["_time"])
                           |> unique(column: "_time")
-                          |> tail(n: 1)
+                          |> last()
                         '''
 
                     result = query_api.query(query=query)
                     
                     new_points = []
+                    seen_timestamps = set()
+                    
                     for table in result:
                         for record in table.records:
+                            timestamp_iso = record.get_time().isoformat()
+                            
+                            # Skip if we've already seen this timestamp
+                            if timestamp_iso in seen_timestamps:
+                                continue
+                            
+                            seen_timestamps.add(timestamp_iso)
+                            
                             point_data = {
-                                'time': record.get_time().isoformat(),
+                                'time': timestamp_iso,
                                 'latitude': record.values.get('latitude'),
                                 'longitude': record.values.get('longitude'),
                                 'speed': record.values.get('speed'),
@@ -995,16 +1005,16 @@ def stream_car_data():
                                 'point_sequence': record.values.get('point_sequence')
                             }
                             new_points.append(point_data)
-                            last_timestamp = record.get_time().isoformat()
+                            last_timestamp = timestamp_iso
                     
                     if new_points:
                         # Send new data points
                         for point in new_points:
                             yield f"data: {json.dumps(point)}\n\n"
-                        print(f"📡 Streamed {len(new_points)} data points")
+                        print(f"📡 Streamed {len(new_points)} new data points")
                     else:
-                        # Send heartbeat to keep connection alive
-                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time(), 'message': 'No new data available'})}\n\n"
+                        # Send heartbeat to keep connection alive (less frequently)
+                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time()})}\n\n"
                     
                     time.sleep(1)  # Check for new data every second
                     
