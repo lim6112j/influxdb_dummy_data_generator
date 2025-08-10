@@ -147,7 +147,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     influxdb_url = influxdb_url or "http://43.201.26.186:8086"
     influxdb_token = influxdb_token or ""
     influxdb_org = influxdb_org or "ciel mobility"
-    influxdb_bucket = influxdb_bucket or "location_202506"
+    influxdb_bucket = influxdb_bucket or "location"
     influxdb_measurement = influxdb_measurement or "locReports"
     influxdb_tag_name = influxdb_tag_name or "device_id"
     influxdb_tag_value = influxdb_tag_value or "ETRI_VT60_ID01"
@@ -736,8 +736,8 @@ if __name__ == "__main__":
                         help="InfluxDB authentication token")
     parser.add_argument("--influxdb-org", type=str, default="ciel mobility",
                         help="InfluxDB organization (default: ciel mobility)")
-    parser.add_argument("--influxdb-bucket", type=str, default="location_202506",
-                        help="InfluxDB bucket name (default: location_202506)")
+    parser.add_argument("--influxdb-bucket", type=str, default="location",
+                        help="InfluxDB bucket name (default: location)")
     parser.add_argument("--influxdb-measurement", type=str, default="locReports",
                         help="InfluxDB measurement name (default: locReports)")
     parser.add_argument("--influxdb-tag-name", type=str, default="device_id",

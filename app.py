@@ -32,7 +32,7 @@ def get_car_data():
         influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
+        influxdb_bucket = request.args.get('influxdb_bucket', 'location')
         influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
         influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
@@ -223,7 +223,7 @@ def check_influxdb_status():
         influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
+        influxdb_bucket = request.args.get('influxdb_bucket', 'location')
         influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
         influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
@@ -319,7 +319,7 @@ def start_generation():
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = data.get('influxdb_token', '')
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
         influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
@@ -515,7 +515,7 @@ def update_route():
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
         influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
@@ -628,7 +628,7 @@ def append_route():
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
         influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
@@ -756,7 +756,7 @@ def append_route_optimized():
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
         influxdb_tag_value = data.get('influxdb_tag_value', '1')
@@ -866,7 +866,7 @@ def get_influxdb_config():
         config = {
             'url': 'http://43.201.26.186:8086',
             'org': 'ciel mobility',
-            'bucket': 'location_202506',
+            'bucket': 'location',
             'measurement': 'locReports',
             'tag_name': 'device_id',
             'tag_value': 'ETRI_VT60_ID01'
@@ -940,7 +940,7 @@ def stream_car_data():
     influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
     influxdb_token = request.args.get('influxdb_token', '')
     influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
-    influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
+    influxdb_bucket = request.args.get('influxdb_bucket', 'location')
     influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
     influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
     influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
