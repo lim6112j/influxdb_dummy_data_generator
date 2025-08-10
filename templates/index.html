@@ -338,7 +338,7 @@
                   <input
                     type="text"
                     id="influxdbOrgInput"
-                    value="myorg"
+                    value="ciel mobility"
                     style="
                       width: 100%;
                       padding: 4px;
@@ -549,7 +549,7 @@
             <strong>GET /api/status/influxdb</strong>
             <p style="margin: 5px 0; color: #666;">Check InfluxDB server status and configuration</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;">Parameters: influxdb_url, influxdb_token, influxdb_org, influxdb_bucket</p>
-            <p style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace;">Example: /api/status/influxdb?influxdb_url=http://localhost:8086&influxdb_org=myorg&influxdb_bucket=car_tracking</p>
+            <p style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace;">Example: /api/status/influxdb?influxdb_url=http://localhost:8086&influxdb_org=ciel%20mobility&influxdb_bucket=car_tracking</p>
           </div>
 
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
@@ -904,7 +904,7 @@
         // Get InfluxDB configuration from UI
         const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
-        const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
+        const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'car_tracking';
 
         // First, start the data generation script
@@ -1513,7 +1513,7 @@
         const influxdbToken =
           document.getElementById("influxdbTokenInput").value.trim();
         const influxdbOrg =
-          document.getElementById("influxdbOrgInput").value.trim() || "myorg";
+          document.getElementById("influxdbOrgInput").value.trim() || "ciel mobility";
         const influxdbBucket =
           document.getElementById("influxdbBucketInput").value.trim() ||
           "car_tracking";
