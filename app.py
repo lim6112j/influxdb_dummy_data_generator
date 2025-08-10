@@ -28,14 +28,11 @@ def get_car_data():
     """Fetch car data from InfluxDB and return as JSON"""
 
     try:
-        # Load environment variables
-        influxdb_url = os.getenv('INFLUXDB_URL')
-        influxdb_token = os.getenv('INFLUXDB_TOKEN')
-        influxdb_org = os.getenv('INFLUXDB_ORG')
-        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
-
-        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
-            return jsonify({'error': 'Missing InfluxDB configuration'}), 500
+        # Get InfluxDB configuration from request parameters
+        influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
+        influxdb_token = request.args.get('influxdb_token', '')
+        influxdb_org = request.args.get('influxdb_org', 'myorg')
+        influxdb_bucket = request.args.get('influxdb_bucket', 'car_tracking')
 
         print(f"Connecting to InfluxDB: {influxdb_url}")
         print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
@@ -45,11 +42,14 @@ def get_car_data():
         query_api = client.query_api()
 
         # Query to get the last 500 car data points with step information
+        influxdb_measurement = 'locReports'
+        influxdb_device_id = '1'
+        
         query = f'''
         from(bucket: "{influxdb_bucket}")
           |> range(start: -10m)
-          |> filter(fn: (r) => r["_measurement"] == "car_data")
-          |> filter(fn: (r) => r["car_id"] == "1")
+          |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
+          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
           |> sort(columns: ["_time"])
           |> limit(n: 500)
@@ -215,22 +215,21 @@ def check_osrm_status():
 def check_influxdb_status():
     """Check if InfluxDB is accessible and configured properly"""
     try:
-        # Get configuration from query parameters or environment variables
-        influxdb_url = request.args.get('influxdb_url') or os.getenv('INFLUXDB_URL')
-        influxdb_token = request.args.get('influxdb_token') or os.getenv('INFLUXDB_TOKEN')
-        influxdb_org = request.args.get('influxdb_org') or os.getenv('INFLUXDB_ORG')
-        influxdb_bucket = request.args.get('influxdb_bucket') or os.getenv('INFLUXDB_BUCKET')
+        # Get configuration from query parameters with defaults
+        influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
+        influxdb_token = request.args.get('influxdb_token', '')
+        influxdb_org = request.args.get('influxdb_org', 'myorg')
+        influxdb_bucket = request.args.get('influxdb_bucket', 'car_tracking')
 
-        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
+        if not all([influxdb_url, influxdb_org, influxdb_bucket]):
             missing = []
-            if not influxdb_url: missing.append('INFLUXDB_URL')
-            if not influxdb_token: missing.append('INFLUXDB_TOKEN')
-            if not influxdb_org: missing.append('INFLUXDB_ORG')
-            if not influxdb_bucket: missing.append('INFLUXDB_BUCKET')
+            if not influxdb_url: missing.append('influxdb_url')
+            if not influxdb_org: missing.append('influxdb_org')
+            if not influxdb_bucket: missing.append('influxdb_bucket')
             
             return jsonify({
                 'status': 'misconfigured',
-                'message': f"Missing environment variables: {', '.join(missing)}",
+                'message': f"Missing required parameters: {', '.join(missing)}",
                 'url': influxdb_url or 'Not configured'
             })
 
@@ -306,6 +305,12 @@ def start_generation():
         osrm_url = data.get('osrm_url', 'http://localhost:5001')
         movement_mode = data.get('movement_mode', 'one-way')  # Default one-way
         
+        # InfluxDB configuration
+        influxdb_url = data.get('influxdb_url', 'http://localhost:8086')
+        influxdb_token = data.get('influxdb_token', '')
+        influxdb_org = data.get('influxdb_org', 'myorg')
+        influxdb_bucket = data.get('influxdb_bucket', 'car_tracking')
+        
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
         
@@ -316,7 +321,11 @@ def start_generation():
             '--origin', str(origin_lat), str(origin_lon),
             '--destination', str(dest_lat), str(dest_lon),
             '--osrm-url', osrm_url,
-            '--movement-mode', movement_mode
+            '--movement-mode', movement_mode,
+            '--influxdb-url', influxdb_url,
+            '--influxdb-token', influxdb_token,
+            '--influxdb-org', influxdb_org,
+            '--influxdb-bucket', influxdb_bucket
         ]
         
         # Start the script as a subprocess so we can control it
@@ -484,23 +493,23 @@ def update_route():
                 return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
         
         # Get current car position from the latest data point
-        influxdb_url = os.getenv('INFLUXDB_URL')
-        influxdb_token = os.getenv('INFLUXDB_TOKEN')
-        influxdb_org = os.getenv('INFLUXDB_ORG')
-        influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
-
-        if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
-            return jsonify({'error': 'Missing InfluxDB configuration'}), 500
+        influxdb_url = data.get('influxdb_url', 'http://localhost:8086')
+        influxdb_token = data.get('influxdb_token', '')
+        influxdb_org = data.get('influxdb_org', 'myorg')
+        influxdb_bucket = data.get('influxdb_bucket', 'car_tracking')
 
         client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
         query_api = client.query_api()
 
         # Get the latest car position
+        influxdb_measurement = 'locReports'
+        influxdb_device_id = '1'
+        
         query = f'''
         from(bucket: "{influxdb_bucket}")
           |> range(start: -1h)
-          |> filter(fn: (r) => r["_measurement"] == "car_data")
-          |> filter(fn: (r) => r["car_id"] == "1")
+          |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
+          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
           |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
           |> last()
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
@@ -562,21 +571,15 @@ def update_route():
 
 @app.route('/api/influxdb-config')
 def get_influxdb_config():
-    """Get InfluxDB configuration from environment variables"""
+    """Get default InfluxDB configuration"""
     try:
         config = {
-            'url': os.getenv('INFLUXDB_URL'),
-            'org': os.getenv('INFLUXDB_ORG'),
-            'bucket': os.getenv('INFLUXDB_BUCKET')
+            'url': 'http://localhost:8086',
+            'org': 'myorg',
+            'bucket': 'car_tracking'
             # Note: Token is not included for security reasons
         }
         
-        # Remove None values
-        config = {k: v for k, v in config.items() if v is not None}
-        
-        if not config:
-            return jsonify({'error': 'No InfluxDB configuration found'}), 404
-            
         return jsonify(config)
         
     except Exception as e:
@@ -642,20 +645,20 @@ def stream_car_data():
     
     def generate_data():
         try:
-            # Load environment variables
-            influxdb_url = os.getenv('INFLUXDB_URL')
-            influxdb_token = os.getenv('INFLUXDB_TOKEN')
-            influxdb_org = os.getenv('INFLUXDB_ORG')
-            influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
-
-            if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
-                yield f"data: {json.dumps({'error': 'Missing InfluxDB configuration'})}\n\n"
-                return
+            # Get InfluxDB configuration from request parameters
+            influxdb_url = request.args.get('influxdb_url', 'http://localhost:8086')
+            influxdb_token = request.args.get('influxdb_token', '')
+            influxdb_org = request.args.get('influxdb_org', 'myorg')
+            influxdb_bucket = request.args.get('influxdb_bucket', 'car_tracking')
 
             client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
             
             last_timestamp = None
+            
+            # Use fixed measurement and device ID
+            influxdb_measurement = 'locReports'
+            influxdb_device_id = '1'
             
             while True:
                 try:
@@ -664,8 +667,8 @@ def stream_car_data():
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -10m)
-                          |> filter(fn: (r) => r["_measurement"] == "car_data")
-                          |> filter(fn: (r) => r["car_id"] == "1")
+                          |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
+                          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
@@ -674,8 +677,8 @@ def stream_car_data():
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -1m)
-                          |> filter(fn: (r) => r["_measurement"] == "car_data")
-                          |> filter(fn: (r) => r["car_id"] == "1")
+                          |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
+                          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
                         '''

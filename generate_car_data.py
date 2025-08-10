@@ -117,14 +117,14 @@ def clear_existing_car_data(client, influxdb_bucket, influxdb_org):
     try:
         delete_api = client.delete_api()
         
-        # Delete all car_data measurements for car_id=1
+        # Delete all locReports measurements for device_id=1
         start_time = "1970-01-01T00:00:00Z"  # Delete all historical data
         stop_time = "2030-01-01T00:00:00Z"   # Far future to ensure we get everything
         
         delete_api.delete(
             start=start_time,
             stop=stop_time,
-            predicate='_measurement="car_data" AND car_id="1"',
+            predicate='_measurement="locReports" AND device_id="1"',
             bucket=influxdb_bucket,
             org=influxdb_org
         )
@@ -135,49 +135,45 @@ def clear_existing_car_data(client, influxdb_bucket, influxdb_org):
         print(f"Warning: Error clearing existing data: {e}")
 
 
-def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', clear_existing=True):
+def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', clear_existing=True, 
+                     influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
 
     start_time = time.time()
     end_time = start_time + (duration * 3600)  # Convert hours to seconds
 
-    # Load environment variables
-    env_file = '.env'
-    if os.path.exists(env_file):
-        print(f"Loading environment from: {os.path.abspath(env_file)}")
-        load_dotenv(env_file, override=True)
-    else:
-        print(f"Warning: .env file not found at {os.path.abspath(env_file)}")
-        load_dotenv(override=True)
+    # Use provided InfluxDB configuration or defaults
+    influxdb_url = influxdb_url or "http://localhost:8086"
+    influxdb_token = influxdb_token or ""
+    influxdb_org = influxdb_org or "myorg"
+    influxdb_bucket = influxdb_bucket or "car_tracking"
+    influxdb_measurement = "locReports"
+    influxdb_device_id = "1"
 
-    # Load environment variables
-    influxdb_url = os.getenv('INFLUXDB_URL')
-    influxdb_token = os.getenv('INFLUXDB_TOKEN')
-    influxdb_org = os.getenv('INFLUXDB_ORG')
-    influxdb_bucket = os.getenv('INFLUXDB_BUCKET')
+    print(f"InfluxDB Configuration:")
+    print(f"  URL: {influxdb_url}")
+    print(f"  Organization: {influxdb_org}")
+    print(f"  Bucket: {influxdb_bucket}")
+    print(f"  Token: {'***' if influxdb_token else 'Not provided'}")
 
-    print(f"Loaded environment variables:")
-    print(f"  INFLUXDB_URL: {influxdb_url}")
-    print(f"  INFLUXDB_ORG: {influxdb_org}")
-    print(f"  INFLUXDB_BUCKET: {influxdb_bucket}")
-    print(
-        f"  INFLUXDB_TOKEN: {influxdb_token[:20]}..." if influxdb_token else "Token: None")
-
-    # Check if all required environment variables are set
-    if not all([influxdb_url, influxdb_token, influxdb_org, influxdb_bucket]):
-        print("Error: Missing required environment variables.")
-        print(f"INFLUXDB_URL: {'✓' if influxdb_url else '✗'}")
-        print(f"INFLUXDB_TOKEN: {'✓' if influxdb_token else '✗'}")
-        print(f"INFLUXDB_ORG: {'✓' if influxdb_org else '✗'}")
-        print(f"INFLUXDB_BUCKET: {'✓' if influxdb_bucket else '✗'}")
-        print("\nPlease check your .env file and ensure all variables are set correctly.")
+    # Check if all required parameters are set
+    if not all([influxdb_url, influxdb_org, influxdb_bucket]):
+        print("Error: Missing required InfluxDB configuration.")
+        print(f"URL: {'✓' if influxdb_url else '✗'}")
+        print(f"Organization: {'✓' if influxdb_org else '✗'}")
+        print(f"Bucket: {'✓' if influxdb_bucket else '✗'}")
+        print("\nPlease provide InfluxDB configuration parameters.")
         return
+
+    # Warn if no token is provided
+    if not influxdb_token:
+        print("⚠️  WARNING: No InfluxDB token provided. This may cause authentication errors.")
+        print("⚠️  If InfluxDB requires authentication, please provide a valid token.")
+        print("⚠️  Continuing anyway in case InfluxDB is configured without authentication...")
 
     print(f"Connecting to InfluxDB at: {influxdb_url}")
     print(f"Organization: {influxdb_org}")
     print(f"Bucket: {influxdb_bucket}")
-    print(
-        f"Token: {influxdb_token[:20]}..." if influxdb_token else "Token: None")
 
     # Initialize InfluxDB client
     try:
@@ -396,8 +392,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 heading = last_position.get('heading', 0)
                 
                 # Create a Point object for paused state
-                point = Point("car_data") \
-                    .tag("car_id", "1") \
+                point = Point(influxdb_measurement) \
+                    .tag("device_id", influxdb_device_id) \
                     .field("latitude", latitude) \
                     .field("longitude", longitude) \
                     .field("speed", float(speed)) \
@@ -417,7 +413,13 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                     if int(current_time) % 30 == 0:  # Print every 30 seconds when paused
                         print(f"🛑 Car paused at {latitude:.6f}, {longitude:.6f} - {time.strftime('%H:%M:%S')}")
                 except Exception as e:
-                    print(f"Error writing paused data: {e}")
+                    error_msg = str(e)
+                    if "401" in error_msg or "unauthorized" in error_msg.lower():
+                        print(f"❌ InfluxDB Authentication Error while paused: {e}")
+                        print("❌ Cannot write paused position data due to authentication failure.")
+                        # Continue the loop to keep trying, but don't exit
+                    else:
+                        print(f"Error writing paused data: {e}")
                 
                 current_time += 1
                 time.sleep(1)
@@ -638,8 +640,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             print(f"Debug: {progress_info} ({direction}): {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
         # Create a Point object with step information
-        point = Point("car_data") \
-            .tag("car_id", "1") \
+        point = Point(influxdb_measurement) \
+            .tag("device_id", influxdb_device_id) \
             .field("latitude", latitude) \
             .field("longitude", longitude) \
             .field("speed", float(speed)) \
@@ -664,7 +666,14 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 print(
                     f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - {progress_info}")
         except Exception as e:
-            print(f"Error writing data: {e}")
+            error_msg = str(e)
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                print(f"❌ InfluxDB Authentication Error: {e}")
+                print("❌ This is likely due to missing or invalid InfluxDB token.")
+                print("❌ Please check your InfluxDB configuration and provide a valid token.")
+                print("❌ Stopping data generation due to authentication failure.")
+            else:
+                print(f"❌ Error writing data: {e}")
             client.close()
             return
 
@@ -707,10 +716,21 @@ if __name__ == "__main__":
                         default='one-way', help="Movement mode: one-way or round-trip (default: one-way)")
     parser.add_argument("--no-clear", action='store_true',
                         help="Don't clear existing car data before generating new data")
+    parser.add_argument("--influxdb-url", type=str, default="http://localhost:8086",
+                        help="InfluxDB server URL (default: http://localhost:8086)")
+    parser.add_argument("--influxdb-token", type=str, default="",
+                        help="InfluxDB authentication token")
+    parser.add_argument("--influxdb-org", type=str, default="myorg",
+                        help="InfluxDB organization (default: myorg)")
+    parser.add_argument("--influxdb-bucket", type=str, default="car_tracking",
+                        help="InfluxDB bucket name (default: car_tracking)")
 
     args = parser.parse_args()
 
     origin = (float(args.origin[0]), float(args.origin[1]))
     destination = (float(args.destination[0]), float(args.destination[1]))
 
-    generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode, clear_existing=not args.no_clear)
+    generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode, 
+                     clear_existing=not args.no_clear, influxdb_url=args.influxdb_url,
+                     influxdb_token=args.influxdb_token, influxdb_org=args.influxdb_org,
+                     influxdb_bucket=args.influxdb_bucket)
