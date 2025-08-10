@@ -404,7 +404,7 @@
                   <input
                     type="text"
                     id="influxdbTagValueInput"
-                    value="1"
+                    value="ETRI_VT60_ID01"
                     style="
                       width: 100%;
                       padding: 4px;
@@ -882,7 +882,7 @@
               document.getElementById('influxdbBucketInput').value = data.bucket || 'car_tracking';
               document.getElementById('influxdbMeasurementInput').value = data.measurement || 'locReports';
               document.getElementById('influxdbTagNameInput').value = data.tag_name || 'device_id';
-              document.getElementById('influxdbTagValueInput').value = data.tag_value || '1';
+              document.getElementById('influxdbTagValueInput').value = data.tag_value || 'ETRI_VT60_ID01';
               // Note: Token is not loaded from config for security reasons
             }
           })
@@ -999,7 +999,7 @@
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
-        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || '1';
+        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
 
         // First, start the data generation script
         fetch("/api/start-generation", {
@@ -1066,7 +1066,7 @@
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
-        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || '1';
+        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
         
         // Build streaming URL with InfluxDB parameters
         const streamUrl = `/api/car-data-stream?influxdb_url=${encodeURIComponent(influxdbUrl)}&influxdb_token=${encodeURIComponent(influxdbToken)}&influxdb_org=${encodeURIComponent(influxdbOrg)}&influxdb_bucket=${encodeURIComponent(influxdbBucket)}&influxdb_measurement=${encodeURIComponent(influxdbMeasurement)}&influxdb_tag_name=${encodeURIComponent(influxdbTagName)}&influxdb_tag_value=${encodeURIComponent(influxdbTagValue)}`;
@@ -1666,7 +1666,7 @@
           "device_id";
         const influxdbTagValue =
           document.getElementById("influxdbTagValueInput").value.trim() ||
-          "1";
+          "ETRI_VT60_ID01";
 
         const params = new URLSearchParams({
           influxdb_url: influxdbUrl,
@@ -1752,7 +1752,7 @@
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
-        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || '1';
+        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
 
         // Only include osrm_url if it's provided, otherwise let the server use the stored value
         const requestBody = { 

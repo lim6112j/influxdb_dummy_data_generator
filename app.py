@@ -35,7 +35,7 @@ def get_car_data():
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = request.args.get('influxdb_tag_value', '1')
+        influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
 
         print(f"Connecting to InfluxDB: {influxdb_url}")
         print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
@@ -224,7 +224,7 @@ def check_influxdb_status():
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = request.args.get('influxdb_tag_value', '1')
+        influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
 
         if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement, influxdb_tag_name, influxdb_tag_value]):
             missing = []
@@ -320,9 +320,9 @@ def start_generation():
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', '1')
+        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', '1')
+        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
@@ -516,7 +516,7 @@ def update_route():
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', '1')
+        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
 
         print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"🔄 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
@@ -629,7 +629,7 @@ def append_route():
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', '1')
+        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
 
         print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"➕ Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
@@ -867,7 +867,7 @@ def get_influxdb_config():
             'bucket': 'location_202506',
             'measurement': 'locReports',
             'tag_name': 'device_id',
-            'tag_value': '1'
+            'tag_value': 'ETRI_VT60_ID01'
             # Note: Token is not included for security reasons
         }
         
@@ -941,7 +941,7 @@ def stream_car_data():
     influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
     influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
     influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
-    influxdb_tag_value = request.args.get('influxdb_tag_value', '1')
+    influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
     
     def generate_data():
         client = None

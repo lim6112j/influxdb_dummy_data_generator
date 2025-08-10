@@ -150,7 +150,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     influxdb_bucket = influxdb_bucket or "location_202506"
     influxdb_measurement = influxdb_measurement or "locReports"
     influxdb_tag_name = influxdb_tag_name or "device_id"
-    influxdb_tag_value = influxdb_tag_value or "1"
+    influxdb_tag_value = influxdb_tag_value or "ETRI_VT60_ID01"
 
     print(f"InfluxDB Configuration:")
     print(f"  URL: {influxdb_url}")
@@ -738,8 +738,8 @@ if __name__ == "__main__":
                         help="InfluxDB measurement name (default: locReports)")
     parser.add_argument("--influxdb-tag-name", type=str, default="device_id",
                         help="InfluxDB tag name (default: device_id)")
-    parser.add_argument("--influxdb-tag-value", type=str, default="1",
-                        help="InfluxDB tag value (default: 1)")
+    parser.add_argument("--influxdb-tag-value", type=str, default="ETRI_VT60_ID01",
+                        help="InfluxDB tag value (default: ETRI_VT60_ID01)")
 
     args = parser.parse_args()
 
