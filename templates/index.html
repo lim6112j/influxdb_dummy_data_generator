@@ -366,6 +366,23 @@
                   />
                 </div>
               </div>
+              <div style="margin-top: 4px;">
+                <label for="influxdbMeasurementInput" style="display: block; font-size: 11px; color: #666; margin-bottom: 2px;">Measurement:</label>
+                <input
+                  type="text"
+                  id="influxdbMeasurementInput"
+                  value="locReports"
+                  style="
+                    width: 100%;
+                    padding: 4px;
+                    border: 1px solid #ddd;
+                    border-radius: 3px;
+                    font-size: 12px;
+                  "
+                  placeholder="Measurement"
+                />
+              </div>
+              </div>
             </div>
             <div id="influxdbMessage">Checking status...</div>
             <div class="status-details" id="influxdbDetails"></div>
@@ -829,6 +846,7 @@
               document.getElementById('influxdbUrlInput').value = data.url || 'http://localhost:8086';
               document.getElementById('influxdbOrgInput').value = data.org || 'myorg';
               document.getElementById('influxdbBucketInput').value = data.bucket || 'car_tracking';
+              document.getElementById('influxdbMeasurementInput').value = data.measurement || 'locReports';
               // Note: Token is not loaded from config for security reasons
             }
           })
@@ -943,6 +961,7 @@
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
 
         // First, start the data generation script
         fetch("/api/start-generation", {
@@ -964,6 +983,7 @@
             influxdb_token: influxdbToken,
             influxdb_org: influxdbOrg,
             influxdb_bucket: influxdbBucket,
+            influxdb_measurement: influxdbMeasurement,
           }),
         })
           .then((response) => response.json())
@@ -1004,9 +1024,10 @@
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         
         // Build streaming URL with InfluxDB parameters
-        const streamUrl = `/api/car-data-stream?influxdb_url=${encodeURIComponent(influxdbUrl)}&influxdb_token=${encodeURIComponent(influxdbToken)}&influxdb_org=${encodeURIComponent(influxdbOrg)}&influxdb_bucket=${encodeURIComponent(influxdbBucket)}`;
+        const streamUrl = `/api/car-data-stream?influxdb_url=${encodeURIComponent(influxdbUrl)}&influxdb_token=${encodeURIComponent(influxdbToken)}&influxdb_org=${encodeURIComponent(influxdbOrg)}&influxdb_bucket=${encodeURIComponent(influxdbBucket)}&influxdb_measurement=${encodeURIComponent(influxdbMeasurement)}`;
         
         // Start EventSource for streaming
         eventSource = new EventSource(streamUrl);
@@ -1595,11 +1616,15 @@
         const influxdbBucket =
           document.getElementById("influxdbBucketInput").value.trim() ||
           "car_tracking";
+        const influxdbMeasurement =
+          document.getElementById("influxdbMeasurementInput").value.trim() ||
+          "locReports";
 
         const params = new URLSearchParams({
           influxdb_url: influxdbUrl,
           influxdb_org: influxdbOrg,
           influxdb_bucket: influxdbBucket,
+          influxdb_measurement: influxdbMeasurement,
         });
 
         // Add token to params if provided
@@ -1675,6 +1700,7 @@
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
 
         // Only include osrm_url if it's provided, otherwise let the server use the stored value
         const requestBody = { 
@@ -1682,7 +1708,8 @@
           influxdb_url: influxdbUrl,
           influxdb_token: influxdbToken,
           influxdb_org: influxdbOrg,
-          influxdb_bucket: influxdbBucket
+          influxdb_bucket: influxdbBucket,
+          influxdb_measurement: influxdbMeasurement
         };
         if (osrmUrl) {
           requestBody.osrm_url = osrmUrl;
@@ -1778,6 +1805,7 @@
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
 
         // Only include osrm_url if it's provided, otherwise let the server use the stored value
         const requestBody = { 
@@ -1785,7 +1813,8 @@
           influxdb_url: influxdbUrl,
           influxdb_token: influxdbToken,
           influxdb_org: influxdbOrg,
-          influxdb_bucket: influxdbBucket
+          influxdb_bucket: influxdbBucket,
+          influxdb_measurement: influxdbMeasurement
         };
         if (osrmUrl) {
           requestBody.osrm_url = osrmUrl;

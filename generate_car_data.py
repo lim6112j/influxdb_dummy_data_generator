@@ -136,7 +136,7 @@ def clear_existing_car_data(client, influxdb_bucket, influxdb_org):
 
 
 def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', clear_existing=True, 
-                     influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None):
+                     influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None, influxdb_measurement=None):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
 
     start_time = time.time()
@@ -147,21 +147,23 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     influxdb_token = influxdb_token or ""
     influxdb_org = influxdb_org or "ciel mobility"
     influxdb_bucket = influxdb_bucket or "location_202506"
-    influxdb_measurement = "locReports"
+    influxdb_measurement = influxdb_measurement or "locReports"
     influxdb_device_id = "1"
 
     print(f"InfluxDB Configuration:")
     print(f"  URL: {influxdb_url}")
     print(f"  Organization: {influxdb_org}")
     print(f"  Bucket: {influxdb_bucket}")
+    print(f"  Measurement: {influxdb_measurement}")
     print(f"  Token: {'***' if influxdb_token else 'Not provided'}")
 
     # Check if all required parameters are set
-    if not all([influxdb_url, influxdb_org, influxdb_bucket]):
+    if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement]):
         print("Error: Missing required InfluxDB configuration.")
         print(f"URL: {'✓' if influxdb_url else '✗'}")
         print(f"Organization: {'✓' if influxdb_org else '✗'}")
         print(f"Bucket: {'✓' if influxdb_bucket else '✗'}")
+        print(f"Measurement: {'✓' if influxdb_measurement else '✗'}")
         print("\nPlease provide InfluxDB configuration parameters.")
         return
 
@@ -727,6 +729,8 @@ if __name__ == "__main__":
                         help="InfluxDB organization (default: ciel mobility)")
     parser.add_argument("--influxdb-bucket", type=str, default="location_202506",
                         help="InfluxDB bucket name (default: location_202506)")
+    parser.add_argument("--influxdb-measurement", type=str, default="locReports",
+                        help="InfluxDB measurement name (default: locReports)")
 
     args = parser.parse_args()
 
@@ -736,4 +740,4 @@ if __name__ == "__main__":
     generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode, 
                      clear_existing=not args.no_clear, influxdb_url=args.influxdb_url,
                      influxdb_token=args.influxdb_token, influxdb_org=args.influxdb_org,
-                     influxdb_bucket=args.influxdb_bucket)
+                     influxdb_bucket=args.influxdb_bucket, influxdb_measurement=args.influxdb_measurement)

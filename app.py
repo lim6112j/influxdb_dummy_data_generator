@@ -33,6 +33,7 @@ def get_car_data():
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
+        influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
 
         print(f"Connecting to InfluxDB: {influxdb_url}")
         print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
@@ -42,7 +43,6 @@ def get_car_data():
         query_api = client.query_api()
 
         # Query to get the last 500 car data points with step information
-        influxdb_measurement = 'locReports'
         influxdb_device_id = '1'
         
         query = f'''
@@ -222,12 +222,14 @@ def check_influxdb_status():
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
+        influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
 
-        if not all([influxdb_url, influxdb_org, influxdb_bucket]):
+        if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement]):
             missing = []
             if not influxdb_url: missing.append('influxdb_url')
             if not influxdb_org: missing.append('influxdb_org')
             if not influxdb_bucket: missing.append('influxdb_bucket')
+            if not influxdb_measurement: missing.append('influxdb_measurement')
             
             return jsonify({
                 'status': 'misconfigured',
@@ -312,6 +314,7 @@ def start_generation():
         influxdb_token = data.get('influxdb_token', '')
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
@@ -327,7 +330,8 @@ def start_generation():
             '--influxdb-url', influxdb_url,
             '--influxdb-token', influxdb_token,
             '--influxdb-org', influxdb_org,
-            '--influxdb-bucket', influxdb_bucket
+            '--influxdb-bucket', influxdb_bucket,
+            '--influxdb-measurement', influxdb_measurement
         ]
         
         # Start the script as a subprocess so we can control it
@@ -500,8 +504,9 @@ def update_route():
         influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_measurement = data.get('influxdb_measurement', 'locReports')
 
-        print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}")
+        print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}")
         print(f"🔄 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
 
         try:
@@ -509,7 +514,6 @@ def update_route():
             query_api = client.query_api()
 
             # Get the latest car position
-            influxdb_measurement = 'locReports'
             influxdb_device_id = '1'
             
             query = f'''
@@ -613,8 +617,9 @@ def append_route():
         influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_measurement = data.get('influxdb_measurement', 'locReports')
 
-        print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}")
+        print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}")
         print(f"➕ Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
 
         try:
@@ -622,7 +627,6 @@ def append_route():
             query_api = client.query_api()
 
             # Get the latest car position
-            influxdb_measurement = 'locReports'
             influxdb_device_id = '1'
             
             query = f'''
@@ -741,8 +745,9 @@ def append_route_optimized():
         influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
+        influxdb_measurement = data.get('influxdb_measurement', 'locReports')
 
-        print(f"🚀 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}")
+        print(f"🚀 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}")
         print(f"🚀 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
 
         try:
@@ -750,7 +755,6 @@ def append_route_optimized():
             query_api = client.query_api()
 
             # Get the latest car position
-            influxdb_measurement = 'locReports'
             influxdb_device_id = '1'
             
             query = f'''
@@ -850,7 +854,8 @@ def get_influxdb_config():
         config = {
             'url': 'http://43.201.26.186:8086',
             'org': 'ciel mobility',
-            'bucket': 'location_202506'
+            'bucket': 'location_202506',
+            'measurement': 'locReports'
             # Note: Token is not included for security reasons
         }
         
@@ -922,6 +927,7 @@ def stream_car_data():
     influxdb_token = request.args.get('influxdb_token', '')
     influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
     influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
+    influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
     
     def generate_data():
         client = None
@@ -943,8 +949,7 @@ def stream_car_data():
             
             last_timestamp = None
             
-            # Use fixed measurement and device ID
-            influxdb_measurement = 'locReports'
+            # Use fixed device ID
             influxdb_device_id = '1'
             
             while True:
