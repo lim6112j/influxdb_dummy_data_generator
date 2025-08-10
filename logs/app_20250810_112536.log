@@ -1,0 +1,878 @@
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://172.31.14.20:8080
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 108-420-135
+183.102.112.168 - - [10/Aug/2025 11:26:11] "GET / HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:11] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:11] "GET /api/influxdb-config HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:11] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:11] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:14] "GET / HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:14] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:14] "GET /api/influxdb-config HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:14] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:14] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:24] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:24] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:34] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:34] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:39] "GET /api/route?origin_lat=37.228489&origin_lon=126.744449&dest_lat=37.233956&dest_lon=126.794403&osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:43] "POST /api/start-generation HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:44] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:44] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:44] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:45] "GET /api/car-data-stream?influxdb_url=http://43.201.26.186:8086&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D&influxdb_org=ciel%20mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:48] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:53] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:54] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:54] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:54] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:26:58] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:03] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:04] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:04] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:04] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:08] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:13] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:14] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:14] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:14] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:18] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:23] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:24] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:24] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:24] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:28] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:33] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:34] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:34] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:34] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:38] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:43] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:44] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:44] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:44] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:48] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:53] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:54] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:54] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:54] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:27:58] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:03] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:04] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:04] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:04] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:08] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:13] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:14] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:14] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:14] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:18] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:23] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:24] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:24] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:24] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:28] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:33] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:34] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:34] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:34] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:38] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:43] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:44] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:44] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:44] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:48] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:53] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:54] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:54] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:54] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:58] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:28:58] "POST /api/stop-generation HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:04] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:04] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:06] "GET /api/route?origin_lat=37.225325&origin_lon=126.733659&dest_lat=37.235781&dest_lon=126.784128&osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:08] "POST /api/start-generation HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:10] "GET /api/car-data-stream?influxdb_url=http://43.201.26.186:8086&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D&influxdb_org=ciel%20mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:13] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:14] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:14] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:14] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:18] "GET /api/route-status HTTP/1.1" 200 -
+Starting data generation: python generate_car_data.py --duration 1 --origin 37.228489 126.744449 --destination 37.233956 126.794403 --osrm-url http://13.209.66.194:5000 --movement-mode one-way --influxdb-url http://43.201.26.186:8086 --influxdb-token iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg== --influxdb-org ciel mobility --influxdb-bucket location --influxdb-measurement locReports --influxdb-tag-name device_id --influxdb-tag-value ETRI_VT60_ID01
+🔄 Starting car data stream with InfluxDB: http://43.201.26.186:8086
+🔄 Organization: ciel mobility, Bucket: location
+✓ InfluxDB health status: pass
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📁 Route loaded from file: 0 -> 170 points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=170, updated=True, timestamp=1754825203.8340511
+Data generation completed
+Data generation process terminated gracefully
+📡 Streamed 1 new data points
+🔌 InfluxDB client closed
+Starting data generation: python generate_car_data.py --duration 1 --origin 37.225325 126.733659 --destination 37.235781 126.784128 --osrm-url http://13.209.66.194:5000 --movement-mode round-trip --influxdb-url http://43.201.26.186:8086 --influxdb-token iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg== --influxdb-org ciel mobility --influxdb-bucket location --influxdb-measurement locReports --influxdb-tag-name device_id --influxdb-tag-value ETRI_VT60_ID01
+🔄 Starting car data stream with InfluxDB: http://43.201.26.186:8086
+🔄 Organization: ciel mobility, Bucket: location
+✓ InfluxDB health status: pass
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📁 Route loaded from file: 170 -> 164 points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+183.102.112.168 - - [10/Aug/2025 11:29:23] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:24] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:24] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:24] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:28] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:33] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:34] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:34] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:34] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:39] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:44] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:44] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:44] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:44] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:48] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:53] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:54] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:54] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:54] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:29:58] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:03] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:04] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:04] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:04] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:08] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:13] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:14] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:14] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:14] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:18] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:23] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:24] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:24] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:24] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:28] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:33] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:34] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:34] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:34] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:38] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:43] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:44] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:44] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:44] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:48] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:53] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:54] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:54] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:54] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:30:58] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:03] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:04] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:04] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:04] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:08] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:13] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:14] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:14] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:14] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:19] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:23] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:24] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:24] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:24] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:31:28] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:32:17] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:32:17] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:32:17] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:32:17] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+183.102.112.168 - - [10/Aug/2025 11:33:17] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:33:17] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:33:17] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:33:17] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:34:17] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:34:17] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:34:17] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:34:17] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:35:17] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:35:17] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:35:17] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:35:17] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:36:17] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:36:17] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:36:17] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:36:17] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+🔍 Route manager: points=164, updated=True, timestamp=1754825348.453896
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 2 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+📡 Streamed 1 new data points
+183.102.112.168 - - [10/Aug/2025 11:37:00] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:00] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:00] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:00] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:03] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:04] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:04] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:04] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:08] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:13] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:14] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:14] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:14] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:18] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:23] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:24] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:24] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:24] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:28] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:33] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:34] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:34] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:34] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:38] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:43] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:44] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:44] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:44] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:48] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:53] "GET /api/route-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:54] "GET /api/generation-status HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:54] "GET /api/status/osrm?osrm_url=http://13.209.66.194:5000 HTTP/1.1" 200 -
+183.102.112.168 - - [10/Aug/2025 11:37:54] "GET /api/status/influxdb?influxdb_url=http://43.201.26.186:8086&influxdb_org=ciel+mobility&influxdb_bucket=location&influxdb_measurement=locReports&influxdb_tag_name=device_id&influxdb_tag_value=ETRI_VT60_ID01&influxdb_token=iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg%3D%3D HTTP/1.1" 200 -
