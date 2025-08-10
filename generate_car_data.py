@@ -641,7 +641,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 progress_info += f" (Cycle {cycle_count + 1})"
             print(f"Debug: {progress_info} ({direction}): {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
-        # Create a Point object with step information
+        # Create a Point object with step information using precise timestamp
+        precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
         point = Point(influxdb_measurement) \
             .tag("device_id", influxdb_device_id) \
             .field("latitude", latitude) \
@@ -655,7 +656,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             .field("step_duration", float(current_point.get('step_duration', 0))) \
             .field("step_distance", float(current_point.get('step_distance', 0))) \
             .field("step_name", current_point.get('step_name', '')) \
-            .time(int(current_time * 1e9), "ns")
+            .field("point_sequence", int(point_index)) \
+            .time(precise_timestamp, "ns")
 
         # Write the data to InfluxDB
         try:
