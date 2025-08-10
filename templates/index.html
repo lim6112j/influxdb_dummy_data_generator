@@ -1856,6 +1856,8 @@
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
+        const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
+        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || '1';
 
         // Only include osrm_url if it's provided, otherwise let the server use the stored value
         const requestBody = { 
@@ -1864,7 +1866,9 @@
           influxdb_token: influxdbToken,
           influxdb_org: influxdbOrg,
           influxdb_bucket: influxdbBucket,
-          influxdb_measurement: influxdbMeasurement
+          influxdb_measurement: influxdbMeasurement,
+          influxdb_tag_name: influxdbTagName,
+          influxdb_tag_value: influxdbTagValue
         };
         if (osrmUrl) {
           requestBody.osrm_url = osrmUrl;
