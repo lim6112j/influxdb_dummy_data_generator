@@ -644,6 +644,7 @@ def stream_car_data():
     import time
     
     def generate_data():
+        client = None
         try:
             # Get InfluxDB configuration from request parameters
             influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
@@ -651,8 +652,19 @@ def stream_car_data():
             influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
             influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
 
+            print(f"🔄 Starting car data stream with InfluxDB: {influxdb_url}")
+            print(f"🔄 Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
+
+            # Send initial connection message
+            yield f"data: {json.dumps({'status': 'connecting', 'message': 'Connecting to InfluxDB...'})}\n\n"
+
             client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
+            
+            # Test connection
+            health = client.health()
+            print(f"✓ InfluxDB health status: {health.status}")
+            yield f"data: {json.dumps({'status': 'connected', 'message': 'Connected to InfluxDB'})}\n\n"
             
             last_timestamp = None
             
@@ -674,13 +686,15 @@ def stream_car_data():
                           |> sort(columns: ["_time"])
                         '''
                     else:
+                        # Get the most recent data point to start streaming
                         query = f'''
                         from(bucket: "{influxdb_bucket}")
-                          |> range(start: -1m)
+                          |> range(start: -5m)
                           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
                           |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
+                          |> last()
                         '''
 
                     result = query_api.query(query=query)
@@ -709,21 +723,34 @@ def stream_car_data():
                         # Send new data points
                         for point in new_points:
                             yield f"data: {json.dumps(point)}\n\n"
+                        print(f"📡 Streamed {len(new_points)} data points")
+                    else:
+                        # Send heartbeat to keep connection alive
+                        yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time()})}\n\n"
                     
                     time.sleep(1)  # Check for new data every second
                     
                 except Exception as e:
-                    print(f"Error in streaming: {e}")
-                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                    print(f"❌ Error in streaming loop: {e}")
+                    yield f"data: {json.dumps({'error': f'Streaming error: {str(e)}'})}\n\n"
                     time.sleep(5)  # Wait longer on error
                     
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            print(f"❌ Error in stream setup: {e}")
+            yield f"data: {json.dumps({'error': f'Stream setup error: {str(e)}'})}\n\n"
+        finally:
+            if client:
+                try:
+                    client.close()
+                    print("🔌 InfluxDB client closed")
+                except:
+                    pass
     
     return Response(generate_data(), mimetype='text/event-stream',
                    headers={'Cache-Control': 'no-cache',
                            'Connection': 'keep-alive',
-                           'Access-Control-Allow-Origin': '*'})
+                           'Access-Control-Allow-Origin': '*',
+                           'Access-Control-Allow-Headers': 'Cache-Control'})
 
 
 if __name__ == '__main__':
