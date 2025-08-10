@@ -443,8 +443,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         # Check for route updates every iteration (immediate response)
         current_route_points, current_step_locations, route_was_updated, update_timestamp = route_manager.get_current_route_data(reset_update_flag=True)
         
-        # Debug: Print route check status every 60 seconds (reduced frequency)
-        if int(current_time) % 60 == 0:
+        # Debug: Print route check status only when there's an actual update
+        if route_was_updated:
             print(f"🔍 Route check at {time.strftime('%H:%M:%S')}: updated={route_was_updated}, points={len(current_route_points) if current_route_points else 0}")
         
         if route_was_updated and current_route_points and update_timestamp > last_route_check:
