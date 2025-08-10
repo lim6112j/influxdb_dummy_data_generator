@@ -34,6 +34,8 @@ def get_car_data():
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = request.args.get('influxdb_tag_value', '1')
 
         print(f"Connecting to InfluxDB: {influxdb_url}")
         print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
@@ -43,13 +45,11 @@ def get_car_data():
         query_api = client.query_api()
 
         # Query to get the last 500 car data points with step information
-        influxdb_device_id = '1'
-        
         query = f'''
         from(bucket: "{influxdb_bucket}")
           |> range(start: -10m)
           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
-          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+          |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
           |> sort(columns: ["_time"])
           |> unique(column: "_time")
@@ -223,13 +223,17 @@ def check_influxdb_status():
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = request.args.get('influxdb_tag_value', '1')
 
-        if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement]):
+        if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement, influxdb_tag_name, influxdb_tag_value]):
             missing = []
             if not influxdb_url: missing.append('influxdb_url')
             if not influxdb_org: missing.append('influxdb_org')
             if not influxdb_bucket: missing.append('influxdb_bucket')
             if not influxdb_measurement: missing.append('influxdb_measurement')
+            if not influxdb_tag_name: missing.append('influxdb_tag_name')
+            if not influxdb_tag_value: missing.append('influxdb_tag_value')
             
             return jsonify({
                 'status': 'misconfigured',
@@ -315,6 +319,8 @@ def start_generation():
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = data.get('influxdb_tag_value', '1')
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
@@ -331,7 +337,9 @@ def start_generation():
             '--influxdb-token', influxdb_token,
             '--influxdb-org', influxdb_org,
             '--influxdb-bucket', influxdb_bucket,
-            '--influxdb-measurement', influxdb_measurement
+            '--influxdb-measurement', influxdb_measurement,
+            '--influxdb-tag-name', influxdb_tag_name,
+            '--influxdb-tag-value', influxdb_tag_value
         ]
         
         # Start the script as a subprocess so we can control it
@@ -505,8 +513,10 @@ def update_route():
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = data.get('influxdb_tag_value', '1')
 
-        print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}")
+        print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"🔄 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
 
         try:
@@ -514,13 +524,11 @@ def update_route():
             query_api = client.query_api()
 
             # Get the latest car position
-            influxdb_device_id = '1'
-            
             query = f'''
             from(bucket: "{influxdb_bucket}")
               |> range(start: -1h)
               |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
-              |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+              |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
               |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
               |> last()
               |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
@@ -618,8 +626,10 @@ def append_route():
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = data.get('influxdb_tag_value', '1')
 
-        print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}")
+        print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"➕ Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
 
         try:
@@ -627,13 +637,11 @@ def append_route():
             query_api = client.query_api()
 
             # Get the latest car position
-            influxdb_device_id = '1'
-            
             query = f'''
             from(bucket: "{influxdb_bucket}")
               |> range(start: -1h)
               |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
-              |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+              |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
               |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
               |> last()
               |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
@@ -746,8 +754,10 @@ def append_route_optimized():
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = data.get('influxdb_tag_value', '1')
 
-        print(f"🚀 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}")
+        print(f"🚀 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"🚀 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
 
         try:
@@ -755,13 +765,11 @@ def append_route_optimized():
             query_api = client.query_api()
 
             # Get the latest car position
-            influxdb_device_id = '1'
-            
             query = f'''
             from(bucket: "{influxdb_bucket}")
               |> range(start: -1h)
               |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
-              |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+              |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
               |> filter(fn: (r) => r["_field"] == "latitude" or r["_field"] == "longitude")
               |> last()
               |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
@@ -855,7 +863,9 @@ def get_influxdb_config():
             'url': 'http://43.201.26.186:8086',
             'org': 'ciel mobility',
             'bucket': 'location_202506',
-            'measurement': 'locReports'
+            'measurement': 'locReports',
+            'tag_name': 'device_id',
+            'tag_value': '1'
             # Note: Token is not included for security reasons
         }
         
@@ -928,6 +938,8 @@ def stream_car_data():
     influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
     influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
     influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
+    influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
+    influxdb_tag_value = request.args.get('influxdb_tag_value', '1')
     
     def generate_data():
         client = None
@@ -949,8 +961,7 @@ def stream_car_data():
             
             last_timestamp = None
             
-            # Use fixed device ID
-            influxdb_device_id = '1'
+            # Use configurable tag name and value
             
             while True:
                 try:
@@ -961,7 +972,7 @@ def stream_car_data():
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -10m)
                           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
-                          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+                          |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
                           |> filter(fn: (r) => r["_time"] > time(v: "{last_timestamp}"))
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
@@ -974,7 +985,7 @@ def stream_car_data():
                         from(bucket: "{influxdb_bucket}")
                           |> range(start: -10m)
                           |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
-                          |> filter(fn: (r) => r["device_id"] == "{influxdb_device_id}")
+                          |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
                           |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
                           |> sort(columns: ["_time"])
                           |> group()

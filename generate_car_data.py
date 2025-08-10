@@ -117,14 +117,14 @@ def clear_existing_car_data(client, influxdb_bucket, influxdb_org):
     try:
         delete_api = client.delete_api()
         
-        # Delete all locReports measurements for device_id=1
+        # Delete all measurements for the specified tag
         start_time = "1970-01-01T00:00:00Z"  # Delete all historical data
         stop_time = "2030-01-01T00:00:00Z"   # Far future to ensure we get everything
         
         delete_api.delete(
             start=start_time,
             stop=stop_time,
-            predicate='_measurement="locReports" AND device_id="1"',
+            predicate=f'_measurement="{influxdb_measurement}" AND {influxdb_tag_name}="{influxdb_tag_value}"',
             bucket=influxdb_bucket,
             org=influxdb_org
         )
@@ -136,7 +136,8 @@ def clear_existing_car_data(client, influxdb_bucket, influxdb_org):
 
 
 def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', clear_existing=True, 
-                     influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None, influxdb_measurement=None):
+                     influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None, influxdb_measurement=None,
+                     influxdb_tag_name=None, influxdb_tag_value=None):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
 
     start_time = time.time()
@@ -148,22 +149,26 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     influxdb_org = influxdb_org or "ciel mobility"
     influxdb_bucket = influxdb_bucket or "location_202506"
     influxdb_measurement = influxdb_measurement or "locReports"
-    influxdb_device_id = "1"
+    influxdb_tag_name = influxdb_tag_name or "device_id"
+    influxdb_tag_value = influxdb_tag_value or "1"
 
     print(f"InfluxDB Configuration:")
     print(f"  URL: {influxdb_url}")
     print(f"  Organization: {influxdb_org}")
     print(f"  Bucket: {influxdb_bucket}")
     print(f"  Measurement: {influxdb_measurement}")
+    print(f"  Tag: {influxdb_tag_name}={influxdb_tag_value}")
     print(f"  Token: {'***' if influxdb_token else 'Not provided'}")
 
     # Check if all required parameters are set
-    if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement]):
+    if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement, influxdb_tag_name, influxdb_tag_value]):
         print("Error: Missing required InfluxDB configuration.")
         print(f"URL: {'✓' if influxdb_url else '✗'}")
         print(f"Organization: {'✓' if influxdb_org else '✗'}")
         print(f"Bucket: {'✓' if influxdb_bucket else '✗'}")
         print(f"Measurement: {'✓' if influxdb_measurement else '✗'}")
+        print(f"Tag Name: {'✓' if influxdb_tag_name else '✗'}")
+        print(f"Tag Value: {'✓' if influxdb_tag_value else '✗'}")
         print("\nPlease provide InfluxDB configuration parameters.")
         return
 
@@ -396,7 +401,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 # Create a Point object for paused state with precise timestamp
                 precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
                 point = Point(influxdb_measurement) \
-                    .tag("device_id", influxdb_device_id) \
+                    .tag(influxdb_tag_name, influxdb_tag_value) \
                     .field("latitude", latitude) \
                     .field("longitude", longitude) \
                     .field("speed", float(speed)) \
@@ -646,7 +651,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         # Create a Point object with step information using precise timestamp
         precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
         point = Point(influxdb_measurement) \
-            .tag("device_id", influxdb_device_id) \
+            .tag(influxdb_tag_name, influxdb_tag_value) \
             .field("latitude", latitude) \
             .field("longitude", longitude) \
             .field("speed", float(speed)) \
@@ -731,6 +736,10 @@ if __name__ == "__main__":
                         help="InfluxDB bucket name (default: location_202506)")
     parser.add_argument("--influxdb-measurement", type=str, default="locReports",
                         help="InfluxDB measurement name (default: locReports)")
+    parser.add_argument("--influxdb-tag-name", type=str, default="device_id",
+                        help="InfluxDB tag name (default: device_id)")
+    parser.add_argument("--influxdb-tag-value", type=str, default="1",
+                        help="InfluxDB tag value (default: 1)")
 
     args = parser.parse_args()
 
@@ -740,4 +749,5 @@ if __name__ == "__main__":
     generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode, 
                      clear_existing=not args.no_clear, influxdb_url=args.influxdb_url,
                      influxdb_token=args.influxdb_token, influxdb_org=args.influxdb_org,
-                     influxdb_bucket=args.influxdb_bucket, influxdb_measurement=args.influxdb_measurement)
+                     influxdb_bucket=args.influxdb_bucket, influxdb_measurement=args.influxdb_measurement,
+                     influxdb_tag_name=args.influxdb_tag_name, influxdb_tag_value=args.influxdb_tag_value)
