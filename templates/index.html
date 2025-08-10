@@ -998,6 +998,8 @@
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
+        const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
+        const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || '1';
 
         // First, start the data generation script
         fetch("/api/start-generation", {
@@ -1020,6 +1022,8 @@
             influxdb_org: influxdbOrg,
             influxdb_bucket: influxdbBucket,
             influxdb_measurement: influxdbMeasurement,
+            influxdb_tag_name: influxdbTagName,
+            influxdb_tag_value: influxdbTagValue,
           }),
         })
           .then((response) => response.json())
