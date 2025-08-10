@@ -306,7 +306,7 @@
               <input
                 type="text"
                 id="influxdbUrlInput"
-                value="http://localhost:8086"
+                value="http://43.201.26.186:8086"
                 style="
                   width: 100%;
                   padding: 4px;
@@ -902,7 +902,7 @@
         document.getElementById("dataCount").textContent = "";
 
         // Get InfluxDB configuration from UI
-        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://localhost:8086';
+        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'car_tracking';
@@ -963,7 +963,7 @@
 
       function startEventStream() {
         // Get InfluxDB configuration from UI
-        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://localhost:8086';
+        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'car_tracking';
@@ -1509,7 +1509,7 @@
 
         const influxdbUrl =
           document.getElementById("influxdbUrlInput").value.trim() ||
-          "http://localhost:8086";
+          "http://43.201.26.186:8086";
         const influxdbToken =
           document.getElementById("influxdbTokenInput").value.trim();
         const influxdbOrg =
@@ -1593,7 +1593,7 @@
         const osrmUrl = document.getElementById("osrmUrlInput").value.trim();
         
         // Get InfluxDB configuration from UI
-        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://localhost:8086';
+        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'car_tracking';
@@ -1696,7 +1696,7 @@
         const osrmUrl = document.getElementById("osrmUrlInput").value.trim();
         
         // Get InfluxDB configuration from UI
-        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://localhost:8086';
+        const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
         const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'car_tracking';
