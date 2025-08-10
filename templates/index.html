@@ -983,6 +983,17 @@
               return;
             }
 
+            // Skip heartbeat messages and status messages
+            if (newPoint.heartbeat || newPoint.status) {
+              return;
+            }
+
+            // Validate coordinates before processing
+            if (!isValidCoordinate(newPoint.latitude) || !isValidCoordinate(newPoint.longitude)) {
+              console.warn("Invalid coordinates received:", newPoint);
+              return;
+            }
+
             // Add new point to data array
             carData.push(newPoint);
 
@@ -990,11 +1001,13 @@
             updateCarMarker(newPoint);
             updateCarInfo(newPoint);
 
-            // Update path
-            const path = carData.map((point) => ({
-              lat: point.latitude,
-              lng: point.longitude,
-            }));
+            // Update path with validated coordinates
+            const path = carData
+              .filter(point => isValidCoordinate(point.latitude) && isValidCoordinate(point.longitude))
+              .map((point) => ({
+                lat: point.latitude,
+                lng: point.longitude,
+              }));
             pathPolyline.setPath(path);
 
             // Center map on current position (optional - can be disabled for better UX)
@@ -1087,7 +1100,21 @@
           });
       }
 
+      function isValidCoordinate(coord) {
+        return typeof coord === 'number' && 
+               !isNaN(coord) && 
+               isFinite(coord) && 
+               coord !== null && 
+               coord !== undefined;
+      }
+
       function updateCarMarker(point) {
+        // Validate coordinates before creating position
+        if (!isValidCoordinate(point.latitude) || !isValidCoordinate(point.longitude)) {
+          console.warn("Cannot update car marker: invalid coordinates", point);
+          return;
+        }
+
         const position = { lat: point.latitude, lng: point.longitude };
 
         if (!carMarker) {
@@ -1095,7 +1122,7 @@
           carMarker = new google.maps.Marker({
             position: position,
             map: map,
-            title: `Car Position - Speed: ${point.speed} km/h`,
+            title: `Car Position - Speed: ${point.speed || 0} km/h`,
             icon: {
               path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
               scale: 8,
@@ -1122,19 +1149,22 @@
           carMarker.setIcon(newIcon);
 
           // Update title
-          carMarker.setTitle(`Car Position - Speed: ${point.speed} km/h`);
+          carMarker.setTitle(`Car Position - Speed: ${point.speed || 0} km/h`);
 
           console.log("Updated car marker to:", position);
         }
       }
 
       function updateCarInfo(point) {
-        document.getElementById("currentPos").textContent =
-          `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`;
-        document.getElementById("currentSpeed").textContent =
-          `${point.speed} km/h`;
-        document.getElementById("currentHeading").textContent =
-          `${point.heading}°`;
+        // Safely update car info with validation
+        const lat = isValidCoordinate(point.latitude) ? point.latitude.toFixed(6) : 'Invalid';
+        const lng = isValidCoordinate(point.longitude) ? point.longitude.toFixed(6) : 'Invalid';
+        const speed = (typeof point.speed === 'number' && !isNaN(point.speed)) ? point.speed : 0;
+        const heading = (typeof point.heading === 'number' && !isNaN(point.heading)) ? point.heading : 0;
+
+        document.getElementById("currentPos").textContent = `${lat}, ${lng}`;
+        document.getElementById("currentSpeed").textContent = `${speed} km/h`;
+        document.getElementById("currentHeading").textContent = `${heading}°`;
       }
 
       function calculateTotalDistance(points) {
@@ -1212,13 +1242,18 @@
 
         dataToShow.forEach((point, index) => {
           const time = new Date(point.time).toLocaleString();
+          const lat = isValidCoordinate(point.latitude) ? point.latitude.toFixed(6) : 'Invalid';
+          const lng = isValidCoordinate(point.longitude) ? point.longitude.toFixed(6) : 'Invalid';
+          const speed = (typeof point.speed === 'number' && !isNaN(point.speed)) ? point.speed : 0;
+          const heading = (typeof point.heading === 'number' && !isNaN(point.heading)) ? point.heading : 0;
+          
           tableHTML += `
             <tr onclick="highlightPoint(${carData.indexOf(point)})" style="cursor: pointer;">
               <td>${time}</td>
-              <td>${point.latitude.toFixed(6)}</td>
-              <td>${point.longitude.toFixed(6)}</td>
-              <td>${point.speed}</td>
-              <td>${point.heading}</td>
+              <td>${lat}</td>
+              <td>${lng}</td>
+              <td>${speed}</td>
+              <td>${heading}</td>
             </tr>
           `;
         });
@@ -1234,18 +1269,24 @@
       function highlightPoint(index) {
         if (index >= 0 && index < carData.length) {
           const point = carData[index];
-          updateCarMarker(point);
-          updateCarInfo(point);
+          
+          // Only highlight if coordinates are valid
+          if (isValidCoordinate(point.latitude) && isValidCoordinate(point.longitude)) {
+            updateCarMarker(point);
+            updateCarInfo(point);
 
-          // Center map on selected point
-          map.setCenter({
-            lat: point.latitude,
-            lng: point.longitude,
-          });
+            // Center map on selected point
+            map.setCenter({
+              lat: point.latitude,
+              lng: point.longitude,
+            });
 
-          // Zoom in a bit
-          if (map.getZoom() < 15) {
-            map.setZoom(15);
+            // Zoom in a bit
+            if (map.getZoom() < 15) {
+              map.setZoom(15);
+            }
+          } else {
+            console.warn("Cannot highlight point with invalid coordinates:", point);
           }
         }
       }
