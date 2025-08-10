@@ -643,14 +643,15 @@ def stream_car_data():
     import json
     import time
     
+    # Extract request parameters BEFORE entering the generator function
+    influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
+    influxdb_token = request.args.get('influxdb_token', '')
+    influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
+    influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
+    
     def generate_data():
         client = None
         try:
-            # Get InfluxDB configuration from request parameters
-            influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
-            influxdb_token = request.args.get('influxdb_token', '')
-            influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
-            influxdb_bucket = request.args.get('influxdb_bucket', 'location_202506')
 
             print(f"🔄 Starting car data stream with InfluxDB: {influxdb_url}")
             print(f"🔄 Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
