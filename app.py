@@ -493,14 +493,13 @@ def update_route():
                 return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
         
         # Get current car position from the latest data point
+        # Use default InfluxDB configuration if not provided
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
-        influxdb_token = data.get('influxdb_token', '')
+        influxdb_token = data.get('influxdb_token', 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg==')
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location_202506')
 
-        # Check if InfluxDB token is provided
-        if not influxdb_token:
-            return jsonify({'error': 'InfluxDB token is required to get current car position'}), 400
+        print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}")
 
         try:
             client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
