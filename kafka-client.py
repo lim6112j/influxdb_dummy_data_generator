@@ -251,6 +251,33 @@ class VehicleDataProducer:
         
         print(f"Simulation completed. Sent {message_count} messages.")
     
+    def list_available_topics(self):
+        """List all available Kafka topics"""
+        try:
+            from kafka import KafkaAdminClient
+            
+            admin_client = KafkaAdminClient(
+                bootstrap_servers=self.bootstrap_servers,
+                security_protocol=self.security_protocol,
+                sasl_mechanism=self.sasl_mechanism,
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password
+            )
+            
+            metadata = admin_client.list_topics()
+            topics = list(metadata)
+            
+            print(f"📋 Available Kafka Topics ({len(topics)} total):")
+            for i, topic in enumerate(topics, 1):
+                print(f"{i:2d}. {topic}")
+            
+            admin_client.close()
+            return topics
+            
+        except Exception as e:
+            print(f"❌ Error listing topics: {e}")
+            return []
+    
     def close(self):
         """Close the Kafka producer"""
         self.producer.close()
@@ -260,22 +287,46 @@ def main():
     producer = VehicleDataProducer()
     
     try:
-        # Send a login request
-        print("Sending login request...")
-        producer.send_login_request("ETRI_VT60_ID04")
+        print("\n🚀 Kafka Vehicle Data Producer")
+        print("=" * 50)
+        print("1. List available topics")
+        print("2. Send login request")
+        print("3. Send logout request") 
+        print("4. Send single vehicle message")
+        print("5. Simulate vehicle movement")
+        print("6. Exit")
         
-        # Send a logout request
-        print("Sending logout request...")
-        producer.send_logout_request("ETRI_VT60_ID04")
-        
-        # Send a single vehicle message
-        print("Sending single vehicle message...")
-        message = producer.create_vehicle_message()
-        producer.send_message("vehicle-driving-data", message, key="ETRI_VT60_ID04")
-        
-        # Simulate vehicle movement for 30 seconds
-        print("\nStarting vehicle movement simulation...")
-        producer.simulate_vehicle_movement("vehicle-driving-data", "ETRI_VT60_ID04", duration=30, interval=2)
+        while True:
+            choice = input("\nEnter your choice (1-6): ").strip()
+            
+            if choice == '1':
+                producer.list_available_topics()
+                
+            elif choice == '2':
+                print("Sending login request...")
+                producer.send_login_request("ETRI_VT60_ID04")
+                
+            elif choice == '3':
+                print("Sending logout request...")
+                producer.send_logout_request("ETRI_VT60_ID04")
+                
+            elif choice == '4':
+                print("Sending single vehicle message...")
+                message = producer.create_vehicle_message()
+                producer.send_message("vehicle-driving-data", message, key="ETRI_VT60_ID04")
+                
+            elif choice == '5':
+                duration = int(input("Enter duration in seconds (default 30): ") or "30")
+                interval = int(input("Enter interval in seconds (default 2): ") or "2")
+                print(f"\nStarting vehicle movement simulation for {duration} seconds...")
+                producer.simulate_vehicle_movement("vehicle-driving-data", "ETRI_VT60_ID04", duration=duration, interval=interval)
+                
+            elif choice == '6':
+                print("👋 Goodbye!")
+                break
+                
+            else:
+                print("❌ Invalid choice. Please enter 1-6.")
         
     except KeyboardInterrupt:
         print("\nStopping producer...")
