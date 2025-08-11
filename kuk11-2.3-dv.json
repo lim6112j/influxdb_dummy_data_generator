@@ -1,0 +1,94 @@
+{
+  "messageTime": 1706855167658,
+  "messageType": 0,
+  "dataTxt": {
+    "authenticationInfo": "F2",
+    "dataPacketNbr": 1,
+    "dataPacketPriorityCd": 5,
+    "pdu": {
+      "userNameTxt": "VEHICLE001",
+      "frED": 0,
+      "publication": {
+        "publishGuaranteedBool": true,
+        "format": {
+          "data": {
+            "publishSerialNbr": 1,
+            "publishSerialCnt": 1,
+            "publishLatePublicationFlagBool": false,
+            "publicationType": {
+              "publishManagementCd": 1,
+              "publicationData": {
+                "endApplicationMessageId": "MSG001",
+                "endApplicationMessageMsg": {
+                  "probeID": {
+                    "name": "CITSOBE-0001",
+                    "id": "RANDOM123"
+                  },
+                  "vehicleID": "VEH001",
+                  "vehicleType": "BUS",
+                  "timeInfo": {
+                    "year": 2024,
+                    "month": 2,
+                    "day": 1,
+                    "hour": 14,
+                    "minute": 30,
+                    "second": 45,
+                    "millisecond": 658,
+                    "alivecount": 1
+                  },
+                  "thePosition": {
+                    "longitude": 126.9780,
+                    "latitude": 37.5665,
+                    "elevation": 5000,
+                    "heading": 9000,
+                    "speed": 5000,
+                    "posAccuracy": 500
+                  },
+                  "vehicleEvents": {
+                    "hazardLights": false,
+                    "absActivated": false,
+                    "hardBraking": false,
+                    "lightsChanged": 0,
+                    "flatTire": 0,
+                    "disabledVehicle": false,
+                    "getOnDown": false,
+                    "trouble": false,
+                    "hardDeceleration": false,
+                    "hardStop": false,
+                    "hardTurn": false,
+                    "uTurn": false
+                  },
+                  "serviceEvents": {
+                    "roadWork": false,
+                    "waypointArrived": false,
+                    "waypoinDeparture": false,
+                    "eta": 300,
+                    "serviceDoorOpen": false,
+                    "LiftOn": false
+                  },
+                  "vehicleStatus": {
+                    "lights": false,
+                    "lightBar": false,
+                    "brakeStatus": 0,
+                    "throttlePos": 0,
+                    "gpsStatus": 1,
+                    "transitStatus": false,
+                    "acceleration": 0,
+                    "worklanes": false,
+                    "curlane": 1,
+                    "vehicleCnt": 5,
+                    "batteryStatus": 85,
+                    "rangeStatus": 250,
+                    "failure": 0
+                  }
+                }
+              }
+            }
+          },
+          "publishFileNameTxt": ""
+        }
+      }
+    }
+  },
+  "crcID": "7C"
+}
