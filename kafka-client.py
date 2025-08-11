@@ -190,11 +190,11 @@ def main():
         # Send a single message
         print("Sending single vehicle message...")
         message = producer.create_vehicle_message()
-        producer.send_message("vehicle-data", message, key="VEH001")
+        producer.send_message("vehicle-driving-data", message, key="VEH001")
         
         # Simulate vehicle movement for 30 seconds
         print("\nStarting vehicle movement simulation...")
-        producer.simulate_vehicle_movement("vehicle-data", "VEH001", duration=30, interval=2)
+        producer.simulate_vehicle_movement("vehicle-driving-data", "VEH001", duration=30, interval=2)
         
     except KeyboardInterrupt:
         print("\nStopping producer...")
