@@ -30,6 +30,37 @@ class VehicleDataProducer:
             key_serializer=lambda k: k.encode('utf-8') if k else None
         )
     
+    def create_login_message(self, vehicle_id="ETRI_VT60_ID04", sender_ip="192.168.1.100", 
+                            destination_ip="192.168.1.200", password="vehicle_password"):
+        """Create a login request message in the kuk11-2-1-LI.json format"""
+        message_time = int(time.time() * 1000)  # Current timestamp in milliseconds
+        
+        message = {
+            "messageTime": message_time,
+            "messageType": 1,
+            "dataTxt": {
+                "authenticationInfo": "F2",
+                "dataPacketNbr": 1,
+                "dataPacketPriorityCd": 5,
+                "pdu": {
+                    "login": {
+                        "senderTxt": sender_ip,
+                        "destinationTxt": destination_ip,
+                        "userNameTxt": vehicle_id,
+                        "passwordTxt": password,
+                        "encodingRules": "1.2.840.113549.1.1.1",
+                        "heartbeatDurationMaxQty": 300,
+                        "responseTimeOutQty": 30,
+                        "initiatorCd": 1,
+                        "datagramSizeQty": 1024
+                    }
+                }
+            },
+            "crcID": "7C"
+        }
+        
+        return message
+
     def create_vehicle_message(self, vehicle_id="ETRI_VT60_ID04", probe_name="CITSOBE-0001", 
                               longitude=126.9780, latitude=37.5665, speed=5000, heading=9000):
         """Create a vehicle message in the kuk11-2.3-dv.json format"""
@@ -144,6 +175,18 @@ class VehicleDataProducer:
             print(f"Failed to send message: {e}")
             return False
     
+    def send_login_request(self, topic, vehicle_id="ETRI_VT60_ID04", sender_ip="192.168.1.100", 
+                          destination_ip="192.168.1.200", password="vehicle_password"):
+        """Send a login request message to Kafka"""
+        message = self.create_login_message(vehicle_id, sender_ip, destination_ip, password)
+        
+        if self.send_message(topic, message, key=vehicle_id):
+            print(f"Login request sent for vehicle {vehicle_id}")
+            return True
+        else:
+            print(f"Failed to send login request for vehicle {vehicle_id}")
+            return False
+
     def simulate_vehicle_movement(self, topic, vehicle_id="ETRI_VT60_ID04", duration=60, interval=5):
         """Simulate vehicle movement by sending periodic updates"""
         print(f"Starting vehicle simulation for {duration} seconds...")
@@ -187,7 +230,11 @@ def main():
     producer = VehicleDataProducer()
     
     try:
-        # Send a single message
+        # Send a login request
+        print("Sending login request...")
+        producer.send_login_request("vehicle-driving-data", "ETRI_VT60_ID04")
+        
+        # Send a single vehicle message
         print("Sending single vehicle message...")
         message = producer.create_vehicle_message()
         producer.send_message("vehicle-driving-data", message, key="ETRI_VT60_ID04")
