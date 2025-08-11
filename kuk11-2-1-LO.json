@@ -1,0 +1,16 @@
+{
+  "messageTime": 1706855167658,
+  "messageType": 2,
+  "dataTxt": {
+    "authenticationInfo": "F2",
+    "dataPacketNbr": 1,
+    "dataPacketPriorityCd": 5,
+    "pdu": {
+      "logout": {
+        "userNameTxt": "ETRI_VT60_ID04",
+        "logoutCd": 1
+      }
+    }
+  },
+  "crcID": "7C"
+}
