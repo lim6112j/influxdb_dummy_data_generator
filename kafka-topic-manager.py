@@ -175,6 +175,184 @@ class KafkaTopicManager:
             print(f"❌ Error sending test message: {e}")
             return False
     
+    def send_vehicle_login_message(self, topic_name, vehicle_id="ETRI_VT60_ID04", 
+                                  sender_ip="192.168.1.100", destination_ip="192.168.1.200", 
+                                  password="vehicle_password"):
+        """Send a vehicle login request message based on kuk11-2-1-LI.json format"""
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=self.bootstrap_servers,
+                security_protocol=self.security_protocol,
+                sasl_mechanism=self.sasl_mechanism,
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                key_serializer=lambda k: k.encode('utf-8') if k else None
+            )
+            
+            message_time = int(time.time() * 1000)
+            
+            login_message = {
+                "messageTime": message_time,
+                "messageType": 1,
+                "dataTxt": {
+                    "authenticationInfo": "F2",
+                    "dataPacketNbr": 1,
+                    "dataPacketPriorityCd": 5,
+                    "pdu": {
+                        "login": {
+                            "senderTxt": sender_ip,
+                            "destinationTxt": destination_ip,
+                            "userNameTxt": vehicle_id,
+                            "passwordTxt": password,
+                            "encodingRules": "1.2.840.113549.1.1.1",
+                            "heartbeatDurationMaxQty": 300,
+                            "responseTimeOutQty": 30,
+                            "initiatorCd": 1,
+                            "datagramSizeQty": 1024
+                        }
+                    }
+                },
+                "crcID": "7C"
+            }
+            
+            future = producer.send(topic_name, value=login_message, key=vehicle_id)
+            record_metadata = future.get(timeout=10)
+            
+            print(f"✅ Vehicle login message sent to topic '{topic_name}'")
+            print(f"🚗 Vehicle ID: {vehicle_id}")
+            print(f"📍 Partition: {record_metadata.partition}, Offset: {record_metadata.offset}")
+            
+            producer.close()
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error sending vehicle login message: {e}")
+            return False
+    
+    def send_vehicle_logout_message(self, topic_name, vehicle_id="ETRI_VT60_ID04", logout_code=1):
+        """Send a vehicle logout request message based on kuk11-2-1-LO.json format"""
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=self.bootstrap_servers,
+                security_protocol=self.security_protocol,
+                sasl_mechanism=self.sasl_mechanism,
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                key_serializer=lambda k: k.encode('utf-8') if k else None
+            )
+            
+            message_time = int(time.time() * 1000)
+            
+            logout_message = {
+                "messageTime": message_time,
+                "messageType": 2,
+                "dataTxt": {
+                    "authenticationInfo": "F2",
+                    "dataPacketNbr": 1,
+                    "dataPacketPriorityCd": 5,
+                    "pdu": {
+                        "logout": {
+                            "userNameTxt": vehicle_id,
+                            "logoutCd": logout_code
+                        }
+                    }
+                },
+                "crcID": "7C"
+            }
+            
+            future = producer.send(topic_name, value=logout_message, key=vehicle_id)
+            record_metadata = future.get(timeout=10)
+            
+            print(f"✅ Vehicle logout message sent to topic '{topic_name}'")
+            print(f"🚗 Vehicle ID: {vehicle_id}")
+            print(f"📍 Partition: {record_metadata.partition}, Offset: {record_metadata.offset}")
+            
+            producer.close()
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error sending vehicle logout message: {e}")
+            return False
+    
+    def send_vehicle_control_message(self, topic_name, vehicle_id="ETRI_VT60_ID04", service_id=1001):
+        """Send a vehicle control message based on kuk11-3.2-VC.json format"""
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=self.bootstrap_servers,
+                security_protocol=self.security_protocol,
+                sasl_mechanism=self.sasl_mechanism,
+                sasl_plain_username=self.sasl_username,
+                sasl_plain_password=self.sasl_password,
+                value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                key_serializer=lambda k: k.encode('utf-8') if k else None
+            )
+            
+            message_time = int(time.time() * 1000)
+            
+            control_message = {
+                "messageTime": message_time,
+                "messageType": 8,
+                "dataTxt": {
+                    "vehicleID": vehicle_id,
+                    "serviceId": service_id,
+                    "startYear": 2024,
+                    "startTime": 480,
+                    "durationTime": 60,
+                    "priority": 1,
+                    "serviceType": {
+                        "vehicleControl": [
+                            {
+                                "ctrlType": 0,
+                                "ctrlValue": True
+                            },
+                            {
+                                "ctrlType": 1,
+                                "ctrlValue": False
+                            },
+                            {
+                                "ctrlType": 2,
+                                "ctrlValue": True
+                            },
+                            {
+                                "ctrlType": 3,
+                                "ctrlValue": True
+                            }
+                        ]
+                    }
+                },
+                "crcID": "7C"
+            }
+            
+            future = producer.send(topic_name, value=control_message, key=vehicle_id)
+            record_metadata = future.get(timeout=10)
+            
+            print(f"✅ Vehicle control message sent to topic '{topic_name}'")
+            print(f"🚗 Vehicle ID: {vehicle_id}")
+            print(f"📍 Partition: {record_metadata.partition}, Offset: {record_metadata.offset}")
+            
+            producer.close()
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error sending vehicle control message: {e}")
+            return False
+    
+    def send_auth_request_to_topic(self, message_type="login", vehicle_id="ETRI_VT60_ID04"):
+        """Send authentication request to vehicle-auth-request topic specifically"""
+        auth_topic = "vehicle-auth-request"
+        
+        print(f"\n🔐 Sending {message_type} request to '{auth_topic}' topic...")
+        
+        if message_type == "login":
+            return self.send_vehicle_login_message(auth_topic, vehicle_id)
+        elif message_type == "logout":
+            return self.send_vehicle_logout_message(auth_topic, vehicle_id)
+        else:
+            print(f"❌ Unknown message type: {message_type}")
+            return False
+    
     def close(self):
         """Close the admin client"""
         try:
@@ -194,11 +372,13 @@ def main():
             print("1. List all topics")
             print("2. Select topic and consume messages")
             print("3. Send test message to topic")
-            print("4. Get topic information")
-            print("5. Exit")
+            print("4. Send vehicle authentication messages")
+            print("5. Quick send to vehicle-auth-request topic")
+            print("6. Get topic information")
+            print("7. Exit")
             print("-" * 60)
             
-            choice = input("Enter your choice (1-5): ").strip()
+            choice = input("Enter your choice (1-7): ").strip()
             
             if choice == '1':
                 topics = manager.list_topics()
@@ -257,13 +437,81 @@ def main():
                     topic_num = int(input(f"\nSelect topic number (1-{len(topics)}): "))
                     if 1 <= topic_num <= len(topics):
                         selected_topic = topics[topic_num - 1]
-                        manager.get_topic_info(selected_topic)
+                        print(f"\n🎯 Selected topic: {selected_topic}")
+                        
+                        print("\n🚗 Vehicle Authentication Messages:")
+                        print("1. Send vehicle login message")
+                        print("2. Send vehicle logout message") 
+                        print("3. Send vehicle control message")
+                        print("4. Back to main menu")
+                        
+                        auth_choice = input("Enter your choice (1-4): ").strip()
+                        
+                        if auth_choice == '1':
+                            vehicle_id = input("Enter vehicle ID (default: ETRI_VT60_ID04): ").strip() or "ETRI_VT60_ID04"
+                            sender_ip = input("Enter sender IP (default: 192.168.1.100): ").strip() or "192.168.1.100"
+                            destination_ip = input("Enter destination IP (default: 192.168.1.200): ").strip() or "192.168.1.200"
+                            password = input("Enter password (default: vehicle_password): ").strip() or "vehicle_password"
+                            
+                            manager.send_vehicle_login_message(selected_topic, vehicle_id, sender_ip, destination_ip, password)
+                            
+                        elif auth_choice == '2':
+                            vehicle_id = input("Enter vehicle ID (default: ETRI_VT60_ID04): ").strip() or "ETRI_VT60_ID04"
+                            logout_code = int(input("Enter logout code (default: 1): ").strip() or "1")
+                            
+                            manager.send_vehicle_logout_message(selected_topic, vehicle_id, logout_code)
+                            
+                        elif auth_choice == '3':
+                            vehicle_id = input("Enter vehicle ID (default: ETRI_VT60_ID04): ").strip() or "ETRI_VT60_ID04"
+                            service_id = int(input("Enter service ID (default: 1001): ").strip() or "1001")
+                            
+                            manager.send_vehicle_control_message(selected_topic, vehicle_id, service_id)
+                            
+                        elif auth_choice == '4':
+                            continue
+                        else:
+                            print("❌ Invalid choice")
                     else:
                         print("❌ Invalid topic number")
                 except ValueError:
                     print("❌ Please enter a valid number")
                     
             elif choice == '5':
+                print("\n🚀 Quick send to vehicle-auth-request topic:")
+                print("1. Send login request")
+                print("2. Send logout request")
+                print("3. Back to main menu")
+                
+                quick_choice = input("Enter your choice (1-3): ").strip()
+                
+                if quick_choice == '1':
+                    vehicle_id = input("Enter vehicle ID (default: ETRI_VT60_ID04): ").strip() or "ETRI_VT60_ID04"
+                    manager.send_auth_request_to_topic("login", vehicle_id)
+                elif quick_choice == '2':
+                    vehicle_id = input("Enter vehicle ID (default: ETRI_VT60_ID04): ").strip() or "ETRI_VT60_ID04"
+                    manager.send_auth_request_to_topic("logout", vehicle_id)
+                elif quick_choice == '3':
+                    continue
+                else:
+                    print("❌ Invalid choice")
+                    
+            elif choice == '6':
+                topics = manager.list_topics()
+                if not topics:
+                    print("❌ No topics available")
+                    continue
+                
+                try:
+                    topic_num = int(input(f"\nSelect topic number (1-{len(topics)}): "))
+                    if 1 <= topic_num <= len(topics):
+                        selected_topic = topics[topic_num - 1]
+                        manager.get_topic_info(selected_topic)
+                    else:
+                        print("❌ Invalid topic number")
+                except ValueError:
+                    print("❌ Please enter a valid number")
+                    
+            elif choice == '7':
                 print("👋 Goodbye!")
                 break
                 
