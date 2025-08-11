@@ -4,9 +4,11 @@ import argparse
 import os
 import math
 import requests
+import json
+from datetime import datetime
 from dotenv import load_dotenv
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
+from kafka import KafkaProducer
+from kafka.errors import KafkaError
 from dynamic_route_manager import route_manager
 
 
@@ -112,113 +114,187 @@ def generate_intermediate_points(start_location, end_location, duration, speed_k
     return points
 
 
-def clear_existing_car_data(client, influxdb_bucket, influxdb_org, influxdb_measurement, influxdb_tag_name, influxdb_tag_value):
-    """Clear existing car data from InfluxDB"""
+def create_kafka_producer(bootstrap_servers, sasl_username, sasl_password):
+    """Create and return a Kafka producer"""
     try:
-        delete_api = client.delete_api()
-        
-        # Delete all measurements for the specified tag
-        start_time = "1970-01-01T00:00:00Z"  # Delete all historical data
-        stop_time = "2030-01-01T00:00:00Z"   # Far future to ensure we get everything
-        
-        delete_api.delete(
-            start=start_time,
-            stop=stop_time,
-            predicate=f'_measurement="{influxdb_measurement}" AND {influxdb_tag_name}="{influxdb_tag_value}"',
-            bucket=influxdb_bucket,
-            org=influxdb_org
+        producer = KafkaProducer(
+            bootstrap_servers=bootstrap_servers,
+            security_protocol='SASL_PLAINTEXT',
+            sasl_mechanism='PLAIN',
+            sasl_plain_username=sasl_username,
+            sasl_plain_password=sasl_password,
+            value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+            key_serializer=lambda k: k.encode('utf-8') if k else None
         )
-        
-        print("✓ Cleared existing car data from InfluxDB")
-        
+        print(f"✓ Connected to Kafka at {bootstrap_servers}")
+        return producer
     except Exception as e:
-        print(f"Warning: Error clearing existing data: {e}")
+        print(f"Error connecting to Kafka: {e}")
+        return None
 
 
-def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', clear_existing=True, 
-                     influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None, influxdb_measurement=None,
-                     influxdb_tag_name=None, influxdb_tag_value=None):
-    """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
+def create_vehicle_message(vehicle_id, probe_name, longitude, latitude, speed_kmh, heading, 
+                          elevation=5000, pos_accuracy=500):
+    """Create a vehicle message in the kuk11-2.3-dv.json format"""
+    current_time = datetime.now()
+    message_time = int(time.time() * 1000)  # Current timestamp in milliseconds
+    
+    # Convert speed from km/h to the units used in the JSON (appears to be in units where 5000 = ~50 km/h)
+    speed_units = int(speed_kmh * 100) if speed_kmh > 0 else 0
+    
+    # Convert heading from degrees to decidegrees (multiply by 100)
+    heading_decidegrees = int(heading * 100)
+    
+    message = {
+        "messageTime": message_time,
+        "messageType": 0,
+        "dataTxt": {
+            "authenticationInfo": "F2",
+            "dataPacketNbr": 1,
+            "dataPacketPriorityCd": 5,
+            "pdu": {
+                "userNameTxt": "VEHICLE001",
+                "frED": 0,
+                "publication": {
+                    "publishGuaranteedBool": True,
+                    "format": {
+                        "data": {
+                            "publishSerialNbr": 1,
+                            "publishSerialCnt": 1,
+                            "publishLatePublicationFlagBool": False,
+                            "publicationType": {
+                                "publishManagementCd": 1,
+                                "publicationData": {
+                                    "endApplicationMessageId": "MSG001",
+                                    "endApplicationMessageMsg": {
+                                        "probeID": {
+                                            "name": probe_name,
+                                            "id": "RANDOM123"
+                                        },
+                                        "vehicleID": vehicle_id,
+                                        "vehicleType": "BUS",
+                                        "timeInfo": {
+                                            "year": current_time.year,
+                                            "month": current_time.month,
+                                            "day": current_time.day,
+                                            "hour": current_time.hour,
+                                            "minute": current_time.minute,
+                                            "second": current_time.second,
+                                            "millisecond": current_time.microsecond // 1000,
+                                            "alivecount": 1
+                                        },
+                                        "thePosition": {
+                                            "longitude": longitude,
+                                            "latitude": latitude,
+                                            "elevation": elevation,
+                                            "heading": heading_decidegrees,
+                                            "speed": speed_units,
+                                            "posAccuracy": pos_accuracy
+                                        },
+                                        "vehicleEvents": {
+                                            "hazardLights": False,
+                                            "absActivated": False,
+                                            "hardBraking": False,
+                                            "lightsChanged": 0,
+                                            "flatTire": 0,
+                                            "disabledVehicle": False,
+                                            "getOnDown": False,
+                                            "trouble": False,
+                                            "hardDeceleration": False,
+                                            "hardStop": False,
+                                            "hardTurn": False,
+                                            "uTurn": False
+                                        },
+                                        "serviceEvents": {
+                                            "roadWork": False,
+                                            "waypointArrived": False,
+                                            "waypoinDeparture": False,
+                                            "eta": 300,
+                                            "serviceDoorOpen": False,
+                                            "LiftOn": False
+                                        },
+                                        "vehicleStatus": {
+                                            "lights": False,
+                                            "lightBar": False,
+                                            "brakeStatus": 0,
+                                            "throttlePos": 0,
+                                            "gpsStatus": 1,
+                                            "transitStatus": False,
+                                            "acceleration": 0,
+                                            "worklanes": False,
+                                            "curlane": 1,
+                                            "vehicleCnt": 5,
+                                            "batteryStatus": 85,
+                                            "rangeStatus": 250,
+                                            "failure": 0
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "publishFileNameTxt": ""
+                    }
+                }
+            }
+        },
+        "crcID": "7C"
+    }
+    
+    return message
+
+
+def send_kafka_message(producer, topic, message, key=None):
+    """Send a message to Kafka topic"""
+    try:
+        future = producer.send(topic, value=message, key=key)
+        record_metadata = future.get(timeout=10)
+        return True
+    except KafkaError as e:
+        print(f"Failed to send message to Kafka: {e}")
+        return False
+
+
+def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', 
+                     kafka_bootstrap_servers=None, kafka_topic=None, kafka_username=None, kafka_password=None,
+                     vehicle_id=None, probe_name=None):
+    """Generates dummy car movement data and sends it to Kafka every 1 second."""
 
     start_time = time.time()
     end_time = start_time + (duration * 3600)  # Convert hours to seconds
 
-    # Use provided InfluxDB configuration or defaults
-    influxdb_url = influxdb_url or "http://43.201.26.186:8086"
-    influxdb_token = influxdb_token or ""
-    influxdb_org = influxdb_org or "ciel mobility"
-    influxdb_bucket = influxdb_bucket or "location"
-    influxdb_measurement = influxdb_measurement or "locReports"
-    influxdb_tag_name = influxdb_tag_name or "device_id"
-    influxdb_tag_value = influxdb_tag_value or "ETRI_VT60_ID01"
+    # Use provided Kafka configuration or defaults
+    kafka_bootstrap_servers = kafka_bootstrap_servers or "123.143.232.180:19092"
+    kafka_topic = kafka_topic or "vehicle-driving-data"
+    kafka_username = kafka_username or "iov"
+    kafka_password = kafka_password or "iov"
+    vehicle_id = vehicle_id or "VEH001"
+    probe_name = probe_name or "CITSOBE-0001"
 
-    print(f"InfluxDB Configuration:")
-    print(f"  URL: {influxdb_url}")
-    print(f"  Organization: {influxdb_org}")
-    print(f"  Bucket: {influxdb_bucket}")
-    print(f"  Measurement: {influxdb_measurement}")
-    print(f"  Tag: {influxdb_tag_name}={influxdb_tag_value}")
-    print(f"  Token: {'***' if influxdb_token else 'Not provided'}")
+    print(f"Kafka Configuration:")
+    print(f"  Bootstrap Servers: {kafka_bootstrap_servers}")
+    print(f"  Topic: {kafka_topic}")
+    print(f"  Username: {kafka_username}")
+    print(f"  Vehicle ID: {vehicle_id}")
+    print(f"  Probe Name: {probe_name}")
 
     # Check if all required parameters are set
-    if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement, influxdb_tag_name, influxdb_tag_value]):
-        print("Error: Missing required InfluxDB configuration.")
-        print(f"URL: {'✓' if influxdb_url else '✗'}")
-        print(f"Organization: {'✓' if influxdb_org else '✗'}")
-        print(f"Bucket: {'✓' if influxdb_bucket else '✗'}")
-        print(f"Measurement: {'✓' if influxdb_measurement else '✗'}")
-        print(f"Tag Name: {'✓' if influxdb_tag_name else '✗'}")
-        print(f"Tag Value: {'✓' if influxdb_tag_value else '✗'}")
-        print("\nPlease provide InfluxDB configuration parameters.")
+    if not all([kafka_bootstrap_servers, kafka_topic, kafka_username, kafka_password, vehicle_id, probe_name]):
+        print("Error: Missing required Kafka configuration.")
+        print(f"Bootstrap Servers: {'✓' if kafka_bootstrap_servers else '✗'}")
+        print(f"Topic: {'✓' if kafka_topic else '✗'}")
+        print(f"Username: {'✓' if kafka_username else '✗'}")
+        print(f"Password: {'✓' if kafka_password else '✗'}")
+        print(f"Vehicle ID: {'✓' if vehicle_id else '✗'}")
+        print(f"Probe Name: {'✓' if probe_name else '✗'}")
+        print("\nPlease provide Kafka configuration parameters.")
         return
 
-    # Warn if no token is provided
-    if not influxdb_token:
-        print("⚠️  WARNING: No InfluxDB token provided. This may cause authentication errors.")
-        print("⚠️  If InfluxDB requires authentication, please provide a valid token.")
-        print("⚠️  Continuing anyway in case InfluxDB is configured without authentication...")
+    print(f"Connecting to Kafka at: {kafka_bootstrap_servers}")
 
-    print(f"Connecting to InfluxDB at: {influxdb_url}")
-    print(f"Organization: {influxdb_org}")
-    print(f"Bucket: {influxdb_bucket}")
-
-    # Initialize InfluxDB client
-    try:
-        client = InfluxDBClient(
-            url=influxdb_url, token=influxdb_token, org=influxdb_org)
-
-        # Test the connection by checking if we can access the health endpoint
-        health = client.health()
-        print(f"✓ InfluxDB health status: {health.status}")
-
-        # Test bucket access
-        buckets_api = client.buckets_api()
-        try:
-            bucket = buckets_api.find_bucket_by_name(influxdb_bucket)
-            if not bucket:
-                print(f"Error: Bucket '{influxdb_bucket}' not found.")
-                print("Available buckets:")
-                buckets = buckets_api.find_buckets()
-                for b in buckets.buckets:
-                    print(f"  - {b.name}")
-                client.close()
-                return
-            print(f"✓ Found bucket: {bucket.name}")
-        except Exception as e:
-            print(f"Error accessing buckets: {e}")
-            print("This might be a permissions issue with your token.")
-            client.close()
-            return
-
-        write_api = client.write_api(write_options=SYNCHRONOUS)
-        
-        # Clear existing data if requested
-        if clear_existing:
-            print("Clearing existing car data from InfluxDB...")
-            clear_existing_car_data(client, influxdb_bucket, influxdb_org, influxdb_measurement, influxdb_tag_name, influxdb_tag_value)
-
-    except Exception as e:
-        print(f"Error connecting to InfluxDB: {e}")
+    # Initialize Kafka producer
+    producer = create_kafka_producer(kafka_bootstrap_servers, kafka_username, kafka_password)
+    if not producer:
+        print("Failed to create Kafka producer. Exiting.")
         return
 
     # Get route from OSRM using the provided coordinates
@@ -395,42 +471,26 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
             # When paused, keep streaming the same position
             if last_position is not None:
                 latitude, longitude = last_position['location']
-                speed = 0.0  # Car is stopped (use float to match existing field type)
+                speed = 0.0  # Car is stopped
                 heading = last_position.get('heading', 0)
-                
-                # Create a Point object for paused state with precise timestamp
-                precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
-                point = Point(influxdb_measurement) \
-                    .tag(influxdb_tag_name, influxdb_tag_value) \
-                    .field("lat", latitude) \
-                    .field("lng", longitude) \
-                    .field("speed", float(speed)) \
-                    .field("angle", heading) \
-                    .field("alt", 100.0) \
-                    .field("get_date", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))) \
-                    .field("step_index", int(last_position.get('step_index', 0))) \
-                    .field("instruction", "paused") \
-                    .field("intermediate_index", int(last_position.get('intermediate_index', 0))) \
-                    .field("cycle_count", int(cycle_count)) \
-                    .field("step_duration", 0.0) \
-                    .field("step_distance", 0.0) \
-                    .field("step_name", "Car Paused") \
-                    .field("point_sequence", int(point_index)) \
-                    .time(precise_timestamp, "ns")
+                    
+                # Create Kafka message for paused state
+                message = create_vehicle_message(
+                    vehicle_id=vehicle_id,
+                    probe_name=probe_name,
+                    longitude=longitude,
+                    latitude=latitude,
+                    speed_kmh=speed,
+                    heading=heading
+                )
 
-                # Write the paused data to InfluxDB
+                # Send the paused data to Kafka
                 try:
-                    write_api.write(bucket=influxdb_bucket, org=influxdb_org, record=point)
-                    if int(current_time) % 30 == 0:  # Print every 30 seconds when paused
-                        print(f"🛑 Car paused at {latitude:.6f}, {longitude:.6f} - {time.strftime('%H:%M:%S')}")
+                    if send_kafka_message(producer, kafka_topic, message, key=vehicle_id):
+                        if int(current_time) % 30 == 0:  # Print every 30 seconds when paused
+                            print(f"🛑 Car paused at {latitude:.6f}, {longitude:.6f} - {time.strftime('%H:%M:%S')}")
                 except Exception as e:
-                    error_msg = str(e)
-                    if "401" in error_msg or "unauthorized" in error_msg.lower():
-                        print(f"❌ InfluxDB Authentication Error while paused: {e}")
-                        print("❌ Cannot write paused position data due to authentication failure.")
-                        # Continue the loop to keep trying, but don't exit
-                    else:
-                        print(f"Error writing paused data: {e}")
+                    print(f"Error sending paused data to Kafka: {e}")
                 
                 current_time += 1
                 time.sleep(1)
@@ -650,46 +710,28 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 progress_info += f" (Cycle {cycle_count + 1})"
             print(f"Debug: {progress_info} ({direction}): {step_info} - {latitude:.6f}, {longitude:.6f} - {speed} km/h")
 
-        # Create a Point object with step information using precise timestamp
-        precise_timestamp = int(current_time * 1e9)  # Convert to nanoseconds
-        point = Point(influxdb_measurement) \
-            .tag(influxdb_tag_name, influxdb_tag_value) \
-            .field("lat", latitude) \
-            .field("lng", longitude) \
-            .field("speed", float(speed)) \
-            .field("angle", heading) \
-            .field("alt", 100.0) \
-            .field("get_date", time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))) \
-            .field("step_index", int(current_point.get('step_index', 0))) \
-            .field("instruction", current_point.get('instruction', 'moving')) \
-            .field("intermediate_index", int(current_point.get('intermediate_index', 0))) \
-            .field("cycle_count", int(cycle_count)) \
-            .field("step_duration", float(current_point.get('step_duration', 0))) \
-            .field("step_distance", float(current_point.get('step_distance', 0))) \
-            .field("step_name", current_point.get('step_name', '')) \
-            .field("point_sequence", int(point_index)) \
-            .time(precise_timestamp, "ns")
+        # Create Kafka message with vehicle data
+        message = create_vehicle_message(
+            vehicle_id=vehicle_id,
+            probe_name=probe_name,
+            longitude=longitude,
+            latitude=latitude,
+            speed_kmh=speed,
+            heading=heading
+        )
 
-        # Write the data to InfluxDB
+        # Send the data to Kafka
         try:
-            write_api.write(bucket=influxdb_bucket,
-                            org=influxdb_org, record=point)
-            if int(current_time) % 60 == 0:  # Print every 60 seconds
-                progress_info = f"Point {point_index + 1}/{len(all_route_points)}"
-                if movement_mode == 'round-trip':
-                    progress_info += f" (Cycle {cycle_count + 1})"
-                print(
-                    f"✓ Written data point at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - {progress_info}")
+            if send_kafka_message(producer, kafka_topic, message, key=vehicle_id):
+                if int(current_time) % 60 == 0:  # Print every 60 seconds
+                    progress_info = f"Point {point_index + 1}/{len(all_route_points)}"
+                    if movement_mode == 'round-trip':
+                        progress_info += f" (Cycle {cycle_count + 1})"
+                    print(
+                        f"✓ Sent data to Kafka at {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_time))} - {progress_info}")
         except Exception as e:
-            error_msg = str(e)
-            if "401" in error_msg or "unauthorized" in error_msg.lower():
-                print(f"❌ InfluxDB Authentication Error: {e}")
-                print("❌ This is likely due to missing or invalid InfluxDB token.")
-                print("❌ Please check your InfluxDB configuration and provide a valid token.")
-                print("❌ Stopping data generation due to authentication failure.")
-            else:
-                print(f"❌ Error writing data: {e}")
-            client.close()
+            print(f"❌ Error sending data to Kafka: {e}")
+            producer.close()
             return
 
         # Only increment point_index for one-way mode, round-trip uses time-based calculation
@@ -699,8 +741,8 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         current_time += 1
         time.sleep(1)
 
-    # Close the client
-    client.close()
+    # Close the Kafka producer
+    producer.close()
     
     # Clean up pause signal file
     if os.path.exists('car_pause_signal.txt'):
@@ -728,30 +770,25 @@ if __name__ == "__main__":
                         help="OSRM server URL (default: http://localhost:5001)")
     parser.add_argument("--movement-mode", type=str, choices=['one-way', 'round-trip'], 
                         default='one-way', help="Movement mode: one-way or round-trip (default: one-way)")
-    parser.add_argument("--no-clear", action='store_true',
-                        help="Don't clear existing car data before generating new data")
-    parser.add_argument("--influxdb-url", type=str, default="http://43.201.26.186:8086",
-                        help="InfluxDB server URL (default: http://43.201.26.186:8086)")
-    parser.add_argument("--influxdb-token", type=str, default="",
-                        help="InfluxDB authentication token")
-    parser.add_argument("--influxdb-org", type=str, default="ciel mobility",
-                        help="InfluxDB organization (default: ciel mobility)")
-    parser.add_argument("--influxdb-bucket", type=str, default="location",
-                        help="InfluxDB bucket name (default: location)")
-    parser.add_argument("--influxdb-measurement", type=str, default="locReports",
-                        help="InfluxDB measurement name (default: locReports)")
-    parser.add_argument("--influxdb-tag-name", type=str, default="device_id",
-                        help="InfluxDB tag name (default: device_id)")
-    parser.add_argument("--influxdb-tag-value", type=str, default="ETRI_VT60_ID01",
-                        help="InfluxDB tag value (default: ETRI_VT60_ID01)")
+    parser.add_argument("--kafka-bootstrap-servers", type=str, default="123.143.232.180:19092",
+                        help="Kafka bootstrap servers (default: 123.143.232.180:19092)")
+    parser.add_argument("--kafka-topic", type=str, default="vehicle-driving-data",
+                        help="Kafka topic name (default: vehicle-driving-data)")
+    parser.add_argument("--kafka-username", type=str, default="iov",
+                        help="Kafka SASL username (default: iov)")
+    parser.add_argument("--kafka-password", type=str, default="iov",
+                        help="Kafka SASL password (default: iov)")
+    parser.add_argument("--vehicle-id", type=str, default="VEH001",
+                        help="Vehicle ID (default: VEH001)")
+    parser.add_argument("--probe-name", type=str, default="CITSOBE-0001",
+                        help="Probe name (default: CITSOBE-0001)")
 
     args = parser.parse_args()
 
     origin = (float(args.origin[0]), float(args.origin[1]))
     destination = (float(args.destination[0]), float(args.destination[1]))
 
-    generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode, 
-                     clear_existing=not args.no_clear, influxdb_url=args.influxdb_url,
-                     influxdb_token=args.influxdb_token, influxdb_org=args.influxdb_org,
-                     influxdb_bucket=args.influxdb_bucket, influxdb_measurement=args.influxdb_measurement,
-                     influxdb_tag_name=args.influxdb_tag_name, influxdb_tag_value=args.influxdb_tag_value)
+    generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode,
+                     kafka_bootstrap_servers=args.kafka_bootstrap_servers, kafka_topic=args.kafka_topic,
+                     kafka_username=args.kafka_username, kafka_password=args.kafka_password,
+                     vehicle_id=args.vehicle_id, probe_name=args.probe_name)
