@@ -30,7 +30,7 @@ class VehicleDataProducer:
             key_serializer=lambda k: k.encode('utf-8') if k else None
         )
     
-    def create_vehicle_message(self, vehicle_id="ETRI_VT60_ID01", probe_name="CITSOBE-0001", 
+    def create_vehicle_message(self, vehicle_id="ETRI_VT60_ID04", probe_name="CITSOBE-0001", 
                               longitude=126.9780, latitude=37.5665, speed=5000, heading=9000):
         """Create a vehicle message in the kuk11-2.3-dv.json format"""
         current_time = datetime.now()
@@ -144,7 +144,7 @@ class VehicleDataProducer:
             print(f"Failed to send message: {e}")
             return False
     
-    def simulate_vehicle_movement(self, topic, vehicle_id="ETRI_VT60_ID01", duration=60, interval=5):
+    def simulate_vehicle_movement(self, topic, vehicle_id="ETRI_VT60_ID04", duration=60, interval=5):
         """Simulate vehicle movement by sending periodic updates"""
         print(f"Starting vehicle simulation for {duration} seconds...")
         
@@ -190,11 +190,11 @@ def main():
         # Send a single message
         print("Sending single vehicle message...")
         message = producer.create_vehicle_message()
-        producer.send_message("vehicle-driving-data", message, key="ETRI_VT60_ID01")
+        producer.send_message("vehicle-driving-data", message, key="ETRI_VT60_ID04")
         
         # Simulate vehicle movement for 30 seconds
         print("\nStarting vehicle movement simulation...")
-        producer.simulate_vehicle_movement("vehicle-driving-data", "ETRI_VT60_ID01", duration=30, interval=2)
+        producer.simulate_vehicle_movement("vehicle-driving-data", "ETRI_VT60_ID04", duration=30, interval=2)
         
     except KeyboardInterrupt:
         print("\nStopping producer...")
