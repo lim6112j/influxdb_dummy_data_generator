@@ -1,0 +1,33 @@
+{
+  "messageTime": 1706855167658,
+  "messageType": 8,
+  "dataTxt": {
+    "vehicleID": "ETRI_VT60_ID04",
+    "serviceId": 1001,
+    "startYear": 2024,
+    "startTime": 480,
+    "durationTime": 60,
+    "priority": 1,
+    "serviceType": {
+      "vehicleControl": [
+        {
+          "ctrlType": 0,
+          "ctrlValue": true
+        },
+        {
+          "ctrlType": 1,
+          "ctrlValue": false
+        },
+        {
+          "ctrlType": 2,
+          "ctrlValue": true
+        },
+        {
+          "ctrlType": 3,
+          "ctrlValue": true
+        }
+      ]
+    }
+  },
+  "crcID": "7C"
+}
