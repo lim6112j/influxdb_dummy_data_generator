@@ -1,0 +1,23 @@
+{
+  "messageTime": 1706855167658,
+  "messageType": 1,
+  "dataTxt": {
+    "authenticationInfo": "F2",
+    "dataPacketNbr": 1,
+    "dataPacketPriorityCd": 5,
+    "pdu": {
+      "login": {
+        "senderTxt": "192.168.1.100",
+        "destinationTxt": "192.168.1.200",
+        "userNameTxt": "ETRI_VT60_ID04",
+        "passwordTxt": "vehicle_password",
+        "encodingRules": "1.2.840.113549.1.1.1",
+        "heartbeatDurationMaxQty": 300,
+        "responseTimeOutQty": 30,
+        "initiatorCd": 1,
+        "datagramSizeQty": 1024
+      }
+    }
+  },
+  "crcID": "7C"
+}
