@@ -175,13 +175,14 @@ class VehicleDataProducer:
             print(f"Failed to send message: {e}")
             return False
     
-    def send_login_request(self, topic, vehicle_id="ETRI_VT60_ID04", sender_ip="192.168.1.100", 
+    def send_login_request(self, vehicle_id="ETRI_VT60_ID04", sender_ip="192.168.1.100", 
                           destination_ip="192.168.1.200", password="vehicle_password"):
         """Send a login request message to Kafka"""
         message = self.create_login_message(vehicle_id, sender_ip, destination_ip, password)
         
-        if self.send_message(topic, message, key=vehicle_id):
-            print(f"Login request sent for vehicle {vehicle_id}")
+        # Use vehicle-auth-request topic for authentication messages
+        if self.send_message("vehicle-auth-request", message, key=vehicle_id):
+            print(f"Login request sent for vehicle {vehicle_id} to vehicle-auth-request topic")
             return True
         else:
             print(f"Failed to send login request for vehicle {vehicle_id}")
@@ -232,7 +233,11 @@ def main():
     try:
         # Send a login request
         print("Sending login request...")
-        producer.send_login_request("vehicle-driving-data", "ETRI_VT60_ID04")
+        producer.send_login_request("ETRI_VT60_ID04")
+        
+        # Send a logout request
+        print("Sending logout request...")
+        producer.send_logout_request("ETRI_VT60_ID04")
         
         # Send a single vehicle message
         print("Sending single vehicle message...")
