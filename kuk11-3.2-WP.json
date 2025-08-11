@@ -1,0 +1,77 @@
+{
+  "messageTime": 1706855167658,
+  "messageType": 4,
+  "dataTxt": {
+    "vehicleID": "ETRI_VT60_ID04",
+    "serviceId": 1001,
+    "startYear": 2024,
+    "startTime": 480,
+    "durationTime": 60,
+    "priority": 1,
+    "serviceType": {
+      "wayPoint": [
+        {
+          "wptName": "Seoul Station",
+          "wptId": 1,
+          "wptLatitude": 37.5547125,
+          "wptLongitude": 126.9707878,
+          "wptElevation": 50,
+          "wptWaitTime": 120,
+          "wptPick": 5,
+          "wptDrop": 2,
+          "pathPosition": [
+            {
+              "pathLatitude": 37.5540000,
+              "pathLongitude": 126.9700000
+            },
+            {
+              "pathLatitude": 37.5545000,
+              "pathLongitude": 126.9705000
+            }
+          ]
+        },
+        {
+          "wptName": "Gangnam Station",
+          "wptId": 2,
+          "wptLatitude": 37.4979462,
+          "wptLongitude": 127.0276368,
+          "wptElevation": 45,
+          "wptWaitTime": 180,
+          "wptPick": 3,
+          "wptDrop": 4,
+          "pathPosition": [
+            {
+              "pathLatitude": 37.4975000,
+              "pathLongitude": 127.0270000
+            },
+            {
+              "pathLatitude": 37.4980000,
+              "pathLongitude": 127.0275000
+            }
+          ]
+        },
+        {
+          "wptName": "Hongik University",
+          "wptId": 3,
+          "wptLatitude": 37.5511694,
+          "wptLongitude": 126.9227004,
+          "wptElevation": 55,
+          "wptWaitTime": 90,
+          "wptPick": 2,
+          "wptDrop": 1,
+          "pathPosition": [
+            {
+              "pathLatitude": 37.5505000,
+              "pathLongitude": 126.9220000
+            },
+            {
+              "pathLatitude": 37.5510000,
+              "pathLongitude": 126.9225000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "crcID": "7C"
+}
