@@ -175,6 +175,35 @@ class VehicleDataProducer:
             print(f"Failed to send message: {e}")
             return False
     
+    def send_logout_request(self, vehicle_id="ETRI_VT60_ID04", logout_code=1):
+        """Send a logout request message to Kafka"""
+        message_time = int(time.time() * 1000)  # Current timestamp in milliseconds
+        
+        message = {
+            "messageTime": message_time,
+            "messageType": 2,
+            "dataTxt": {
+                "authenticationInfo": "F2",
+                "dataPacketNbr": 1,
+                "dataPacketPriorityCd": 5,
+                "pdu": {
+                    "logout": {
+                        "userNameTxt": vehicle_id,
+                        "logoutCd": logout_code
+                    }
+                }
+            },
+            "crcID": "7C"
+        }
+        
+        # Use vehicle-auth-request topic for authentication messages
+        if self.send_message("vehicle-auth-request", message, key=vehicle_id):
+            print(f"Logout request sent for vehicle {vehicle_id} to vehicle-auth-request topic")
+            return True
+        else:
+            print(f"Failed to send logout request for vehicle {vehicle_id}")
+            return False
+
     def send_login_request(self, vehicle_id="ETRI_VT60_ID04", sender_ip="192.168.1.100", 
                           destination_ip="192.168.1.200", password="vehicle_password"):
         """Send a login request message to Kafka"""
