@@ -315,21 +315,18 @@ def start_generation():
         osrm_url = data.get('osrm_url', 'http://localhost:5001')
         movement_mode = data.get('movement_mode', 'one-way')  # Default one-way
         
-        # InfluxDB configuration
-        influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
-        influxdb_token = data.get('influxdb_token', '')
-        influxdb_org = data.get('influxdb_org', 'ciel mobility')
-        influxdb_bucket = data.get('influxdb_bucket', 'location')
-        influxdb_measurement = data.get('influxdb_measurement', 'locReports')
-        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
-        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        # Kafka configuration
+        kafka_bootstrap_servers = data.get('kafka_bootstrap_servers', '123.143.232.180:19092')
+        kafka_topic = data.get('kafka_topic', 'vehicle-driving-data')
+        kafka_username = data.get('kafka_username', 'iov')
+        kafka_password = data.get('kafka_password', 'iov')
+        vehicle_id = data.get('vehicle_id', 'VEH001')
+        probe_name = data.get('probe_name', 'CITSOBE-0001')
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
         
-        # Build command to run generate_car_data.py (it will clear existing data by default)
+        # Build command to run generate_car_data.py with Kafka parameters
         cmd = [
             'python', 'generate_car_data.py',
             '--duration', str(duration),
@@ -337,13 +334,12 @@ def start_generation():
             '--destination', str(dest_lat), str(dest_lon),
             '--osrm-url', osrm_url,
             '--movement-mode', movement_mode,
-            '--influxdb-url', influxdb_url,
-            '--influxdb-token', influxdb_token,
-            '--influxdb-org', influxdb_org,
-            '--influxdb-bucket', influxdb_bucket,
-            '--influxdb-measurement', influxdb_measurement,
-            '--influxdb-tag-name', influxdb_tag_name,
-            '--influxdb-tag-value', influxdb_tag_value
+            '--kafka-bootstrap-servers', kafka_bootstrap_servers,
+            '--kafka-topic', kafka_topic,
+            '--kafka-username', kafka_username,
+            '--kafka-password', kafka_password,
+            '--vehicle-id', vehicle_id,
+            '--probe-name', probe_name
         ]
         
         # Start the script as a subprocess so we can control it
@@ -367,8 +363,14 @@ def start_generation():
         thread.start()
         
         return jsonify({
-            'message': 'Data generation started (existing data will be cleared)',
-            'command': ' '.join(cmd)
+            'message': 'Data generation started (sending to Kafka)',
+            'command': ' '.join(cmd),
+            'kafka_config': {
+                'bootstrap_servers': kafka_bootstrap_servers,
+                'topic': kafka_topic,
+                'vehicle_id': vehicle_id,
+                'probe_name': probe_name
+            }
         })
         
     except Exception as e:
@@ -871,6 +873,25 @@ def get_influxdb_config():
             'tag_name': 'device_id',
             'tag_value': 'ETRI_VT60_ID01'
             # Note: Token is not included for security reasons
+        }
+        
+        return jsonify(config)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/kafka-config')
+def get_kafka_config():
+    """Get default Kafka configuration"""
+    try:
+        config = {
+            'bootstrap_servers': '123.143.232.180:19092',
+            'topic': 'vehicle-driving-data',
+            'username': 'iov',
+            'vehicle_id': 'VEH001',
+            'probe_name': 'CITSOBE-0001'
+            # Note: Password is not included for security reasons
         }
         
         return jsonify(config)
