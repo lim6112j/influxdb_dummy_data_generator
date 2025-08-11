@@ -1,0 +1,19 @@
+{
+  "messageTime": 1706855167658,
+  "messageType": 6,
+  "dataTxt": {
+    "authenticationInfo": "35",
+    "dataPacketNbr": 1,
+    "dataPacketPriorityCd": 5,
+    "pdu": {
+      "reject": {
+        "rejectPacketNbr": 1,
+        "userNameTxt": "ETRI_VT60_ID04",
+        "rejectType": {
+          "rejectLoginCd": 4
+        }
+      }
+    }
+  },
+  "crcID": "7C"
+}
