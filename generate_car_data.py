@@ -307,7 +307,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
 
     if not route_points or not step_locations:
         print("Failed to get route from OSRM. Exiting.")
-        client.close()
+        producer.close()
         return
 
     # Calculate how many times to repeat the route to fill the duration
