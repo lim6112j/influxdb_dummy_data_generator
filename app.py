@@ -328,7 +328,7 @@ def start_generation():
         
         # Build command to run generate_car_data.py with Kafka parameters
         cmd = [
-            'python', 'generate_car_data.py',
+            'uv', 'run', 'generate_car_data.py',
             '--duration', str(duration),
             '--origin', str(origin_lat), str(origin_lon),
             '--destination', str(dest_lat), str(dest_lon),
