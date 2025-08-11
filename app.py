@@ -320,7 +320,7 @@ def start_generation():
         kafka_topic = data.get('kafka_topic', 'vehicle-driving-data')
         kafka_username = data.get('kafka_username', 'iov')
         kafka_password = data.get('kafka_password', 'iov')
-        vehicle_id = data.get('vehicle_id', 'VEH001')
+        vehicle_id = data.get('vehicle_id', 'ETRI_VT60_ID01')
         probe_name = data.get('probe_name', 'CITSOBE-0001')
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
@@ -889,7 +889,7 @@ def get_kafka_config():
             'bootstrap_servers': '123.143.232.180:19092',
             'topic': 'vehicle-driving-data',
             'username': 'iov',
-            'vehicle_id': 'VEH001',
+            'vehicle_id': 'ETRI_VT60_ID01',
             'probe_name': 'CITSOBE-0001'
             # Note: Password is not included for security reasons
         }
