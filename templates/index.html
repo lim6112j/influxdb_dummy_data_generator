@@ -485,6 +485,19 @@
               >Round-trip (Cyclical)</label
             >
           </div>
+          <div class="input-group">
+            <label for="waypointDistance">Waypoint Distance (m):</label>
+            <input
+              type="number"
+              id="waypointDistance"
+              placeholder="Distance in meters"
+              value="200"
+              min="10"
+              max="2000"
+              step="10"
+            />
+            <small style="color: #666; margin-left: 10px;">Auto-pause distance when reaching waypoints</small>
+          </div>
         </div>
         <button onclick="startStreaming()" id="streamBtn" disabled>
           Start Streaming Data
@@ -938,6 +951,10 @@
           'input[name="movementMode"]:checked',
         ).value;
 
+        // Get waypoint distance threshold
+        const waypointDistanceMeters = parseFloat(document.getElementById("waypointDistance").value) || 200;
+        const waypointDistanceThreshold = waypointDistanceMeters / 111000; // Convert meters to degrees (approximate)
+
         // Validate inputs
         if (
           isNaN(originLat) ||
@@ -1024,6 +1041,7 @@
             influxdb_measurement: influxdbMeasurement,
             influxdb_tag_name: influxdbTagName,
             influxdb_tag_value: influxdbTagValue,
+            waypoint_distance_threshold: waypointDistanceThreshold,
           }),
         })
           .then((response) => response.json())
