@@ -342,7 +342,8 @@ def start_generation():
             '--influxdb-bucket', influxdb_bucket,
             '--influxdb-measurement', influxdb_measurement,
             '--influxdb-tag-name', influxdb_tag_name,
-            '--influxdb-tag-value', influxdb_tag_value
+            '--influxdb-tag-value', influxdb_tag_value,
+            '--waypoint-distance-threshold', str(waypoint_distance_threshold)
         ]
         
         # Start the script as a subprocess so we can control it
