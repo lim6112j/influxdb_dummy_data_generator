@@ -323,8 +323,7 @@ def start_generation():
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
         influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
-        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        waypoint_distance_threshold = data.get('waypoint_distance_threshold', 0.002)
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400

@@ -623,11 +623,11 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                     wp_lat, wp_lon = waypoint['location']
                     distance = math.sqrt((latitude - wp_lat)**2 + (longitude - wp_lon)**2)
                     
-                    # If within reasonable distance (about 200 meters in degrees)
-                    if distance < 0.002:  # Approximately 200 meters
+                    # If within configured distance threshold
+                    if distance < waypoint_distance_threshold:
                         print(f"🎯 USER WAYPOINT REACHED: {waypoint['name']} at {time.strftime('%H:%M:%S')}")
                         print(f"   Location: ({latitude:.6f}, {longitude:.6f})")
-                        print(f"   Distance to waypoint: {distance:.6f} degrees")
+                        print(f"   Distance to waypoint: {distance:.6f} degrees (threshold: {waypoint_distance_threshold})")
                         print(f"   Auto-pausing car for user waypoint...")
                         
                         # Create pause signal file for waypoint pause
