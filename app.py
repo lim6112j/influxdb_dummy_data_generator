@@ -871,7 +871,8 @@ def get_influxdb_config():
             'bucket': 'location',
             'measurement': 'locReports',
             'tag_name': 'device_id',
-            'tag_value': 'ETRI_VT60_ID01'
+            'tag_value': 'ETRI_VT60_ID01',
+            'vehicle_id': 'ETRI_VT60_ID01'
             # Note: Token is not included for security reasons
         }
         
