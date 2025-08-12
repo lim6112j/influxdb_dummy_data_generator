@@ -745,7 +745,7 @@ if __name__ == "__main__":
     parser.add_argument("--influxdb-tag-value", type=str, default="ETRI_VT60_ID01",
                         help="InfluxDB tag value (default: ETRI_VT60_ID01)")
     parser.add_argument("--waypoint-distance-threshold", type=float, default=0.002,
-                        help="Distance threshold for waypoint auto-pause in degrees (default: 0.002, ~200m)")
+                        help="Distance threshold for waypoint auto-pause in degrees (default: 0.002, ~222m)")
 
     args = parser.parse_args()
 

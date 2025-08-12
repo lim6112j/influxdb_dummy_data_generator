@@ -953,7 +953,10 @@
 
         // Get waypoint distance threshold
         const waypointDistanceMeters = parseFloat(document.getElementById("waypointDistance").value) || 200;
-        const waypointDistanceThreshold = waypointDistanceMeters / 111000; // Convert meters to degrees (approximate)
+        // Convert meters to degrees using more accurate conversion
+        // 1 degree latitude ≈ 111,320 meters
+        // 1 degree longitude varies by latitude, but we'll use a reasonable approximation
+        const waypointDistanceThreshold = waypointDistanceMeters / 111320; // Convert meters to degrees
 
         // Validate inputs
         if (
