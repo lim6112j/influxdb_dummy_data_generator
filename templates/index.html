@@ -639,6 +639,27 @@
             </p>
           </div>
 
+          <div style="margin-bottom: 15px; padding: 10px; background: #fff3e0; border-radius: 4px; border-left: 4px solid #FF9800;">
+            <strong>POST /api/append-dispatch-engine</strong>
+            <p style="margin: 5px 0; color: #666;">Append new pickup/dropoff demands using dispatch engine optimization service</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #888;">Body: {demands: [...], algorithm: 2 (optional)}</p>
+            <div style="margin: 5px 0; font-size: 11px; color: #999; font-family: monospace; background: #f0f0f0; padding: 8px; border-radius: 3px;">
+              Example JSON:<br>
+              {<br>
+              &nbsp;&nbsp;"demands": [<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 37.36431, "lng": 126.73700},<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;{"lat": 37.38091, "lng": 126.65638}<br>
+              &nbsp;&nbsp;],<br>
+              &nbsp;&nbsp;"algorithm": 2<br>
+              &nbsp;&nbsp;// Calls external dispatch engine at 13.209.84.184:8765<br>
+              &nbsp;&nbsp;// Creates optimized pickup/dropoff routes<br>
+              }
+            </div>
+            <p style="margin: 5px 0; font-size: 11px; color: #E65100; font-style: italic;">
+              🚚 This endpoint uses an external dispatch engine service to create optimized pickup/dropoff routes for delivery/taxi scenarios.
+            </p>
+          </div>
+
           <div style="margin-bottom: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
             <strong>GET /api/status/osrm</strong>
             <p style="margin: 5px 0; color: #666;">Check OSRM server status and connectivity</p>

@@ -859,6 +859,225 @@ def append_route_optimized():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/append-dispatch-engine', methods=['POST'])
+def append_dispatch_engine():
+    """Append new waypoints using dispatch engine optimization for pickup/dropoff routes"""
+    try:
+        data = request.get_json()
+        new_demands = data.get('demands', [])
+        algorithm = data.get('algorithm', 2)
+        
+        print(f"🚚 /api/append-dispatch-engine called with {len(new_demands)} new demands")
+        print(f"🚚 Request data: {data}")
+        print(f"🚚 Using algorithm: {algorithm}")
+        
+        if not new_demands:
+            return jsonify({'error': 'No demands provided'}), 400
+        
+        # Validate demands format
+        for i, demand in enumerate(new_demands):
+            print(f"🚚 New demand {i+1}: {demand}")
+            if not isinstance(demand, dict) or 'lat' not in demand or 'lng' not in demand:
+                return jsonify({'error': f'Invalid demand {i+1}: must have lat and lng keys'}), 400
+        
+        # Get current car position from the latest data point
+        # Use default InfluxDB configuration if not provided
+        influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
+        influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
+        influxdb_org = data.get('influxdb_org', 'ciel mobility')
+        influxdb_bucket = data.get('influxdb_bucket', 'location')
+        influxdb_measurement = data.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+
+        print(f"🚚 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
+
+        try:
+            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            query_api = client.query_api()
+
+            # Get the latest car position
+            query = f'''
+            from(bucket: "{influxdb_bucket}")
+              |> range(start: -1h)
+              |> filter(fn: (r) => r["_measurement"] == "{influxdb_measurement}")
+              |> filter(fn: (r) => r["{influxdb_tag_name}"] == "{influxdb_tag_value}")
+              |> filter(fn: (r) => r["_field"] == "lat" or r["_field"] == "lng")
+              |> last()
+              |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+            '''
+
+            result = query_api.query(query=query)
+            client.close()
+
+            current_lat = None
+            current_lon = None
+            
+            for table in result:
+                for record in table.records:
+                    current_lat = record.values.get('lat')
+                    current_lon = record.values.get('lng')
+                    break
+
+            if current_lat is None or current_lon is None:
+                return jsonify({'error': 'No current car position found'}), 404
+
+        except Exception as influx_error:
+            error_msg = str(influx_error)
+            if "401" in error_msg or "unauthorized" in error_msg.lower():
+                return jsonify({'error': 'InfluxDB authentication failed. Please check your token and permissions.'}), 401
+            elif "connection" in error_msg.lower():
+                return jsonify({'error': 'Cannot connect to InfluxDB server. Please check the URL.'}), 503
+            else:
+                return jsonify({'error': f'InfluxDB error: {error_msg}'}), 500
+
+        # Load existing waypoints from route file
+        existing_waypoints = []
+        try:
+            import json
+            if os.path.exists('current_route.json'):
+                with open('current_route.json', 'r') as f:
+                    route_data = json.load(f)
+                    existing_waypoints = route_data.get('user_waypoints', [])
+                    print(f"🚚 Found {len(existing_waypoints)} existing waypoints")
+        except Exception as e:
+            print(f"Warning: Could not load existing waypoints: {e}")
+
+        # Prepare waypoints for dispatch engine (current major waypoints)
+        dispatch_waypoints = []
+        
+        # Add current position as first waypoint
+        dispatch_waypoints.append({
+            "lng": str(current_lon),
+            "lat": str(current_lat),
+            "metadata": {"type": "current_position"}
+        })
+        
+        # Add existing waypoints
+        for wp in existing_waypoints:
+            dispatch_waypoints.append({
+                "lng": str(wp['lng']),
+                "lat": str(wp['lat']),
+                "metadata": {"name": wp.get('name', ''), "type": "existing_waypoint"}
+            })
+
+        # Prepare demands for dispatch engine (new pickup/dropoff locations)
+        dispatch_demands = []
+        for demand in new_demands:
+            dispatch_demands.append({
+                "lng": str(demand['lng']),
+                "lat": str(demand['lat'])
+            })
+
+        # Call dispatch engine service
+        dispatch_url = "http://13.209.84.184:8765/dispatch-engine-servicei/osrm"
+        dispatch_payload = {
+            "waypoints": dispatch_waypoints,
+            "demands": dispatch_demands,
+            "algorithm": algorithm
+        }
+
+        print(f"🚚 Calling dispatch engine at: {dispatch_url}")
+        print(f"🚚 Payload: {dispatch_payload}")
+
+        try:
+            dispatch_response = requests.post(
+                dispatch_url,
+                json=dispatch_payload,
+                headers={'Content-Type': 'application/json'},
+                timeout=30
+            )
+            dispatch_response.raise_for_status()
+            dispatch_result = dispatch_response.json()
+            
+            print(f"🚚 Dispatch engine response: {dispatch_result}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error calling dispatch engine: {e}")
+            return jsonify({'error': f'Error calling dispatch engine service: {str(e)}'}), 500
+
+        # Extract optimized route from dispatch engine response
+        # The response should contain optimized waypoints including pickup/dropoff points
+        if 'waypoints' not in dispatch_result and 'route' not in dispatch_result:
+            return jsonify({'error': 'Invalid response from dispatch engine - no waypoints or route found'}), 500
+
+        # Convert dispatch engine response to our waypoint format
+        optimized_waypoints = []
+        
+        # Handle different possible response formats from dispatch engine
+        if 'waypoints' in dispatch_result:
+            for i, wp in enumerate(dispatch_result['waypoints']):
+                # Skip the current position (first waypoint)
+                if i == 0:
+                    continue
+                    
+                optimized_waypoints.append({
+                    'lat': float(wp['lat']),
+                    'lng': float(wp['lng']),
+                    'name': wp.get('metadata', {}).get('name', f'Optimized Point {i}')
+                })
+        elif 'route' in dispatch_result:
+            for i, point in enumerate(dispatch_result['route']):
+                optimized_waypoints.append({
+                    'lat': float(point['lat']),
+                    'lng': float(point['lng']),
+                    'name': point.get('name', f'Route Point {i+1}')
+                })
+
+        print(f"🚚 Extracted {len(optimized_waypoints)} optimized waypoints from dispatch engine")
+
+        if not optimized_waypoints:
+            return jsonify({'error': 'No optimized waypoints received from dispatch engine'}), 500
+
+        # Use provided OSRM URL or fall back to the one stored in route manager
+        osrm_url = data.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
+
+        # Update the route in the route manager with optimized waypoints
+        success = route_manager.update_route_from_current(
+            (current_lat, current_lon), optimized_waypoints, osrm_url
+        )
+        
+        # Update the stored OSRM URL in route manager if a new one was provided
+        if data.get('osrm_url'):
+            route_manager.osrm_url = osrm_url
+        
+        if not success:
+            return jsonify({'error': 'Failed to update route with dispatch engine optimization - check server logs for details'}), 500
+        
+        # Get the updated route data for response
+        route_points, step_locations, _, _ = route_manager.get_current_route_data()
+        
+        # Convert route points to Google Maps format for frontend
+        route_points_gm = [[point[0], point[1]] for point in route_points]
+        
+        # Calculate approximate duration and distance
+        total_distance = sum(step.get('distance', 0) for step in step_locations)
+        total_duration = sum(step.get('duration', 0) for step in step_locations)
+        
+        return jsonify({
+            'route_points': route_points_gm,
+            'duration': total_duration,
+            'distance': total_distance,
+            'current_position': {'lat': current_lat, 'lng': current_lon},
+            'waypoints': optimized_waypoints,
+            'original_demands': new_demands,
+            'total_waypoints': len(optimized_waypoints),
+            'added_demands': len(new_demands),
+            'optimized': True,
+            'optimization_method': 'dispatch_engine',
+            'algorithm': algorithm,
+            'dispatch_response': dispatch_result,
+            'message': f'Route optimized by dispatch engine with {len(new_demands)} demands - car will follow optimized pickup/dropoff sequence',
+            'auto_applied': True,
+            'success': True
+        })
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Error connecting to dispatch engine: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/influxdb-config')
 def get_influxdb_config():
     """Get default InfluxDB configuration"""
