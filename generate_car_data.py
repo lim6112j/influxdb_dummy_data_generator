@@ -137,7 +137,7 @@ def clear_existing_car_data(client, influxdb_bucket, influxdb_org, influxdb_meas
 
 def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', clear_existing=True, 
                      influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None, influxdb_measurement=None,
-                     influxdb_tag_name=None, influxdb_tag_value=None):
+                     influxdb_tag_name=None, influxdb_tag_value=None, waypoint_distance_threshold=0.002):
     """Generates dummy car movement data and writes it to InfluxDB every 1 second."""
 
     start_time = time.time()
@@ -744,6 +744,8 @@ if __name__ == "__main__":
                         help="InfluxDB tag name (default: device_id)")
     parser.add_argument("--influxdb-tag-value", type=str, default="ETRI_VT60_ID01",
                         help="InfluxDB tag value (default: ETRI_VT60_ID01)")
+    parser.add_argument("--waypoint-distance-threshold", type=float, default=0.002,
+                        help="Distance threshold for waypoint auto-pause in degrees (default: 0.002, ~200m)")
 
     args = parser.parse_args()
 
@@ -754,4 +756,5 @@ if __name__ == "__main__":
                      clear_existing=not args.no_clear, influxdb_url=args.influxdb_url,
                      influxdb_token=args.influxdb_token, influxdb_org=args.influxdb_org,
                      influxdb_bucket=args.influxdb_bucket, influxdb_measurement=args.influxdb_measurement,
-                     influxdb_tag_name=args.influxdb_tag_name, influxdb_tag_value=args.influxdb_tag_value)
+                     influxdb_tag_name=args.influxdb_tag_name, influxdb_tag_value=args.influxdb_tag_value,
+                     waypoint_distance_threshold=args.waypoint_distance_threshold)
