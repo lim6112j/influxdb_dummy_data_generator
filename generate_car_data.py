@@ -267,7 +267,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     kafka_topic = kafka_topic or "vehicle-driving-data"
     kafka_username = kafka_username or "iov"
     kafka_password = kafka_password or "iov"
-    vehicle_id = vehicle_id or "ETRI_VT60_ID04"
+    vehicle_id = vehicle_id or "ETRI_VT60_ID01"
     probe_name = probe_name or "CITSOBE-0001"
 
     print(f"Kafka Configuration:")
@@ -778,8 +778,8 @@ if __name__ == "__main__":
                         help="Kafka SASL username (default: iov)")
     parser.add_argument("--kafka-password", type=str, default="iov",
                         help="Kafka SASL password (default: iov)")
-    parser.add_argument("--vehicle-id", type=str, default="ETRI_VT60_ID04",
-                        help="Vehicle ID (default: ETRI_VT60_ID04)")
+    parser.add_argument("--vehicle-id", type=str, default="ETRI_VT60_ID01",
+                        help="Vehicle ID (default: ETRI_VT60_ID01)")
     parser.add_argument("--probe-name", type=str, default="CITSOBE-0001",
                         help="Probe name (default: CITSOBE-0001)")
 
