@@ -1033,14 +1033,23 @@ def append_dispatch_engine():
                 headers={'Content-Type': 'application/json'},
                 timeout=30
             )
-            dispatch_response.raise_for_status()
+            
+            print(f"🚚 Dispatch engine HTTP status: {dispatch_response.status_code}")
+            
+            if dispatch_response.status_code != 200:
+                error_text = dispatch_response.text
+                print(f"❌ Dispatch engine error response: {error_text}")
+                return jsonify({'error': f'Dispatch engine returned {dispatch_response.status_code}: {error_text}'}), 500
+            
             dispatch_result = dispatch_response.json()
-
             print(f"🚚 Dispatch engine response: {dispatch_result}")
 
         except requests.exceptions.RequestException as e:
             print(f"❌ Error calling dispatch engine: {e}")
             return jsonify({'error': f'Error calling dispatch engine service: {str(e)}'}), 500
+        except ValueError as e:
+            print(f"❌ Error parsing dispatch engine JSON response: {e}")
+            return jsonify({'error': f'Invalid JSON response from dispatch engine: {str(e)}'}), 500
 
         # Extract optimized route from dispatch engine response
         # The response should contain optimized waypoints including pickup/dropoff points
@@ -1121,7 +1130,30 @@ def append_dispatch_engine():
         print(f"   - Top-level waypoints: {len(dispatch_result.get('waypoints', []))}")
 
         if not optimized_waypoints:
-            return jsonify({'error': 'No optimized waypoints received from dispatch engine'}), 500
+            print("🚚 No optimized waypoints from dispatch engine, using fallback approach")
+            # Fallback: combine existing waypoints + new demands in simple order
+            optimized_waypoints = []
+            
+            # Add existing waypoints from request
+            for i, wp in enumerate(request_waypoints):
+                optimized_waypoints.append({
+                    'lat': float(wp['lat']),
+                    'lng': float(wp['lng']),
+                    'name': wp.get('name', f'Waypoint {i+1}')
+                })
+            
+            # Add new demands
+            for i, demand in enumerate(new_demands):
+                optimized_waypoints.append({
+                    'lat': float(demand['lat']),
+                    'lng': float(demand['lng']),
+                    'name': f'Demand {i+1}'
+                })
+            
+            print(f"🚚 Using fallback with {len(optimized_waypoints)} waypoints")
+            
+            if not optimized_waypoints:
+                return jsonify({'error': 'No waypoints to process (dispatch engine failed and no fallback data)'}), 500
 
         # Use provided OSRM URL or fall back to the one stored in route manager
         osrm_url = data.get(
