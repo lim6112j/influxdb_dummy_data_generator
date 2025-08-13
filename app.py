@@ -977,44 +977,43 @@ def append_dispatch_engine():
             else:
                 return jsonify({'error': f'InfluxDB error: {error_msg}'}), 500
 
-        # Load existing waypoints from route file
-        existing_waypoints = []
-        try:
-            import json
-            if os.path.exists('current_route.json'):
-                with open('current_route.json', 'r') as f:
-                    route_data = json.load(f)
-                    existing_waypoints = route_data.get('user_waypoints', [])
-                    print(f"🚚 Found {len(existing_waypoints)
-                                     } existing waypoints")
-        except Exception as e:
-            print(f"Warning: Could not load existing waypoints: {e}")
-
-        # Prepare waypoints for dispatch engine (current major waypoints)
+        # Get waypoints from request body (these are the current major waypoints)
+        request_waypoints = data.get('waypoints', [])
+        print(f"🚚 Received {len(request_waypoints)} waypoints from request body")
+        
+        # Prepare waypoints for dispatch engine: [current_car_location, waypoint1, waypoint2, ...]
         dispatch_waypoints = []
 
-        # Add current position as first waypoint
+        # 1. Add current car position as first waypoint
         dispatch_waypoints.append({
             "lng": str(current_lon),
             "lat": str(current_lat),
             "metadata": {"type": "current_position"}
         })
+        print(f"🚚 Added current car location: ({current_lat}, {current_lon})")
 
-        # Add existing waypoints
-        for wp in existing_waypoints:
+        # 2. Add waypoints from request body
+        for i, wp in enumerate(request_waypoints):
             dispatch_waypoints.append({
                 "lng": str(wp['lng']),
                 "lat": str(wp['lat']),
-                "metadata": {"name": wp.get('name', ''), "type": "existing_waypoint"}
+                "metadata": {"name": wp.get('name', f'Waypoint {i+1}'), "type": "existing_waypoint"}
             })
+            print(f"🚚 Added waypoint {i+1}: {wp.get('name', f'Waypoint {i+1}')} at ({wp['lat']}, {wp['lng']})")
 
-        # Prepare demands for dispatch engine (new pickup/dropoff locations)
-        dispatch_demands = []
-        for demand in new_demands:
-            dispatch_demands.append({
+        # 3. Add new demands as additional waypoints
+        for i, demand in enumerate(new_demands):
+            dispatch_waypoints.append({
                 "lng": str(demand['lng']),
-                "lat": str(demand['lat'])
+                "lat": str(demand['lat']),
+                "metadata": {"name": f"Demand {i+1}", "type": "new_demand"}
             })
+            print(f"🚚 Added demand {i+1}: ({demand['lat']}, {demand['lng']})")
+
+        # For dispatch engine, we send all points as waypoints (no separate demands)
+        dispatch_demands = []
+        
+        print(f"🚚 Total waypoints for dispatch engine: {len(dispatch_waypoints)} (current location + {len(request_waypoints)} waypoints + {len(new_demands)} demands)")
 
         # Call dispatch engine service
         dispatch_url = "http://13.209.84.184:8765/dispatch-engine-servicei/osrm"
