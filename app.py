@@ -1045,31 +1045,45 @@ def append_dispatch_engine():
 
         # Extract optimized route from dispatch engine response
         # The response should contain optimized waypoints including pickup/dropoff points
-        if 'waypoints' not in dispatch_result and 'route' not in dispatch_result:
-            return jsonify({'error': 'Invalid response from dispatch engine - no waypoints or route found'}), 500
+        if dispatch_result.get('code') != 'Ok':
+            return jsonify({'error': f'Dispatch engine error: {dispatch_result.get("message", "Unknown error")}'}), 500
 
         # Convert dispatch engine response to our waypoint format
         optimized_waypoints = []
 
-        # Handle different possible response formats from dispatch engine
+        # Handle dispatch engine response format
         if 'waypoints' in dispatch_result:
+            # Use waypoints from dispatch engine response
             for i, wp in enumerate(dispatch_result['waypoints']):
                 # Skip the current position (first waypoint)
                 if i == 0:
                     continue
 
                 optimized_waypoints.append({
-                    'lat': float(wp['lat']),
-                    'lng': float(wp['lng']),
+                    'lat': float(wp['location'][1]),
+                    'lng': float(wp['location'][0]),
                     'name': wp.get('metadata', {}).get('name', f'Optimized Point {i}')
                 })
-        elif 'route' in dispatch_result:
-            for i, point in enumerate(dispatch_result['route']):
-                optimized_waypoints.append({
-                    'lat': float(point['lat']),
-                    'lng': float(point['lng']),
-                    'name': point.get('name', f'Route Point {i+1}')
-                })
+        elif 'routes' in dispatch_result and dispatch_result['routes']:
+            # Extract waypoints from the route geometry
+            route = dispatch_result['routes'][0]
+            if 'waypoints' in route:
+                for i, wp in enumerate(route['waypoints']):
+                    optimized_waypoints.append({
+                        'lat': float(wp['location'][1]),
+                        'lng': float(wp['location'][0]),
+                        'name': wp.get('name', f'Route Point {i+1}')
+                    })
+            else:
+                # Fallback: extract from route geometry
+                geometry = route.get('geometry', '')
+                # For now, just use the demands as waypoints since we can't decode the geometry easily
+                for i, demand in enumerate(new_demands):
+                    optimized_waypoints.append({
+                        'lat': float(demand['lat']),
+                        'lng': float(demand['lng']),
+                        'name': f'Demand Point {i+1}'
+                    })
 
         print(f"🚚 Extracted {len(optimized_waypoints)
                              } optimized waypoints from dispatch engine")
