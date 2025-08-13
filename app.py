@@ -322,7 +322,7 @@ def start_generation():
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
         waypoint_distance_threshold = data.get('waypoint_distance_threshold', 0.002)
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
@@ -518,7 +518,7 @@ def update_route():
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
 
         print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"🔄 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
@@ -631,7 +631,7 @@ def append_route():
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
 
         print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"➕ Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
@@ -759,7 +759,7 @@ def append_route_optimized():
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', '1')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
 
         print(f"🚀 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
         print(f"🚀 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
