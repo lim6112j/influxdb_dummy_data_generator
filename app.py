@@ -932,7 +932,7 @@ def append_dispatch_engine():
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID04')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
 
         print(f"🚚 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={
               influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
@@ -1052,38 +1052,60 @@ def append_dispatch_engine():
         optimized_waypoints = []
 
         # Handle dispatch engine response format
-        if 'waypoints' in dispatch_result:
-            # Use waypoints from dispatch engine response
-            for i, wp in enumerate(dispatch_result['waypoints']):
-                # Skip the current position (first waypoint)
-                if i == 0:
-                    continue
-
-                optimized_waypoints.append({
-                    'lat': float(wp['location'][1]),
-                    'lng': float(wp['location'][0]),
-                    'name': wp.get('metadata', {}).get('name', f'Optimized Point {i}')
-                })
-        elif 'routes' in dispatch_result and dispatch_result['routes']:
-            # Extract waypoints from the route geometry
+        if 'routes' in dispatch_result and dispatch_result['routes']:
+            # Extract waypoints from the optimized route
             route = dispatch_result['routes'][0]
-            if 'waypoints' in route:
-                for i, wp in enumerate(route['waypoints']):
-                    optimized_waypoints.append({
-                        'lat': float(wp['location'][1]),
-                        'lng': float(wp['location'][0]),
-                        'name': wp.get('name', f'Route Point {i+1}')
-                    })
+            
+            # Get waypoints from the route response
+            if 'waypoints' in dispatch_result:
+                # Use top-level waypoints if available
+                route_waypoints = dispatch_result['waypoints']
+            elif 'waypoints' in route:
+                # Use route-level waypoints
+                route_waypoints = route['waypoints']
             else:
-                # Fallback: extract from route geometry
-                geometry = route.get('geometry', '')
-                # For now, just use the demands as waypoints since we can't decode the geometry easily
-                for i, demand in enumerate(new_demands):
-                    optimized_waypoints.append({
-                        'lat': float(demand['lat']),
-                        'lng': float(demand['lng']),
-                        'name': f'Demand Point {i+1}'
-                    })
+                route_waypoints = []
+            
+            # Process waypoints, skipping the current position (first waypoint)
+            for i, wp in enumerate(route_waypoints):
+                if i == 0:
+                    continue  # Skip current position
+                
+                # Handle different waypoint formats
+                if 'location' in wp:
+                    # Waypoint has location array [lng, lat]
+                    lat = float(wp['location'][1])
+                    lng = float(wp['location'][0])
+                elif 'lat' in wp and 'lng' in wp:
+                    # Waypoint has direct lat/lng fields
+                    lat = float(wp['lat'])
+                    lng = float(wp['lng'])
+                else:
+                    print(f"⚠️ Skipping waypoint {i} with unknown format: {wp}")
+                    continue
+                
+                # Get waypoint name from metadata or use default
+                name = wp.get('metadata', {}).get('name', f'Optimized Point {i}')
+                if not name or name == '':
+                    name = f'Dispatch Point {i}'
+                
+                optimized_waypoints.append({
+                    'lat': lat,
+                    'lng': lng,
+                    'name': name
+                })
+                
+                print(f"🚚 Added optimized waypoint {i}: {name} at ({lat:.6f}, {lng:.6f})")
+        
+        # Fallback: if no route waypoints found, use the demands as waypoints
+        if not optimized_waypoints:
+            print("🚚 No waypoints found in dispatch response, using demands as fallback")
+            for i, demand in enumerate(new_demands):
+                optimized_waypoints.append({
+                    'lat': float(demand['lat']),
+                    'lng': float(demand['lng']),
+                    'name': f'Demand Point {i+1}'
+                })
 
         print(f"🚚 Extracted {len(optimized_waypoints)
                              } optimized waypoints from dispatch engine")
