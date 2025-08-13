@@ -1109,6 +1109,17 @@ def append_dispatch_engine():
 
         print(f"🚚 Extracted {len(optimized_waypoints)
                              } optimized waypoints from dispatch engine")
+        
+        # Debug: Print the full dispatch response for troubleshooting
+        print(f"🚚 Full dispatch response structure:")
+        print(f"   - Code: {dispatch_result.get('code')}")
+        print(f"   - Routes count: {len(dispatch_result.get('routes', []))}")
+        if 'routes' in dispatch_result and dispatch_result['routes']:
+            route = dispatch_result['routes'][0]
+            print(f"   - Route distance: {route.get('distance', 'N/A')}")
+            print(f"   - Route duration: {route.get('duration', 'N/A')}")
+            print(f"   - Route waypoints: {len(route.get('waypoints', []))}")
+        print(f"   - Top-level waypoints: {len(dispatch_result.get('waypoints', []))}")
 
         if not optimized_waypoints:
             return jsonify({'error': 'No optimized waypoints received from dispatch engine'}), 500
