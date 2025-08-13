@@ -1010,13 +1010,30 @@ def append_dispatch_engine():
             })
             print(f"🚚 Added demand {i+1}: ({demand['lat']}, {demand['lng']})")
 
-        # For dispatch engine, we send all points as waypoints (no separate demands)
+        # For dispatch engine, we need to structure the data correctly
+        # The dispatch engine expects demands as pickup/dropoff pairs
         dispatch_demands = []
         
-        print(f"🚚 Total waypoints for dispatch engine: {len(dispatch_waypoints)} (current location + {len(request_waypoints)} waypoints + {len(new_demands)} demands)")
+        # Convert new demands to pickup/dropoff format for dispatch engine
+        for i, demand in enumerate(new_demands):
+            # Each demand becomes a pickup/dropoff pair
+            pickup = {
+                "lng": str(demand['lng']),
+                "lat": str(demand['lat']),
+                "metadata": {"name": f"Pickup {i+1}", "type": "pickup"}
+            }
+            dropoff = {
+                "lng": str(demand['lng']),
+                "lat": str(demand['lat']),
+                "metadata": {"name": f"Dropoff {i+1}", "type": "dropoff"}
+            }
+            dispatch_demands.append({"pickup": pickup, "dropoff": dropoff})
+        
+        print(f"🚚 Total waypoints for dispatch engine: {len(dispatch_waypoints)} (current location + {len(request_waypoints)} waypoints)")
+        print(f"🚚 Total demands for dispatch engine: {len(dispatch_demands)} pickup/dropoff pairs")
 
         # Call dispatch engine service
-        dispatch_url = "http://13.209.84.184:8765/dispatch-engine-servicei/osrm"
+        dispatch_url = "http://13.209.84.184:8765/dispatch-engine-service/osrm"
         dispatch_payload = {
             "waypoints": dispatch_waypoints,
             "demands": dispatch_demands,
@@ -1064,50 +1081,75 @@ def append_dispatch_engine():
             # Extract waypoints from the optimized route
             route = dispatch_result['routes'][0]
             
-            # Get waypoints from the route response
-            if 'waypoints' in dispatch_result:
-                # Use top-level waypoints if available
-                route_waypoints = dispatch_result['waypoints']
-            elif 'waypoints' in route:
-                # Use route-level waypoints
-                route_waypoints = route['waypoints']
-            else:
-                route_waypoints = []
+            # Get the route geometry and convert to waypoints
+            if 'geometry' in route and 'coordinates' in route['geometry']:
+                geometry_coords = route['geometry']['coordinates']
+                print(f"🚚 Found route geometry with {len(geometry_coords)} coordinates")
+                
+                # Sample waypoints from the route geometry (every 10th point to avoid too many)
+                sample_interval = max(1, len(geometry_coords) // 10)
+                for i in range(0, len(geometry_coords), sample_interval):
+                    coord = geometry_coords[i]
+                    lat = float(coord[1])
+                    lng = float(coord[0])
+                    
+                    optimized_waypoints.append({
+                        'lat': lat,
+                        'lng': lng,
+                        'name': f'Route Point {len(optimized_waypoints) + 1}'
+                    })
+                
+                print(f"🚚 Sampled {len(optimized_waypoints)} waypoints from route geometry")
             
-            # Process waypoints, skipping the current position (first waypoint)
-            for i, wp in enumerate(route_waypoints):
-                if i == 0:
-                    continue  # Skip current position
+            # Also try to get waypoints from the route response
+            elif 'waypoints' in dispatch_result:
+                route_waypoints = dispatch_result['waypoints']
+                print(f"🚚 Found {len(route_waypoints)} waypoints in dispatch result")
                 
-                # Handle different waypoint formats
-                if 'location' in wp:
-                    # Waypoint has location array [lng, lat]
-                    lat = float(wp['location'][1])
-                    lng = float(wp['location'][0])
-                elif 'lat' in wp and 'lng' in wp:
-                    # Waypoint has direct lat/lng fields
-                    lat = float(wp['lat'])
-                    lng = float(wp['lng'])
-                else:
-                    print(f"⚠️ Skipping waypoint {i} with unknown format: {wp}")
-                    continue
-                
-                # Get waypoint name from metadata or use default
-                name = wp.get('metadata', {}).get('name', f'Optimized Point {i}')
-                if not name or name == '':
-                    name = f'Dispatch Point {i}'
-                
-                optimized_waypoints.append({
-                    'lat': lat,
-                    'lng': lng,
-                    'name': name
-                })
-                
-                print(f"🚚 Added optimized waypoint {i}: {name} at ({lat:.6f}, {lng:.6f})")
+                # Process waypoints, skipping the current position (first waypoint)
+                for i, wp in enumerate(route_waypoints):
+                    if i == 0:
+                        continue  # Skip current position
+                    
+                    # Handle different waypoint formats
+                    if 'location' in wp:
+                        # Waypoint has location array [lng, lat]
+                        lat = float(wp['location'][1])
+                        lng = float(wp['location'][0])
+                    elif 'lat' in wp and 'lng' in wp:
+                        # Waypoint has direct lat/lng fields
+                        lat = float(wp['lat'])
+                        lng = float(wp['lng'])
+                    else:
+                        print(f"⚠️ Skipping waypoint {i} with unknown format: {wp}")
+                        continue
+                    
+                    # Get waypoint name from metadata or use default
+                    name = wp.get('metadata', {}).get('name', f'Optimized Point {i}')
+                    if not name or name == '':
+                        name = f'Dispatch Point {i}'
+                    
+                    optimized_waypoints.append({
+                        'lat': lat,
+                        'lng': lng,
+                        'name': name
+                    })
+                    
+                    print(f"🚚 Added optimized waypoint {i}: {name} at ({lat:.6f}, {lng:.6f})")
         
-        # Fallback: if no route waypoints found, use the demands as waypoints
+        # Fallback: if no route waypoints found, use original waypoints + demands
         if not optimized_waypoints:
-            print("🚚 No waypoints found in dispatch response, using demands as fallback")
+            print("🚚 No waypoints found in dispatch response, using fallback approach")
+            
+            # Add existing waypoints from request
+            for i, wp in enumerate(request_waypoints):
+                optimized_waypoints.append({
+                    'lat': float(wp['lat']),
+                    'lng': float(wp['lng']),
+                    'name': wp.get('name', f'Waypoint {i+1}')
+                })
+            
+            # Add new demands as waypoints
             for i, demand in enumerate(new_demands):
                 optimized_waypoints.append({
                     'lat': float(demand['lat']),
