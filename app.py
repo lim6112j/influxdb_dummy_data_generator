@@ -1024,7 +1024,7 @@ def append_dispatch_engine():
         print(f"🚚 Total demands for dispatch engine: {len(dispatch_demands)} coordinate pairs")
 
         # Call dispatch engine service
-        dispatch_url = "http://13.209.84.184:8765/dispatch-engine-service/osrm"
+        dispatch_url = "http://13.209.84.184:8765/dispatch-engine-servicei/osrm"
         dispatch_payload = {
             "waypoints": dispatch_waypoints,
             "demands": dispatch_demands,
