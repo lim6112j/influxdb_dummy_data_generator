@@ -29,13 +29,16 @@ def get_car_data():
 
     try:
         # Get InfluxDB configuration from request parameters
-        influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
+        influxdb_url = request.args.get(
+            'influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location')
-        influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
+        influxdb_measurement = request.args.get(
+            'influxdb_measurement', 'locReports')
         influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        influxdb_tag_value = request.args.get(
+            'influxdb_tag_value', 'ETRI_VT60_ID01')
 
         print(f"Connecting to InfluxDB: {influxdb_url}")
         print(f"Organization: {influxdb_org}, Bucket: {influxdb_bucket}")
@@ -101,14 +104,14 @@ def get_route():
         dest_lat = request.args.get('dest_lat', type=float)
         dest_lon = request.args.get('dest_lon', type=float)
         osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
-        
+
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required parameters: origin_lat, origin_lon, dest_lat, dest_lon'}), 400
-        
+
         # Format coordinates for OSRM (longitude,latitude)
         origin_str = f"{origin_lon},{origin_lat}"
         destination_str = f"{dest_lon},{dest_lat}"
-        
+
         # OSRM route API endpoint
         url = f"{osrm_url}/route/v1/driving/{origin_str};{destination_str}"
         params = {
@@ -116,27 +119,27 @@ def get_route():
             'geometries': 'geojson',
             'steps': 'true'
         }
-        
+
         response = requests.get(url, params=params)
         response.raise_for_status()
         data = response.json()
-        
+
         if data['code'] != 'Ok':
             return jsonify({'error': f"OSRM error: {data.get('message', 'Unknown error')}"}), 500
-        
+
         route = data['routes'][0]
-        
+
         # Extract route geometry (coordinates are in [longitude, latitude] format)
         coordinates = route['geometry']['coordinates']
         # Convert to [latitude, longitude] for Google Maps
         route_points = [[coord[1], coord[0]] for coord in coordinates]
-        
+
         return jsonify({
             'route_points': route_points,
             'duration': route['duration'],
             'distance': route['distance']
         })
-        
+
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
     except Exception as e:
@@ -153,12 +156,11 @@ def get_waypoints():
         {"lat": 35.8600, "lng": 128.6200, "name": "Checkpoint 3"},
         {"lat": 35.8519, "lng": 128.6727, "name": "Final Destination"}
     ]
-    
+
     return jsonify({
         'waypoints': waypoints,
         'message': 'Waypoints retrieved successfully'
     })
-
 
 
 @app.route('/api/status/osrm')
@@ -166,13 +168,13 @@ def check_osrm_status():
     """Check if OSRM server is running and accessible"""
     try:
         osrm_url = request.args.get('osrm_url', 'http://localhost:5001')
-        
+
         # Try to get a simple route to test OSRM connectivity
         test_url = f"{osrm_url}/route/v1/driving/128.48,35.84;128.4827,35.8419"
         params = {'overview': 'false', 'steps': 'false'}
-        
+
         response = requests.get(test_url, params=params, timeout=5)
-        
+
         if response.status_code == 200:
             data = response.json()
             if data.get('code') == 'Ok':
@@ -194,7 +196,7 @@ def check_osrm_status():
                 'message': f"OSRM server returned status {response.status_code}",
                 'url': osrm_url
             })
-            
+
     except requests.exceptions.ConnectionError:
         return jsonify({
             'status': 'offline',
@@ -220,23 +222,32 @@ def check_influxdb_status():
     """Check if InfluxDB is accessible and configured properly"""
     try:
         # Get configuration from query parameters with defaults
-        influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
+        influxdb_url = request.args.get(
+            'influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = request.args.get('influxdb_token', '')
         influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = request.args.get('influxdb_bucket', 'location')
-        influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
+        influxdb_measurement = request.args.get(
+            'influxdb_measurement', 'locReports')
         influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        influxdb_tag_value = request.args.get(
+            'influxdb_tag_value', 'ETRI_VT60_ID01')
 
         if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement, influxdb_tag_name, influxdb_tag_value]):
             missing = []
-            if not influxdb_url: missing.append('influxdb_url')
-            if not influxdb_org: missing.append('influxdb_org')
-            if not influxdb_bucket: missing.append('influxdb_bucket')
-            if not influxdb_measurement: missing.append('influxdb_measurement')
-            if not influxdb_tag_name: missing.append('influxdb_tag_name')
-            if not influxdb_tag_value: missing.append('influxdb_tag_value')
-            
+            if not influxdb_url:
+                missing.append('influxdb_url')
+            if not influxdb_org:
+                missing.append('influxdb_org')
+            if not influxdb_bucket:
+                missing.append('influxdb_bucket')
+            if not influxdb_measurement:
+                missing.append('influxdb_measurement')
+            if not influxdb_tag_name:
+                missing.append('influxdb_tag_name')
+            if not influxdb_tag_value:
+                missing.append('influxdb_tag_value')
+
             return jsonify({
                 'status': 'misconfigured',
                 'message': f"Missing required parameters: {', '.join(missing)}",
@@ -244,25 +255,27 @@ def check_influxdb_status():
             })
 
         # Try to connect to InfluxDB
-        client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
-        
+        client = InfluxDBClient(
+            url=influxdb_url, token=influxdb_token, org=influxdb_org)
+
         # Test connection with a simple query
         query_api = client.query_api()
-        test_query = f'buckets() |> filter(fn: (r) => r.name == "{influxdb_bucket}") |> limit(n: 1)'
-        
+        test_query = f'buckets() |> filter(fn: (r) => r.name == "{
+            influxdb_bucket}") |> limit(n: 1)'
+
         start_time = time.time()
         result = query_api.query(query=test_query)
         response_time = (time.time() - start_time) * 1000
-        
+
         # Check if bucket exists
         bucket_found = False
         for table in result:
             if len(table.records) > 0:
                 bucket_found = True
                 break
-        
+
         client.close()
-        
+
         if bucket_found:
             return jsonify({
                 'status': 'online',
@@ -281,7 +294,7 @@ def check_influxdb_status():
                 'bucket': influxdb_bucket,
                 'response_time_ms': response_time
             })
-            
+
     except Exception as e:
         error_msg = str(e)
         if 'unauthorized' in error_msg.lower():
@@ -293,7 +306,7 @@ def check_influxdb_status():
         else:
             status = 'error'
             message = f'InfluxDB error: {error_msg}'
-            
+
         return jsonify({
             'status': status,
             'message': message,
@@ -304,7 +317,7 @@ def check_influxdb_status():
 @app.route('/api/start-generation', methods=['POST'])
 def start_generation():
     """Start the car data generation script with given coordinates"""
-    
+
     try:
         data = request.get_json()
         origin_lat = data.get('origin_lat')
@@ -314,7 +327,7 @@ def start_generation():
         duration = data.get('duration', 1)  # Default 1 hour
         osrm_url = data.get('osrm_url', 'http://localhost:5001')
         movement_mode = data.get('movement_mode', 'one-way')  # Default one-way
-        
+
         # InfluxDB configuration
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
         influxdb_token = data.get('influxdb_token', '')
@@ -322,12 +335,14 @@ def start_generation():
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
-        waypoint_distance_threshold = data.get('waypoint_distance_threshold', 0.002)
-        
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get(
+            'vehicle_id', 'ETRI_VT60_ID01')
+        waypoint_distance_threshold = data.get(
+            'waypoint_distance_threshold', 0.002)
+
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
-        
+
         # Build command to run generate_car_data.py (it will clear existing data by default)
         cmd = [
             'python', 'generate_car_data.py',
@@ -345,7 +360,7 @@ def start_generation():
             '--influxdb-tag-value', influxdb_tag_value,
             '--waypoint-distance-threshold', str(waypoint_distance_threshold)
         ]
-        
+
         # Start the script as a subprocess so we can control it
         def run_script():
             global running_process
@@ -361,16 +376,16 @@ def start_generation():
             except Exception as e:
                 print(f"Error running data generation: {e}")
                 running_process = None
-        
+
         thread = threading.Thread(target=run_script)
         thread.daemon = True
         thread.start()
-        
+
         return jsonify({
             'message': 'Data generation started (existing data will be cleared)',
             'command': ' '.join(cmd)
         })
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -379,12 +394,12 @@ def start_generation():
 def stop_generation():
     """Stop the running car data generation script"""
     global running_process
-    
+
     try:
         if running_process and running_process.poll() is None:
             # Process is still running, terminate it
             running_process.terminate()
-            
+
             # Wait a bit for graceful termination
             try:
                 running_process.wait(timeout=5)
@@ -394,12 +409,12 @@ def stop_generation():
                 running_process.kill()
                 running_process.wait()
                 print("Data generation process force killed")
-            
+
             running_process = None
             return jsonify({'message': 'Data generation stopped'})
         else:
             return jsonify({'message': 'No data generation process running'})
-            
+
     except Exception as e:
         print(f"Error stopping data generation: {e}")
         return jsonify({'error': str(e)}), 500
@@ -412,13 +427,13 @@ def pause_car():
         # Create or update pause signal file
         with open('car_pause_signal.txt', 'w') as f:
             f.write('PAUSED')
-        
+
         print("Car pause signal sent")
         return jsonify({
             'message': 'Car paused successfully',
             'paused': True
         })
-        
+
     except Exception as e:
         print(f"Error pausing car: {e}")
         return jsonify({'error': str(e)}), 500
@@ -432,13 +447,13 @@ def resume_car():
         import os
         if os.path.exists('car_pause_signal.txt'):
             os.remove('car_pause_signal.txt')
-        
+
         print("Car resume signal sent")
         return jsonify({
             'message': 'Car resumed successfully',
             'paused': False
         })
-        
+
     except Exception as e:
         print(f"Error resuming car: {e}")
         return jsonify({'error': str(e)}), 500
@@ -448,16 +463,16 @@ def resume_car():
 def get_generation_status():
     """Check if data generation process is currently running and if car is paused"""
     global running_process
-    
+
     try:
         is_running = running_process is not None and running_process.poll() is None
-        
+
         # Check if car is paused and get pause reason
         import os
         is_paused = os.path.exists('car_pause_signal.txt')
         pause_reason = None
         waypoint_name = None
-        
+
         if is_paused:
             try:
                 with open('car_pause_signal.txt', 'r') as f:
@@ -469,14 +484,15 @@ def get_generation_status():
                         pause_reason = 'manual'
             except:
                 pause_reason = 'manual'
-        
-        message = f'Data generation is {"running" if is_running else "not running"}'
+
+        message = f'Data generation is {
+            "running" if is_running else "not running"}'
         if is_paused:
             if pause_reason == 'waypoint':
                 message += f' (car paused at waypoint: {waypoint_name})'
             else:
                 message += ' (car paused)'
-        
+
         return jsonify({
             'running': is_running,
             'paused': is_paused,
@@ -495,36 +511,42 @@ def update_route():
         data = request.get_json()
         waypoints = data.get('waypoints', [])
         # Use provided OSRM URL or fall back to the one stored in route manager
-        osrm_url = data.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
-        
+        osrm_url = data.get(
+            'osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
+
         print(f"🔄 /api/update-route called with {len(waypoints)} waypoints")
         print(f"🔄 Request data: {data}")
         print(f"🔄 Using OSRM URL: {osrm_url}")
-        
+
         if not waypoints:
             return jsonify({'error': 'No waypoints provided'}), 400
-        
+
         # Validate waypoints format
         for i, waypoint in enumerate(waypoints):
             print(f"🔄 Waypoint {i+1}: {waypoint}")
             if not isinstance(waypoint, dict) or 'lat' not in waypoint or 'lng' not in waypoint:
                 return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
-        
+
         # Get current car position from the latest data point
         # Use default InfluxDB configuration if not provided
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
-        influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
+        influxdb_token = data.get(
+            'influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get(
+            'vehicle_id', 'ETRI_VT60_ID01')
 
-        print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
-        print(f"🔄 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
+        print(f"🔄 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={
+              influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
+        print(f"🔄 Token provided: {'Yes' if data.get(
+            'influxdb_token') else 'No (using default)'}")
 
         try:
-            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            client = InfluxDBClient(
+                url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
 
             # Get the latest car position
@@ -543,7 +565,7 @@ def update_route():
 
             current_lat = None
             current_lon = None
-            
+
             for table in result:
                 for record in table.records:
                     current_lat = record.values.get('lat')
@@ -566,24 +588,26 @@ def update_route():
         success = route_manager.update_route_from_current(
             (current_lat, current_lon), waypoints, osrm_url
         )
-        
+
         # Update the stored OSRM URL in route manager if a new one was provided
         if data.get('osrm_url'):
             route_manager.osrm_url = osrm_url
-        
+
         if not success:
             return jsonify({'error': 'Failed to update route - check server logs for details'}), 500
-        
+
         # Get the updated route data for response
         route_points, step_locations, _, _ = route_manager.get_current_route_data()
-        
+
         # Convert route points to Google Maps format for frontend
         route_points_gm = [[point[0], point[1]] for point in route_points]
-        
+
         # Calculate approximate duration and distance
-        total_distance = sum(step.get('distance', 0) for step in step_locations)
-        total_duration = sum(step.get('duration', 0) for step in step_locations)
-        
+        total_distance = sum(step.get('distance', 0)
+                             for step in step_locations)
+        total_duration = sum(step.get('duration', 0)
+                             for step in step_locations)
+
         return jsonify({
             'route_points': route_points_gm,
             'duration': total_duration,
@@ -594,7 +618,7 @@ def update_route():
             'auto_applied': True,
             'success': True
         })
-        
+
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
     except Exception as e:
@@ -608,36 +632,43 @@ def append_route():
         data = request.get_json()
         new_waypoints = data.get('waypoints', [])
         # Use provided OSRM URL or fall back to the one stored in route manager
-        osrm_url = data.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
-        
-        print(f"➕ /api/append-route called with {len(new_waypoints)} new waypoints")
+        osrm_url = data.get(
+            'osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
+
+        print(
+            f"➕ /api/append-route called with {len(new_waypoints)} new waypoints")
         print(f"➕ Request data: {data}")
         print(f"➕ Using OSRM URL: {osrm_url}")
-        
+
         if not new_waypoints:
             return jsonify({'error': 'No waypoints provided'}), 400
-        
+
         # Validate waypoints format
         for i, waypoint in enumerate(new_waypoints):
             print(f"➕ New waypoint {i+1}: {waypoint}")
             if not isinstance(waypoint, dict) or 'lat' not in waypoint or 'lng' not in waypoint:
                 return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
-        
+
         # Get current car position from the latest data point
         # Use default InfluxDB configuration if not provided
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
-        influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
+        influxdb_token = data.get(
+            'influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get(
+            'vehicle_id', 'ETRI_VT60_ID01')
 
-        print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
-        print(f"➕ Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
+        print(f"➕ Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={
+              influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
+        print(f"➕ Token provided: {'Yes' if data.get(
+            'influxdb_token') else 'No (using default)'}")
 
         try:
-            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            client = InfluxDBClient(
+                url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
 
             # Get the latest car position
@@ -656,7 +687,7 @@ def append_route():
 
             current_lat = None
             current_lon = None
-            
+
             for table in result:
                 for record in table.records:
                     current_lat = record.values.get('lat')
@@ -679,24 +710,26 @@ def append_route():
         success = route_manager.append_route_from_current(
             (current_lat, current_lon), new_waypoints, osrm_url
         )
-        
+
         # Update the stored OSRM URL in route manager if a new one was provided
         if data.get('osrm_url'):
             route_manager.osrm_url = osrm_url
-        
+
         if not success:
             return jsonify({'error': 'Failed to append route - check server logs for details'}), 500
-        
+
         # Get the updated route data for response
         route_points, step_locations, _, _ = route_manager.get_current_route_data()
-        
+
         # Convert route points to Google Maps format for frontend
         route_points_gm = [[point[0], point[1]] for point in route_points]
-        
+
         # Calculate approximate duration and distance
-        total_distance = sum(step.get('distance', 0) for step in step_locations)
-        total_duration = sum(step.get('duration', 0) for step in step_locations)
-        
+        total_distance = sum(step.get('distance', 0)
+                             for step in step_locations)
+        total_duration = sum(step.get('duration', 0)
+                             for step in step_locations)
+
         # Load all waypoints to return in response
         all_waypoints = []
         try:
@@ -708,7 +741,7 @@ def append_route():
         except Exception as e:
             print(f"Warning: Could not load all waypoints for response: {e}")
             all_waypoints = new_waypoints  # Fallback to just the new waypoints
-        
+
         return jsonify({
             'route_points': route_points_gm,
             'duration': total_duration,
@@ -722,7 +755,7 @@ def append_route():
             'auto_applied': True,
             'success': True
         })
-        
+
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
     except Exception as e:
@@ -736,36 +769,43 @@ def append_route_optimized():
         data = request.get_json()
         new_waypoints = data.get('waypoints', [])
         # Use provided OSRM URL or fall back to the one stored in route manager
-        osrm_url = data.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
-        
-        print(f"🚀 /api/append-route-optimized called with {len(new_waypoints)} new waypoints")
+        osrm_url = data.get(
+            'osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
+
+        print(
+            f"🚀 /api/append-route-optimized called with {len(new_waypoints)} new waypoints")
         print(f"🚀 Request data: {data}")
         print(f"🚀 Using OSRM URL: {osrm_url}")
-        
+
         if not new_waypoints:
             return jsonify({'error': 'No waypoints provided'}), 400
-        
+
         # Validate waypoints format
         for i, waypoint in enumerate(new_waypoints):
             print(f"🚀 New waypoint {i+1}: {waypoint}")
             if not isinstance(waypoint, dict) or 'lat' not in waypoint or 'lng' not in waypoint:
                 return jsonify({'error': f'Invalid waypoint {i+1}: must have lat and lng keys'}), 400
-        
+
         # Get current car position from the latest data point
         # Use default InfluxDB configuration if not provided
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
-        influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
+        influxdb_token = data.get(
+            'influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value') or data.get('vehicle_id', 'ETRI_VT60_ID01')
+        influxdb_tag_value = data.get('influxdb_tag_value') or data.get(
+            'vehicle_id', 'ETRI_VT60_ID01')
 
-        print(f"🚀 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
-        print(f"🚀 Token provided: {'Yes' if data.get('influxdb_token') else 'No (using default)'}")
+        print(f"🚀 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={
+              influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
+        print(f"🚀 Token provided: {'Yes' if data.get(
+            'influxdb_token') else 'No (using default)'}")
 
         try:
-            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            client = InfluxDBClient(
+                url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
 
             # Get the latest car position
@@ -784,7 +824,7 @@ def append_route_optimized():
 
             current_lat = None
             current_lon = None
-            
+
             for table in result:
                 for record in table.records:
                     current_lat = record.values.get('lat')
@@ -807,24 +847,26 @@ def append_route_optimized():
         success = route_manager.append_route_optimized_from_current(
             (current_lat, current_lon), new_waypoints, osrm_url
         )
-        
+
         # Update the stored OSRM URL in route manager if a new one was provided
         if data.get('osrm_url'):
             route_manager.osrm_url = osrm_url
-        
+
         if not success:
             return jsonify({'error': 'Failed to append and optimize route - check server logs for details'}), 500
-        
+
         # Get the updated route data for response
         route_points, step_locations, _, _ = route_manager.get_current_route_data()
-        
+
         # Convert route points to Google Maps format for frontend
         route_points_gm = [[point[0], point[1]] for point in route_points]
-        
+
         # Calculate approximate duration and distance
-        total_distance = sum(step.get('distance', 0) for step in step_locations)
-        total_duration = sum(step.get('duration', 0) for step in step_locations)
-        
+        total_distance = sum(step.get('distance', 0)
+                             for step in step_locations)
+        total_duration = sum(step.get('duration', 0)
+                             for step in step_locations)
+
         # Load all optimized waypoints to return in response
         all_waypoints = []
         try:
@@ -836,7 +878,7 @@ def append_route_optimized():
         except Exception as e:
             print(f"Warning: Could not load all waypoints for response: {e}")
             all_waypoints = new_waypoints  # Fallback to just the new waypoints
-        
+
         return jsonify({
             'route_points': route_points_gm,
             'duration': total_duration,
@@ -852,7 +894,7 @@ def append_route_optimized():
             'auto_applied': True,
             'success': True
         })
-        
+
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Error connecting to OSRM server: {str(e)}'}), 500
     except Exception as e:
@@ -866,34 +908,38 @@ def append_dispatch_engine():
         data = request.get_json()
         new_demands = data.get('demands', [])
         algorithm = data.get('algorithm', 2)
-        
-        print(f"🚚 /api/append-dispatch-engine called with {len(new_demands)} new demands")
+
+        print(
+            f"🚚 /api/append-dispatch-engine called with {len(new_demands)} new demands")
         print(f"🚚 Request data: {data}")
         print(f"🚚 Using algorithm: {algorithm}")
-        
+
         if not new_demands:
             return jsonify({'error': 'No demands provided'}), 400
-        
+
         # Validate demands format
         for i, demand in enumerate(new_demands):
             print(f"🚚 New demand {i+1}: {demand}")
             if not isinstance(demand, dict) or 'lat' not in demand or 'lng' not in demand:
                 return jsonify({'error': f'Invalid demand {i+1}: must have lat and lng keys'}), 400
-        
+
         # Get current car position from the latest data point
         # Use default InfluxDB configuration if not provided
         influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
-        influxdb_token = data.get('influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
+        influxdb_token = data.get(
+            'influxdb_token') or 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=='
         influxdb_org = data.get('influxdb_org', 'ciel mobility')
         influxdb_bucket = data.get('influxdb_bucket', 'location')
         influxdb_measurement = data.get('influxdb_measurement', 'locReports')
         influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
-        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID04')
 
-        print(f"🚚 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
+        print(f"🚚 Using InfluxDB config: URL={influxdb_url}, Org={influxdb_org}, Bucket={
+              influxdb_bucket}, Measurement={influxdb_measurement}, Tag={influxdb_tag_name}={influxdb_tag_value}")
 
         try:
-            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            client = InfluxDBClient(
+                url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
 
             # Get the latest car position
@@ -912,7 +958,7 @@ def append_dispatch_engine():
 
             current_lat = None
             current_lon = None
-            
+
             for table in result:
                 for record in table.records:
                     current_lat = record.values.get('lat')
@@ -939,20 +985,21 @@ def append_dispatch_engine():
                 with open('current_route.json', 'r') as f:
                     route_data = json.load(f)
                     existing_waypoints = route_data.get('user_waypoints', [])
-                    print(f"🚚 Found {len(existing_waypoints)} existing waypoints")
+                    print(f"🚚 Found {len(existing_waypoints)
+                                     } existing waypoints")
         except Exception as e:
             print(f"Warning: Could not load existing waypoints: {e}")
 
         # Prepare waypoints for dispatch engine (current major waypoints)
         dispatch_waypoints = []
-        
+
         # Add current position as first waypoint
         dispatch_waypoints.append({
             "lng": str(current_lon),
             "lat": str(current_lat),
             "metadata": {"type": "current_position"}
         })
-        
+
         # Add existing waypoints
         for wp in existing_waypoints:
             dispatch_waypoints.append({
@@ -989,7 +1036,7 @@ def append_dispatch_engine():
             )
             dispatch_response.raise_for_status()
             dispatch_result = dispatch_response.json()
-            
+
             print(f"🚚 Dispatch engine response: {dispatch_result}")
 
         except requests.exceptions.RequestException as e:
@@ -1003,14 +1050,14 @@ def append_dispatch_engine():
 
         # Convert dispatch engine response to our waypoint format
         optimized_waypoints = []
-        
+
         # Handle different possible response formats from dispatch engine
         if 'waypoints' in dispatch_result:
             for i, wp in enumerate(dispatch_result['waypoints']):
                 # Skip the current position (first waypoint)
                 if i == 0:
                     continue
-                    
+
                 optimized_waypoints.append({
                     'lat': float(wp['lat']),
                     'lng': float(wp['lng']),
@@ -1024,36 +1071,40 @@ def append_dispatch_engine():
                     'name': point.get('name', f'Route Point {i+1}')
                 })
 
-        print(f"🚚 Extracted {len(optimized_waypoints)} optimized waypoints from dispatch engine")
+        print(f"🚚 Extracted {len(optimized_waypoints)
+                             } optimized waypoints from dispatch engine")
 
         if not optimized_waypoints:
             return jsonify({'error': 'No optimized waypoints received from dispatch engine'}), 500
 
         # Use provided OSRM URL or fall back to the one stored in route manager
-        osrm_url = data.get('osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
+        osrm_url = data.get(
+            'osrm_url') or route_manager.osrm_url or 'http://localhost:5001'
 
         # Update the route in the route manager with optimized waypoints
         success = route_manager.update_route_from_current(
             (current_lat, current_lon), optimized_waypoints, osrm_url
         )
-        
+
         # Update the stored OSRM URL in route manager if a new one was provided
         if data.get('osrm_url'):
             route_manager.osrm_url = osrm_url
-        
+
         if not success:
             return jsonify({'error': 'Failed to update route with dispatch engine optimization - check server logs for details'}), 500
-        
+
         # Get the updated route data for response
         route_points, step_locations, _, _ = route_manager.get_current_route_data()
-        
+
         # Convert route points to Google Maps format for frontend
         route_points_gm = [[point[0], point[1]] for point in route_points]
-        
+
         # Calculate approximate duration and distance
-        total_distance = sum(step.get('distance', 0) for step in step_locations)
-        total_duration = sum(step.get('duration', 0) for step in step_locations)
-        
+        total_distance = sum(step.get('distance', 0)
+                             for step in step_locations)
+        total_duration = sum(step.get('duration', 0)
+                             for step in step_locations)
+
         return jsonify({
             'route_points': route_points_gm,
             'duration': total_duration,
@@ -1071,7 +1122,7 @@ def append_dispatch_engine():
             'auto_applied': True,
             'success': True
         })
-        
+
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Error connecting to dispatch engine: {str(e)}'}), 500
     except Exception as e:
@@ -1091,12 +1142,11 @@ def get_influxdb_config():
             'tag_value': 'ETRI_VT60_ID01'
             # Note: Token is not included for security reasons
         }
-        
+
         return jsonify(config)
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 
 @app.route('/api/route-status')
@@ -1105,7 +1155,7 @@ def get_route_status():
     try:
         # Get current route data from route manager
         route_points, step_locations, was_updated, update_timestamp = route_manager.get_current_route_data()
-        
+
         if not route_points:
             return jsonify({
                 'route_updated': False,
@@ -1116,24 +1166,27 @@ def get_route_status():
                 'duration': 0,
                 'message': 'No route data available'
             })
-        
+
         # Convert route points to Google Maps format for frontend
         route_points_gm = [[point[0], point[1]] for point in route_points]
-        
+
         # Calculate approximate duration and distance
-        total_distance = sum(step.get('distance', 0) for step in step_locations)
-        total_duration = sum(step.get('duration', 0) for step in step_locations)
-        
+        total_distance = sum(step.get('distance', 0)
+                             for step in step_locations)
+        total_duration = sum(step.get('duration', 0)
+                             for step in step_locations)
+
         # Extract waypoints from step locations (simplified)
         waypoints = []
-        for i, step in enumerate(step_locations[::max(1, len(step_locations)//4)]):  # Sample every few steps as waypoints
+        # Sample every few steps as waypoints
+        for i, step in enumerate(step_locations[::max(1, len(step_locations)//4)]):
             if step.get('name') and step['name'].strip():
                 waypoints.append({
                     'lat': step['location'][0],
-                    'lng': step['location'][1], 
+                    'lng': step['location'][1],
                     'name': step['name']
                 })
-        
+
         return jsonify({
             'route_updated': was_updated,
             'update_timestamp': update_timestamp,
@@ -1143,7 +1196,7 @@ def get_route_status():
             'duration': total_duration,
             'message': 'Route status retrieved successfully'
         })
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1154,16 +1207,19 @@ def stream_car_data():
     from flask import Response
     import json
     import time
-    
+
     # Extract request parameters BEFORE entering the generator function
-    influxdb_url = request.args.get('influxdb_url', 'http://43.201.26.186:8086')
+    influxdb_url = request.args.get(
+        'influxdb_url', 'http://43.201.26.186:8086')
     influxdb_token = request.args.get('influxdb_token', '')
     influxdb_org = request.args.get('influxdb_org', 'ciel mobility')
     influxdb_bucket = request.args.get('influxdb_bucket', 'location')
-    influxdb_measurement = request.args.get('influxdb_measurement', 'locReports')
+    influxdb_measurement = request.args.get(
+        'influxdb_measurement', 'locReports')
     influxdb_tag_name = request.args.get('influxdb_tag_name', 'device_id')
-    influxdb_tag_value = request.args.get('influxdb_tag_value', 'ETRI_VT60_ID01')
-    
+    influxdb_tag_value = request.args.get(
+        'influxdb_tag_value', 'ETRI_VT60_ID01')
+
     def generate_data():
         client = None
         try:
@@ -1174,18 +1230,19 @@ def stream_car_data():
             # Send initial connection message
             yield f"data: {json.dumps({'status': 'connecting', 'message': 'Connecting to InfluxDB...'})}\n\n"
 
-            client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+            client = InfluxDBClient(
+                url=influxdb_url, token=influxdb_token, org=influxdb_org)
             query_api = client.query_api()
-            
+
             # Test connection
             health = client.health()
             print(f"✓ InfluxDB health status: {health.status}")
             yield f"data: {json.dumps({'status': 'connected', 'message': 'Connected to InfluxDB'})}\n\n"
-            
+
             last_timestamp = None
-            
+
             # Use configurable tag name and value
-            
+
             while True:
                 try:
                     # Query for new data since last timestamp
@@ -1217,32 +1274,32 @@ def stream_car_data():
                         '''
 
                     result = query_api.query(query=query)
-                    
+
                     new_points = []
                     processed_timestamps = set()
-                    
+
                     # Process all tables and records
                     for table in result:
                         for record in table.records:
                             timestamp_iso = record.get_time().isoformat()
-                            
+
                             # Skip if we've already processed this exact timestamp in this iteration
                             if timestamp_iso in processed_timestamps:
                                 continue
-                            
+
                             # Only process if this timestamp is actually newer than our last one
                             if last_timestamp and timestamp_iso <= last_timestamp:
                                 continue
-                            
+
                             processed_timestamps.add(timestamp_iso)
-                            
+
                             # Validate that we have the required fields
                             lat = record.values.get('lat')
                             lng = record.values.get('lng')
-                            
+
                             if lat is None or lng is None:
                                 continue  # Skip incomplete records
-                            
+
                             point_data = {
                                 'time': timestamp_iso,
                                 'lat': lat,
@@ -1262,7 +1319,7 @@ def stream_car_data():
                             }
                             new_points.append(point_data)
                             last_timestamp = timestamp_iso
-                    
+
                     if new_points:
                         # Send new data points
                         for point in new_points:
@@ -1271,25 +1328,26 @@ def stream_car_data():
                     else:
                         # Send heartbeat less frequently to reduce noise
                         yield f"data: {json.dumps({'heartbeat': True, 'timestamp': time.time()})}\n\n"
-                    
+
                     time.sleep(1)  # Check for new data every second
-                    
+
                 except Exception as e:
                     error_msg = str(e)
                     print(f"❌ Error in streaming loop: {e}")
-                    
+
                     # Handle specific InfluxDB errors
                     if "no column" in error_msg and "_value" in error_msg:
                         # This is expected when bucket is empty - just wait for data
                         yield f"data: {json.dumps({'status': 'waiting', 'message': 'Waiting for data to be generated...', 'timestamp': time.time()})}\n\n"
-                        time.sleep(2)  # Wait shorter time when waiting for data
+                        # Wait shorter time when waiting for data
+                        time.sleep(2)
                     elif "unauthorized" in error_msg.lower():
                         yield f"data: {json.dumps({'error': 'InfluxDB authentication failed', 'details': 'Check your token and permissions'})}\n\n"
                         time.sleep(5)  # Wait longer on auth error
                     else:
                         yield f"data: {json.dumps({'error': f'Streaming error: {error_msg}'})}\n\n"
                         time.sleep(3)  # Wait moderate time on other errors
-                    
+
         except Exception as e:
             print(f"❌ Error in stream setup: {e}")
             yield f"data: {json.dumps({'error': f'Stream setup error: {str(e)}'})}\n\n"
@@ -1300,12 +1358,12 @@ def stream_car_data():
                     print("🔌 InfluxDB client closed")
                 except:
                     pass
-    
+
     return Response(generate_data(), mimetype='text/event-stream',
-                   headers={'Cache-Control': 'no-cache',
-                           'Connection': 'keep-alive',
-                           'Access-Control-Allow-Origin': '*',
-                           'Access-Control-Allow-Headers': 'Cache-Control'})
+                    headers={'Cache-Control': 'no-cache',
+                             'Connection': 'keep-alive',
+                             'Access-Control-Allow-Origin': '*',
+                             'Access-Control-Allow-Headers': 'Cache-Control'})
 
 
 if __name__ == '__main__':
