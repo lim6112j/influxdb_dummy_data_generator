@@ -1795,6 +1795,7 @@
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
         const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
+        const vehicleId = document.getElementById('vehicleIdInput').value.trim() || 'ETRI_VT60_ID01';
 
         // Only include osrm_url if it's provided, otherwise let the server use the stored value
         const requestBody = { 
@@ -1805,7 +1806,8 @@
           influxdb_bucket: influxdbBucket,
           influxdb_measurement: influxdbMeasurement,
           influxdb_tag_name: influxdbTagName,
-          influxdb_tag_value: influxdbTagValue
+          influxdb_tag_value: vehicleId,
+          vehicle_id: vehicleId
         };
         if (osrmUrl) {
           requestBody.osrm_url = osrmUrl;
