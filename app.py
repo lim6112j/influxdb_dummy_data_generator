@@ -1010,27 +1010,18 @@ def append_dispatch_engine():
             })
             print(f"🚚 Added demand {i+1}: ({demand['lat']}, {demand['lng']})")
 
-        # For dispatch engine, we need to structure the data correctly
-        # The dispatch engine expects demands as pickup/dropoff pairs
+        # For dispatch engine, convert new demands to simple coordinate format
         dispatch_demands = []
         
-        # Convert new demands to pickup/dropoff format for dispatch engine
+        # Convert new demands to the format expected by dispatch engine
         for i, demand in enumerate(new_demands):
-            # Each demand becomes a pickup/dropoff pair
-            pickup = {
+            dispatch_demands.append({
                 "lng": str(demand['lng']),
-                "lat": str(demand['lat']),
-                "metadata": {"name": f"Pickup {i+1}", "type": "pickup"}
-            }
-            dropoff = {
-                "lng": str(demand['lng']),
-                "lat": str(demand['lat']),
-                "metadata": {"name": f"Dropoff {i+1}", "type": "dropoff"}
-            }
-            dispatch_demands.append({"pickup": pickup, "dropoff": dropoff})
+                "lat": str(demand['lat'])
+            })
         
         print(f"🚚 Total waypoints for dispatch engine: {len(dispatch_waypoints)} (current location + {len(request_waypoints)} waypoints)")
-        print(f"🚚 Total demands for dispatch engine: {len(dispatch_demands)} pickup/dropoff pairs")
+        print(f"🚚 Total demands for dispatch engine: {len(dispatch_demands)} coordinate pairs")
 
         # Call dispatch engine service
         dispatch_url = "http://13.209.84.184:8765/dispatch-engine-service/osrm"
