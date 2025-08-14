@@ -9,6 +9,8 @@ from datetime import datetime
 from dotenv import load_dotenv
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
+from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
 from dynamic_route_manager import route_manager
 
 
@@ -317,12 +319,38 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         print("\nPlease provide Kafka configuration parameters.")
         return
 
+    if not all([influxdb_url, influxdb_org, influxdb_bucket, influxdb_measurement, influxdb_tag_name, influxdb_tag_value]):
+        print("Error: Missing required InfluxDB configuration.")
+        print(f"URL: {'✓' if influxdb_url else '✗'}")
+        print(f"Organization: {'✓' if influxdb_org else '✗'}")
+        print(f"Bucket: {'✓' if influxdb_bucket else '✗'}")
+        print(f"Measurement: {'✓' if influxdb_measurement else '✗'}")
+        print(f"Tag Name: {'✓' if influxdb_tag_name else '✗'}")
+        print(f"Tag Value: {'✓' if influxdb_tag_value else '✗'}")
+        print("\nPlease provide InfluxDB configuration parameters.")
+        return
+
     print(f"Connecting to Kafka at: {kafka_bootstrap_servers}")
 
     # Initialize Kafka producer
     producer = create_kafka_producer(kafka_bootstrap_servers, kafka_username, kafka_password)
     if not producer:
         print("Failed to create Kafka producer. Exiting.")
+        return
+
+    print(f"Connecting to InfluxDB at: {influxdb_url}")
+
+    # Initialize InfluxDB client
+    try:
+        influx_client = InfluxDBClient(url=influxdb_url, token=influxdb_token, org=influxdb_org)
+        write_api = influx_client.write_api(write_options=SYNCHRONOUS)
+        
+        # Test InfluxDB connection
+        health = influx_client.health()
+        print(f"✓ Connected to InfluxDB: {health.status}")
+    except Exception as e:
+        print(f"Failed to connect to InfluxDB: {e}")
+        producer.close()
         return
 
     # Get route from OSRM using the provided coordinates
@@ -760,7 +788,38 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         except Exception as e:
             print(f"❌ Error sending data to Kafka: {e}")
             producer.close()
+            influx_client.close()
             return
+
+        # Create InfluxDB point with the configured tag value
+        try:
+            point = Point(influxdb_measurement) \
+                .tag(influxdb_tag_name, influxdb_tag_value) \
+                .field("lat", latitude) \
+                .field("lng", longitude) \
+                .field("speed", speed) \
+                .field("angle", heading) \
+                .field("alt", 0) \
+                .field("get_date", datetime.now().strftime('%Y-%m-%d %H:%M:%S')) \
+                .field("step_index", current_point.get('step_index', 0)) \
+                .field("instruction", current_point.get('instruction', 'moving')) \
+                .field("intermediate_index", current_point.get('intermediate_index', 0)) \
+                .field("cycle_count", cycle_count) \
+                .field("step_duration", current_point.get('step_duration', 0)) \
+                .field("step_distance", current_point.get('step_distance', 0)) \
+                .field("step_name", current_point.get('step_name', '')) \
+                .field("point_sequence", point_index) \
+                .time(datetime.now(), WritePrecision.S)
+
+            # Write to InfluxDB
+            write_api.write(bucket=influxdb_bucket, org=influxdb_org, record=point)
+            
+            if int(current_time) % 60 == 0:  # Print every 60 seconds
+                print(f"✓ Sent data to InfluxDB with tag {influxdb_tag_name}={influxdb_tag_value}")
+                
+        except Exception as e:
+            print(f"❌ Error sending data to InfluxDB: {e}")
+            # Continue even if InfluxDB fails, but log the error
 
         # Only increment point_index for one-way mode, round-trip uses time-based calculation
         if movement_mode == 'one-way':
@@ -769,8 +828,9 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
         current_time += 1
         time.sleep(1)
 
-    # Close the Kafka producer
+    # Close the connections
     producer.close()
+    influx_client.close()
     
     # Clean up pause signal file
     if os.path.exists('car_pause_signal.txt'):
