@@ -344,6 +344,8 @@ def start_generation():
             '--probe-name', probe_name
         ]
         
+        print(f"Command will use vehicle_id: {vehicle_id}")
+        
         # Start the script as a subprocess so we can control it
         def run_script():
             global running_process
@@ -372,6 +374,10 @@ def start_generation():
                 'topic': kafka_topic,
                 'vehicle_id': vehicle_id,
                 'probe_name': probe_name
+            },
+            'synchronization': {
+                'kafka_vehicle_id': vehicle_id,
+                'synchronized': True
             }
         })
         
