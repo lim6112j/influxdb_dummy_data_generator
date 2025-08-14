@@ -1000,6 +1000,18 @@ def append_dispatch_engine():
                 "lat": str(waypoint['lat']),
                 "metadata": {"name": waypoint.get('name', ''), "type": "existing_waypoint"}
             })
+        
+        # Also append current car location to the waypoints list that will be sent to dispatch engine
+        # This ensures the current position is included in the optimization
+        current_car_waypoint = {
+            "lng": str(current_lon),
+            "lat": str(current_lat),
+            "metadata": {"type": "current_car_position", "name": "Current Car Location"}
+        }
+        
+        # Insert current car location at the beginning of waypoints if not already there
+        if not dispatch_waypoints or (dispatch_waypoints[0]["lng"] != str(current_lon) or dispatch_waypoints[0]["lat"] != str(current_lat)):
+            dispatch_waypoints.insert(0, current_car_waypoint)
 
         # Prepare demands for dispatch engine (new pickup/dropoff locations)
         dispatch_demands = []
