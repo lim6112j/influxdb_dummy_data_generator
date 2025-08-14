@@ -315,15 +315,26 @@ def start_generation():
         osrm_url = data.get('osrm_url', 'http://localhost:5001')
         movement_mode = data.get('movement_mode', 'one-way')  # Default one-way
         
+        # InfluxDB configuration
+        influxdb_url = data.get('influxdb_url', 'http://43.201.26.186:8086')
+        influxdb_token = data.get('influxdb_token', 'iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg==')
+        influxdb_org = data.get('influxdb_org', 'ciel mobility')
+        influxdb_bucket = data.get('influxdb_bucket', 'location')
+        influxdb_measurement = data.get('influxdb_measurement', 'locReports')
+        influxdb_tag_name = data.get('influxdb_tag_name', 'device_id')
+        influxdb_tag_value = data.get('influxdb_tag_value', 'ETRI_VT60_ID01')
+        
         # Kafka configuration
         kafka_bootstrap_servers = data.get('kafka_bootstrap_servers', '123.143.232.180:19092')
         kafka_topic = data.get('kafka_topic', 'vehicle-driving-data')
         kafka_username = data.get('kafka_username', 'iov')
         kafka_password = data.get('kafka_password', 'iov')
-        vehicle_id = data.get('vehicle_id', 'ETRI_VT60_ID01')
+        vehicle_id = data.get('vehicle_id', influxdb_tag_value)  # Use tag value as vehicle_id to keep them synchronized
         probe_name = data.get('probe_name', 'CITSOBE-0001')
         
         print(f"Vehicle ID from request: {vehicle_id}")
+        print(f"InfluxDB tag value from request: {influxdb_tag_value}")
+        print(f"Using vehicle_id for Kafka: {vehicle_id}")
         
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
