@@ -256,7 +256,9 @@ def send_kafka_message(producer, topic, message, key=None):
 
 def generate_car_data(duration, origin, destination, osrm_url, movement_mode='one-way', 
                      kafka_bootstrap_servers=None, kafka_topic=None, kafka_username=None, kafka_password=None,
-                     vehicle_id=None, probe_name=None):
+                     vehicle_id=None, probe_name=None,
+                     influxdb_url=None, influxdb_token=None, influxdb_org=None, influxdb_bucket=None,
+                     influxdb_measurement=None, influxdb_tag_name=None, influxdb_tag_value=None):
     """Generates dummy car movement data and sends it to Kafka every 1 second."""
 
     start_time = time.time()
@@ -270,12 +272,38 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
     vehicle_id = vehicle_id or "ETRI_VT60_ID01"
     probe_name = probe_name or "CITSOBE-0001"
 
+    # Use provided InfluxDB configuration or defaults
+    influxdb_url = influxdb_url or "http://43.201.26.186:8086"
+    influxdb_token = influxdb_token or ""
+    influxdb_org = influxdb_org or "ciel mobility"
+    influxdb_bucket = influxdb_bucket or "location"
+    influxdb_measurement = influxdb_measurement or "locReports"
+    influxdb_tag_name = influxdb_tag_name or "device_id"
+    influxdb_tag_value = influxdb_tag_value or "ETRI_VT60_ID01"
+
+    # If vehicle_id is not explicitly provided, use the InfluxDB tag value to keep them synchronized
+    if vehicle_id == "ETRI_VT60_ID01" and influxdb_tag_value != "ETRI_VT60_ID01":
+        vehicle_id = influxdb_tag_value
+        print(f"Using InfluxDB tag value as vehicle_id: {vehicle_id}")
+
     print(f"Kafka Configuration:")
     print(f"  Bootstrap Servers: {kafka_bootstrap_servers}")
     print(f"  Topic: {kafka_topic}")
     print(f"  Username: {kafka_username}")
     print(f"  Vehicle ID: {vehicle_id}")
     print(f"  Probe Name: {probe_name}")
+
+    print(f"InfluxDB Configuration:")
+    print(f"  URL: {influxdb_url}")
+    print(f"  Organization: {influxdb_org}")
+    print(f"  Bucket: {influxdb_bucket}")
+    print(f"  Measurement: {influxdb_measurement}")
+    print(f"  Tag: {influxdb_tag_name}={influxdb_tag_value}")
+
+    print(f"Data Synchronization:")
+    print(f"  Kafka vehicle_id: {vehicle_id}")
+    print(f"  InfluxDB tag value: {influxdb_tag_value}")
+    print(f"  Synchronized: {'Yes' if vehicle_id == influxdb_tag_value else 'No'}")
 
     # Check if all required parameters are set
     if not all([kafka_bootstrap_servers, kafka_topic, kafka_username, kafka_password, vehicle_id, probe_name]):
@@ -782,6 +810,20 @@ if __name__ == "__main__":
                         help="Vehicle ID (default: ETRI_VT60_ID01)")
     parser.add_argument("--probe-name", type=str, default="CITSOBE-0001",
                         help="Probe name (default: CITSOBE-0001)")
+    parser.add_argument("--influxdb-url", type=str, default="http://43.201.26.186:8086",
+                        help="InfluxDB server URL (default: http://43.201.26.186:8086)")
+    parser.add_argument("--influxdb-token", type=str, default="",
+                        help="InfluxDB authentication token")
+    parser.add_argument("--influxdb-org", type=str, default="ciel mobility",
+                        help="InfluxDB organization (default: ciel mobility)")
+    parser.add_argument("--influxdb-bucket", type=str, default="location",
+                        help="InfluxDB bucket name (default: location)")
+    parser.add_argument("--influxdb-measurement", type=str, default="locReports",
+                        help="InfluxDB measurement name (default: locReports)")
+    parser.add_argument("--influxdb-tag-name", type=str, default="device_id",
+                        help="InfluxDB tag name (default: device_id)")
+    parser.add_argument("--influxdb-tag-value", type=str, default="ETRI_VT60_ID01",
+                        help="InfluxDB tag value (default: ETRI_VT60_ID01)")
 
     args = parser.parse_args()
 
@@ -791,4 +833,8 @@ if __name__ == "__main__":
     generate_car_data(args.duration, origin, destination, args.osrm_url, args.movement_mode,
                      kafka_bootstrap_servers=args.kafka_bootstrap_servers, kafka_topic=args.kafka_topic,
                      kafka_username=args.kafka_username, kafka_password=args.kafka_password,
-                     vehicle_id=args.vehicle_id, probe_name=args.probe_name)
+                     vehicle_id=args.vehicle_id, probe_name=args.probe_name,
+                     influxdb_url=args.influxdb_url, influxdb_token=args.influxdb_token,
+                     influxdb_org=args.influxdb_org, influxdb_bucket=args.influxdb_bucket,
+                     influxdb_measurement=args.influxdb_measurement, influxdb_tag_name=args.influxdb_tag_name,
+                     influxdb_tag_value=args.influxdb_tag_value)
