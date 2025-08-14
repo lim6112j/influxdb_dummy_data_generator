@@ -276,7 +276,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
 
     # Use provided InfluxDB configuration or defaults
     influxdb_url = influxdb_url or "http://43.201.26.186:8086"
-    influxdb_token = influxdb_token or ""
+    influxdb_token = influxdb_token or "iYd5PF2P-ezGnT49aeHh5Qmc-_-jdIFFqFLvm5ZMeFvpDMNq9DnNL6xwxSIsqk1dh6LZAX206Nn28GENRNZLHg=="
     influxdb_org = influxdb_org or "ciel mobility"
     influxdb_bucket = influxdb_bucket or "location"
     influxdb_measurement = influxdb_measurement or "locReports"
@@ -818,7 +818,9 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 print(f"✓ Sent data to InfluxDB with tag {influxdb_tag_name}={influxdb_tag_value}")
                 
         except Exception as e:
-            print(f"❌ Error sending data to InfluxDB: {e}")
+            # Only log InfluxDB errors occasionally to avoid spam
+            if int(current_time) % 60 == 0:  # Log every 60 seconds
+                print(f"❌ Error sending data to InfluxDB: {e}")
             # Continue even if InfluxDB fails, but log the error
 
         # Only increment point_index for one-way mode, round-trip uses time-based calculation

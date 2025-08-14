@@ -328,7 +328,7 @@ def start_generation():
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
         
-        # Build command to run generate_car_data.py with Kafka parameters
+        # Build command to run generate_car_data.py with Kafka and InfluxDB parameters
         cmd = [
             'uv', 'run', 'generate_car_data.py',
             '--duration', str(duration),
@@ -341,10 +341,17 @@ def start_generation():
             '--kafka-username', kafka_username,
             '--kafka-password', kafka_password,
             '--vehicle-id', vehicle_id,
-            '--probe-name', probe_name
+            '--probe-name', probe_name,
+            '--influxdb-url', influxdb_url,
+            '--influxdb-token', influxdb_token,
+            '--influxdb-org', influxdb_org,
+            '--influxdb-bucket', influxdb_bucket,
+            '--influxdb-measurement', influxdb_measurement,
+            '--influxdb-tag-name', influxdb_tag_name,
+            '--influxdb-tag-value', influxdb_tag_value
         ]
         
-        print(f"Command will use vehicle_id: {vehicle_id}")
+        print(f"Command will use vehicle_id: {vehicle_id} and influxdb_tag_value: {influxdb_tag_value}")
         
         # Start the script as a subprocess so we can control it
         def run_script():
@@ -367,7 +374,7 @@ def start_generation():
         thread.start()
         
         return jsonify({
-            'message': 'Data generation started (sending to Kafka)',
+            'message': 'Data generation started (sending to Kafka and InfluxDB)',
             'command': ' '.join(cmd),
             'kafka_config': {
                 'bootstrap_servers': kafka_bootstrap_servers,
@@ -375,9 +382,18 @@ def start_generation():
                 'vehicle_id': vehicle_id,
                 'probe_name': probe_name
             },
+            'influxdb_config': {
+                'url': influxdb_url,
+                'org': influxdb_org,
+                'bucket': influxdb_bucket,
+                'measurement': influxdb_measurement,
+                'tag_name': influxdb_tag_name,
+                'tag_value': influxdb_tag_value
+            },
             'synchronization': {
                 'kafka_vehicle_id': vehicle_id,
-                'synchronized': True
+                'influxdb_tag_value': influxdb_tag_value,
+                'synchronized': vehicle_id == influxdb_tag_value
             }
         })
         
