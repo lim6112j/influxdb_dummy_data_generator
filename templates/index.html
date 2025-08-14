@@ -1013,11 +1013,13 @@
         const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
-        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
         const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
         const vehicleId = document.getElementById('vehicleIdInput').value.trim() || 'ETRI_VT60_ID01';
+
+        console.log('🚀 Starting generation with tag value:', influxdbTagValue);
 
         // First, start the data generation script
         fetch("/api/start-generation", {
@@ -1042,6 +1044,7 @@
             influxdb_measurement: influxdbMeasurement,
             influxdb_tag_name: influxdbTagName,
             influxdb_tag_value: influxdbTagValue,
+            vehicle_id: vehicleId,
           }),
         })
           .then((response) => response.json())
@@ -1081,7 +1084,7 @@
         const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
         const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
-        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
         const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
@@ -1089,6 +1092,8 @@
         
         // Build streaming URL with InfluxDB parameters
         const streamUrl = `/api/car-data-stream?influxdb_url=${encodeURIComponent(influxdbUrl)}&influxdb_token=${encodeURIComponent(influxdbToken)}&influxdb_org=${encodeURIComponent(influxdbOrg)}&influxdb_bucket=${encodeURIComponent(influxdbBucket)}&influxdb_measurement=${encodeURIComponent(influxdbMeasurement)}&influxdb_tag_name=${encodeURIComponent(influxdbTagName)}&influxdb_tag_value=${encodeURIComponent(influxdbTagValue)}&vehicle_id=${encodeURIComponent(vehicleId)}`;
+        
+        console.log('🔄 Starting stream with tag value:', influxdbTagValue);
         
         // Start EventSource for streaming
         eventSource = new EventSource(streamUrl);
@@ -1767,11 +1772,12 @@
         // Get InfluxDB configuration from UI
         const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
-        const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
-        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
+        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
         const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
+        const vehicleId = document.getElementById('vehicleIdInput').value.trim() || 'ETRI_VT60_ID01';
 
         // Only include osrm_url if it's provided, otherwise let the server use the stored value
         const requestBody = { 
@@ -1877,8 +1883,8 @@
         // Get InfluxDB configuration from UI
         const influxdbUrl = document.getElementById('influxdbUrlInput').value.trim() || 'http://43.201.26.186:8086';
         const influxdbToken = document.getElementById('influxdbTokenInput').value.trim();
-        const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'myorg';
-        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location_202506';
+        const influxdbOrg = document.getElementById('influxdbOrgInput').value.trim() || 'ciel mobility';
+        const influxdbBucket = document.getElementById('influxdbBucketInput').value.trim() || 'location';
         const influxdbMeasurement = document.getElementById('influxdbMeasurementInput').value.trim() || 'locReports';
         const influxdbTagName = document.getElementById('influxdbTagNameInput').value.trim() || 'device_id';
         const influxdbTagValue = document.getElementById('influxdbTagValueInput').value.trim() || 'ETRI_VT60_ID01';
@@ -1893,7 +1899,8 @@
           influxdb_bucket: influxdbBucket,
           influxdb_measurement: influxdbMeasurement,
           influxdb_tag_name: influxdbTagName,
-          influxdb_tag_value: influxdbTagValue
+          influxdb_tag_value: influxdbTagValue,
+          vehicle_id: vehicleId
         };
         if (osrmUrl) {
           requestBody.osrm_url = osrmUrl;
@@ -1991,6 +1998,62 @@
 
       // Make the function globally available for console access
       window.updateRouteWithCustomWaypoints = updateRouteWithCustomWaypoints;
+
+      // Function to restart streaming with new configuration
+      function restartStreamingWithNewConfig() {
+        if (!isStreaming) {
+          console.log('Not currently streaming, no need to restart');
+          return;
+        }
+
+        console.log('🔄 Restarting streaming with updated configuration...');
+        
+        // Close existing stream
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+
+        // Wait a moment then restart
+        setTimeout(() => {
+          startEventStream();
+          updateStatus("Streaming restarted with updated configuration", "success");
+        }, 1000);
+      }
+
+      // Add event listeners to InfluxDB configuration inputs to restart streaming when changed
+      function setupConfigChangeListeners() {
+        const configInputs = [
+          'influxdbUrlInput',
+          'influxdbTokenInput', 
+          'influxdbOrgInput',
+          'influxdbBucketInput',
+          'influxdbMeasurementInput',
+          'influxdbTagNameInput',
+          'influxdbTagValueInput',
+          'vehicleIdInput'
+        ];
+
+        configInputs.forEach(inputId => {
+          const input = document.getElementById(inputId);
+          if (input) {
+            input.addEventListener('change', function() {
+              console.log(`🔄 Configuration changed: ${inputId} = ${this.value}`);
+              if (isStreaming) {
+                console.log('🔄 Streaming is active, will restart with new config...');
+                restartStreamingWithNewConfig();
+              }
+            });
+          }
+        });
+
+        console.log('✓ Configuration change listeners set up');
+      }
+
+      // Call setup function when page loads
+      document.addEventListener('DOMContentLoaded', function() {
+        setupConfigChangeListeners();
+      });
 
       function startRouteUpdateCheck() {
         // Clear any existing interval

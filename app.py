@@ -323,6 +323,8 @@ def start_generation():
         vehicle_id = data.get('vehicle_id', 'ETRI_VT60_ID01')
         probe_name = data.get('probe_name', 'CITSOBE-0001')
         
+        print(f"Vehicle ID from request: {vehicle_id}")
+        
         if any(param is None for param in [origin_lat, origin_lon, dest_lat, dest_lon]):
             return jsonify({'error': 'Missing required coordinates'}), 400
         
