@@ -939,13 +939,36 @@ def append_route_optimized():
 
 def transform_waypoints(dispatch_result):
     optimized_waypoints = []
-    for waypoint in dispatch_result['waypoints']:
-        transformed = {
-            'lng': waypoint['location'][0],
-            'lat': waypoint['location'][1],
-            'name': waypoint['name']
-        }
-        optimized_waypoints.append(transformed)
+    
+    # Handle different response formats from dispatch engine
+    waypoints_data = None
+    
+    if isinstance(dispatch_result, dict):
+        # If dispatch_result is a dictionary, look for 'waypoints' key
+        waypoints_data = dispatch_result.get('waypoints', [])
+    elif isinstance(dispatch_result, list):
+        # If dispatch_result is already a list of waypoints
+        waypoints_data = dispatch_result
+    else:
+        print(f"❌ Unexpected dispatch_result type: {type(dispatch_result)}")
+        return []
+    
+    if not waypoints_data:
+        print(f"❌ No waypoints data found in dispatch result")
+        return []
+    
+    for waypoint in waypoints_data:
+        try:
+            transformed = {
+                'lng': waypoint['location'][0],
+                'lat': waypoint['location'][1],
+                'name': waypoint.get('name', '')
+            }
+            optimized_waypoints.append(transformed)
+        except (KeyError, IndexError, TypeError) as e:
+            print(f"❌ Error transforming waypoint {waypoint}: {e}")
+            continue
+    
     return optimized_waypoints
 
 
@@ -1096,7 +1119,7 @@ def append_dispatch_engine():
             return jsonify({'error': f'Error processing dispatch engine response: {str(e)}'}), 500
 
         # Extract optimized route from dispatch engine response
-        # diapatch_result['waypoints'] format is
+        # dispatch_result['waypoints'] format is expected to be:
         #        {
         #     "hint": "r0oygLI4BYBKAAAAVgAAAAAAAAAAAAAALiOmQuqCvUIAAAAAAAAAAEoAAABWAAAAAAAAAAAAAAD_BAAAFNqNB8EhOgJo2o0HViI6AgAAbxJaVpF1",
         #     "distance": 18.133077,
@@ -1108,7 +1131,7 @@ def append_dispatch_engine():
         #     "eta": "2025-08-15T06:00:17.910482Z",
         #     "metadata": {}
         # },
-        # and optmmized_waypoints format should be
+        # and optimized_waypoints format should be:
         # [
         #     {
         #         "lng": 126.736916,
@@ -1118,7 +1141,10 @@ def append_dispatch_engine():
         #     ...
         # ]
 
-        optimized_waypoints = transform_waypoints(dispatch_result['waypoints'])
+        print(f"🚛 Dispatch result type: {type(dispatch_result)}")
+        print(f"🚛 Dispatch result keys: {list(dispatch_result.keys()) if isinstance(dispatch_result, dict) else 'Not a dict'}")
+        
+        optimized_waypoints = transform_waypoints(dispatch_result)
 
         print(f"🚛 Extracted {len(optimized_waypoints)
                              } optimized waypoints from dispatch engine")
