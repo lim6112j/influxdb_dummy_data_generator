@@ -1086,7 +1086,7 @@ def append_dispatch_engine():
         # Extract optimized route from dispatch engine response
         # The exact format depends on the dispatch engine API response
         # Assuming it returns optimized waypoints in some format
-        optimized_waypoints = dispatch_result['waypoits']
+        optimized_waypoints = dispatch_result['waypoints']
 
         print(f"🚛 Extracted {len(optimized_waypoints)
                              } optimized waypoints from dispatch engine")
