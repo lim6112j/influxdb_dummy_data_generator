@@ -937,6 +937,18 @@ def append_route_optimized():
         return jsonify({'error': str(e)}), 500
 
 
+def transform_waypoints(dispatch_result):
+    optimized_waypoints = []
+    for waypoint in dispatch_result['waypoints']:
+        transformed = {
+            'lng': waypoint['location'][0],
+            'lat': waypoint['location'][1],
+            'name': waypoint['name']
+        }
+        optimized_waypoints.append(transformed)
+    return optimized_waypoints
+
+
 @app.route('/api/append-dispatch-engine', methods=['POST'])
 def append_dispatch_engine():
     """Append new waypoints using dispatch engine optimization for pickup/dropoff routes"""
@@ -1084,9 +1096,29 @@ def append_dispatch_engine():
             return jsonify({'error': f'Error processing dispatch engine response: {str(e)}'}), 500
 
         # Extract optimized route from dispatch engine response
-        # The exact format depends on the dispatch engine API response
-        # Assuming it returns optimized waypoints in some format
-        optimized_waypoints = dispatch_result['waypoints']
+        # diapatch_result['waypoints'] format is
+        #        {
+        #     "hint": "r0oygLI4BYBKAAAAVgAAAAAAAAAAAAAALiOmQuqCvUIAAAAAAAAAAEoAAABWAAAAAAAAAAAAAAD_BAAAFNqNB8EhOgJo2o0HViI6AgAAbxJaVpF1",
+        #     "distance": 18.133077,
+        #     "name": "함송로29번길",
+        #     "location": [
+        #         126.736916,
+        #         37.364161
+        #     ],
+        #     "eta": "2025-08-15T06:00:17.910482Z",
+        #     "metadata": {}
+        # },
+        # and optmmized_waypoints format should be
+        # [
+        #     {
+        #         "lng": 126.736916,
+        #         "lat": 37.364161,
+        #         "name": "함송로29번길"
+        #     },
+        #     ...
+        # ]
+
+        optimized_waypoints = transform_waypoints(dispatch_result['waypoints'])
 
         print(f"🚛 Extracted {len(optimized_waypoints)
                              } optimized waypoints from dispatch engine")
