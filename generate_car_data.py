@@ -799,7 +799,7 @@ def generate_car_data(duration, origin, destination, osrm_url, movement_mode='on
                 .field("lng", longitude) \
                 .field("speed", speed) \
                 .field("angle", heading) \
-                .field("alt", 0) \
+                .field("alt", 0.0) \
                 .field("get_date", datetime.now().strftime('%Y-%m-%d %H:%M:%S')) \
                 .field("step_index", current_point.get('step_index', 0)) \
                 .field("instruction", current_point.get('instruction', 'moving')) \
