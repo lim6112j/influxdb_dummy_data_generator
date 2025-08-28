@@ -1242,15 +1242,15 @@ def append_dispatch_engine():
 
 @app.route('/api/influxdb-config')
 def get_influxdb_config():
-    """Get default InfluxDB configuration"""
+    """Get default InfluxDB configuration from environment variables"""
     try:
         config = {
-            'url': 'http://43.201.26.186:8086',
-            'org': 'ciel mobility',
-            'bucket': 'location',
-            'measurement': 'locReports',
-            'tag_name': 'device_id',
-            'tag_value': 'ETRI_VT60_ID01'
+            'url': os.getenv('INFLUXDB_URL', 'http://43.201.26.186:8086'),
+            'org': os.getenv('INFLUXDB_ORG', 'ciel mobility'),
+            'bucket': os.getenv('INFLUXDB_BUCKET', 'location'),
+            'measurement': os.getenv('INFLUXDB_MEASUREMENT', 'locReports'),
+            'tag_name': os.getenv('INFLUXDB_TAG_NAME', 'device_id'),
+            'tag_value': os.getenv('INFLUXDB_TAG_VALUE', 'ETRI_VT60_ID01')
             # Note: Token is not included for security reasons
         }
 
